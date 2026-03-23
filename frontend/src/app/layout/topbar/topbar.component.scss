@@ -1,0 +1,79 @@
+@use 'variables' as vars;
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: vars.$z-topbar;
+  height: vars.$topbar-height;
+  background-color: vars.$topbar-bg;
+  color: vars.$topbar-text;
+  box-shadow: vars.$shadow-sm;
+  gap: vars.$spacing-sm;
+  padding: 0 vars.$spacing-md;
+}
+
+.app-title {
+  font-size: vars.$font-size-xl;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-left: vars.$spacing-sm;
+}
+
+.poslovnica-badge {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-xs;
+  margin-left: vars.$spacing-lg;
+  padding: vars.$spacing-xs vars.$spacing-sm;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: vars.$radius-full;
+  font-size: vars.$font-size-sm;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.user-menu-btn {
+  color: vars.$topbar-text;
+  gap: vars.$spacing-xs;
+
+  mat-icon:first-child {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .user-name {
+    font-size: vars.$font-size-base;
+    font-weight: 400;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.menu-user-info {
+  display: flex;
+  flex-direction: column;
+  padding: vars.$spacing-sm vars.$spacing-md;
+
+  .menu-user-name {
+    font-weight: 500;
+    font-size: vars.$font-size-base;
+  }
+
+  .menu-user-role {
+    font-size: vars.$font-size-sm;
+    color: vars.$surface-700;
+    text-transform: capitalize;
+  }
+}

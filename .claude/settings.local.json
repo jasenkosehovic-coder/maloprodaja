@@ -8,7 +8,16 @@
       "Bash(where py:*)",
       "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
       "Bash(python3 -c \":*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(mkdir -p \"C:/Users/Jasenko/Documents/Java/Maloprodaja/backend/src/main/java/ba/maloprodaja\")",
+      "Bash(mkdir -p \"C:/Users/Jasenko/Documents/Java/Maloprodaja/backend/src/main/resources\")",
+      "Bash(mkdir -p \"C:/Users/Jasenko/Documents/Java/Maloprodaja/backend/src/test/java/ba/maloprodaja\")",
+      "Bash(find C:/Users/Jasenko/Documents/Java/Maloprodaja/frontend -name *.ts)",
+      "Bash(powershell -Command \"Get-Service | Where-Object { \\\\$_.Name -like '*postgres*' -or \\\\$_.DisplayName -like '*postgres*' } | Select-Object Name, DisplayName, Status\")",
+      "Bash(powershell -Command \"Get-Service | Where-Object { \\\\$_.Name -like '*sql*' -or \\\\$_.DisplayName -like '*sql*' } | Select-Object Name, DisplayName, Status\")",
+      "Bash(docker --version 2)",
+      "Bash(1 docker:*)",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -c \"CREATE DATABASE maloprodaja_dev;\" 2>&1)"
     ]
   }
 }

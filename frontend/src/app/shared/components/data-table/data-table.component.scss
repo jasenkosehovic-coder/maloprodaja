@@ -1,0 +1,46 @@
+@use 'variables' as vars;
+
+.table-container {
+  border-radius: vars.$radius-md;
+  overflow: hidden;
+  box-shadow: vars.$shadow-sm;
+  background: vars.$surface-white;
+}
+
+mat-progress-bar {
+  border-radius: vars.$radius-md vars.$radius-md 0 0;
+}
+
+.actions-header,
+.actions-cell {
+  width: 100px;
+  text-align: center;
+}
+
+.no-data-cell {
+  padding: 0;
+}
+
+.no-data-row .no-data-cell {
+  display: table-cell;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 16px;
+  color: vars.$surface-700;
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    opacity: 0.5;
+  }
+
+  span {
+    font-size: vars.$font-size-base;
+  }
+}

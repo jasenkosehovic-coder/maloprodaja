@@ -1,0 +1,96 @@
+<div class="chat-wrapper">
+  <mat-card class="chat-card">
+    <!-- Header -->
+    <mat-card-header class="chat-header">
+      <mat-icon mat-card-avatar>chat</mat-icon>
+      <mat-card-title>Chat poslovnica</mat-card-title>
+      <mat-card-subtitle>
+        <span
+          class="status-dot"
+          [class.connected]="isConnected()"
+          [attr.aria-label]="isConnected() ? 'Konekcija aktivna' : 'Konekcija prekinuta'"
+          role="status"
+        ></span>
+        {{ isConnected() ? 'Povezano' : connectionStatus() }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content class="chat-content">
+      <!-- Messages -->
+      <div
+        class="messages-container"
+        #messagesContainer
+        aria-live="polite"
+        aria-label="Poruke chata"
+        role="log"
+      >
+        @if (messages().length === 0) {
+          <div class="empty-state">
+            <mat-icon>forum</mat-icon>
+            <p>Nema poruka. Budite prvi!</p>
+          </div>
+        }
+
+        @for (msg of messages(); track msg.id) {
+          @if (msg.tip === 'SYSTEM') {
+            <div class="message system-message" role="status">
+              <span>{{ msg.sadrzaj }}</span>
+            </div>
+          } @else {
+            <div
+              class="message"
+              [class.mine]="isMine(msg.senderUsername)"
+              [class.theirs]="!isMine(msg.senderUsername)"
+            >
+              @if (!isMine(msg.senderUsername)) {
+                <div class="message-meta">
+                  <span class="sender-name">{{ msg.senderName }}</span>
+                  <span class="sender-branch">{{ msg.poslovnicaNaziv }}</span>
+                </div>
+              }
+              <div class="message-bubble">
+                <p class="message-text">{{ msg.sadrzaj }}</p>
+                <time
+                  class="message-time"
+                  [attr.datetime]="msg.timestamp"
+                >
+                  {{ msg.timestamp | date:'HH:mm' }}
+                </time>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Input -->
+      <form
+        class="message-form"
+        [formGroup]="messageForm"
+        (ngSubmit)="onSendMessage()"
+        novalidate
+      >
+        <mat-form-field appearance="outline" class="message-input">
+          <mat-label>Napišite poruku...</mat-label>
+          <textarea
+            matInput
+            formControlName="sadrzaj"
+            rows="1"
+            (keydown)="onKeyDown($event)"
+            aria-label="Unesite poruku"
+            maxlength="1000"
+          ></textarea>
+        </mat-form-field>
+
+        <button
+          mat-fab
+          color="primary"
+          type="submit"
+          [disabled]="messageForm.invalid || !isConnected()"
+          aria-label="Pošalji poruku"
+        >
+          <mat-icon>send</mat-icon>
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

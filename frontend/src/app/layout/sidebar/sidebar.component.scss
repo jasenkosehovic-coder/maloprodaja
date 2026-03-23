@@ -1,0 +1,76 @@
+@use 'variables' as vars;
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: vars.$sidebar-bg;
+  overflow: hidden;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-sm;
+  padding: vars.$spacing-md vars.$spacing-md;
+  height: vars.$topbar-height;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: vars.$sidebar-text;
+  white-space: nowrap;
+  overflow: hidden;
+
+  &.collapsed {
+    justify-content: center;
+    padding: vars.$spacing-md vars.$spacing-sm;
+  }
+
+  .logo-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: vars.$accent-500;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-size: vars.$font-size-lg;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+}
+
+.nav-list {
+  padding-top: vars.$spacing-sm;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-item {
+  color: vars.$sidebar-text !important;
+  border-radius: vars.$radius-sm;
+  margin: 2px vars.$spacing-sm;
+  transition: background-color vars.$transition-fast;
+
+  mat-icon {
+    color: vars.$sidebar-icon;
+    transition: color vars.$transition-fast;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+
+    mat-icon {
+      color: vars.$sidebar-text;
+    }
+  }
+
+  &.active {
+    background: vars.$sidebar-active-bg !important;
+    font-weight: 500;
+
+    mat-icon {
+      color: #fff;
+    }
+  }
+}

@@ -1,0 +1,97 @@
+<div class="login-page" role="main">
+  <mat-card class="login-card" aria-labelledby="login-title">
+    <mat-card-header class="login-header">
+      <div class="login-logo">
+        <span class="material-icons logo-icon">store</span>
+      </div>
+      <mat-card-title id="login-title">Maloprodaja</mat-card-title>
+      <mat-card-subtitle>Prijavite se na svoj nalog</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (loginError()) {
+        <div class="login-error" role="alert" aria-live="assertive">
+          <span class="material-icons">error_outline</span>
+          <span>{{ loginError() }}</span>
+        </div>
+      }
+
+      <form
+        [formGroup]="form"
+        (ngSubmit)="onSubmit()"
+        novalidate
+        class="login-form"
+      >
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Korisničko ime</mat-label>
+          <input
+            matInput
+            id="username"
+            type="text"
+            formControlName="username"
+            autocomplete="username"
+            placeholder="Unesite korisničko ime"
+            [attr.aria-describedby]="usernameControl.invalid && usernameControl.touched ? 'username-error' : null"
+          />
+          <mat-icon matPrefix>person</mat-icon>
+          @if (usernameControl.hasError('required') && usernameControl.touched) {
+            <mat-error id="username-error" role="alert">
+              Korisničko ime je obavezno.
+            </mat-error>
+          } @else if (usernameControl.hasError('minlength') && usernameControl.touched) {
+            <mat-error id="username-error" role="alert">
+              Korisničko ime mora imati najmanje 3 znaka.
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Lozinka</mat-label>
+          <input
+            matInput
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            placeholder="Unesite lozinku"
+            [attr.aria-describedby]="passwordControl.invalid && passwordControl.touched ? 'password-error' : null"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword() ? 'Sakrij lozinku' : 'Prikaži lozinku'"
+          >
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          @if (passwordControl.hasError('required') && passwordControl.touched) {
+            <mat-error id="password-error" role="alert">
+              Lozinka je obavezna.
+            </mat-error>
+          } @else if (passwordControl.hasError('minlength') && passwordControl.touched) {
+            <mat-error id="password-error" role="alert">
+              Lozinka mora imati najmanje 4 znaka.
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          class="login-btn full-width"
+          [disabled]="form.invalid || isSubmitting()"
+          aria-live="polite"
+        >
+          @if (isSubmitting()) {
+            <span>Prijava u toku...</span>
+          } @else {
+            <span>Prijava</span>
+          }
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

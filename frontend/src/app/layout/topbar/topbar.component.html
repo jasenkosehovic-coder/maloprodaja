@@ -1,0 +1,59 @@
+<mat-toolbar class="topbar" role="banner">
+  <button
+    mat-icon-button
+    (click)="onMenuToggle()"
+    aria-label="Otvori/zatvori navigacioni meni"
+  >
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="app-title">Maloprodaja</span>
+
+  @if (poslovnicaNaziv()) {
+    <span class="poslovnica-badge">
+      <mat-icon>store</mat-icon>
+      {{ poslovnicaNaziv() }}
+    </span>
+  }
+
+  <span class="spacer"></span>
+
+  <button
+    mat-icon-button
+    routerLink="/chat"
+    aria-label="Otvori chat"
+    matTooltip="Chat"
+  >
+    <mat-icon>chat</mat-icon>
+  </button>
+
+  <button
+    mat-button
+    [matMenuTriggerFor]="userMenu"
+    class="user-menu-btn"
+    aria-label="Meni korisnika"
+  >
+    <mat-icon>account_circle</mat-icon>
+    <span class="user-name">{{ displayName() }}</span>
+    <mat-icon>arrow_drop_down</mat-icon>
+  </button>
+
+  <mat-menu #userMenu="matMenu" xPosition="before">
+    @if (korisnik(); as k) {
+      <div class="menu-user-info">
+        <span class="menu-user-name">{{ k.ime }} {{ k.prezime }}</span>
+        <span class="menu-user-role">{{ k.uloga }}</span>
+      </div>
+      <mat-divider />
+    }
+    <button mat-menu-item routerLink="/postavke">
+      <mat-icon>settings</mat-icon>
+      <span>Postavke</span>
+    </button>
+    <mat-divider />
+    <button mat-menu-item (click)="onLogout()">
+      <mat-icon>logout</mat-icon>
+      <span>Odjava</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>

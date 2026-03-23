@@ -1,0 +1,92 @@
+@use 'variables' as vars;
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, vars.$primary-800 0%, vars.$primary-500 100%);
+  padding: vars.$spacing-md;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: vars.$radius-lg !important;
+  box-shadow: vars.$shadow-lg !important;
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-bottom: vars.$spacing-md;
+
+  mat-card-title {
+    font-size: vars.$font-size-2xl;
+    font-weight: 600;
+    margin-top: vars.$spacing-sm;
+  }
+
+  mat-card-subtitle {
+    font-size: vars.$font-size-base;
+    margin-top: vars.$spacing-xs;
+  }
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: vars.$primary-700;
+  margin-bottom: vars.$spacing-sm;
+
+  .logo-icon {
+    font-size: 40px;
+    color: #fff;
+  }
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: vars.$spacing-sm;
+}
+
+.login-error {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-sm;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  background: #fdecea;
+  color: vars.$warn-600;
+  border-radius: vars.$radius-sm;
+  margin-bottom: vars.$spacing-sm;
+  font-size: vars.$font-size-sm;
+  border-left: 3px solid vars.$warn-500;
+
+  .material-icons {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+}
+
+.login-btn {
+  height: 48px;
+  font-size: vars.$font-size-md;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: vars.$spacing-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: vars.$spacing-sm;
+}
+
+.full-width {
+  width: 100%;
+}

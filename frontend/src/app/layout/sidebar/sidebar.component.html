@@ -1,0 +1,27 @@
+<nav class="sidebar-nav" aria-label="Glavna navigacija">
+  <div class="sidebar-logo" [class.collapsed]="collapsed()">
+    <mat-icon class="logo-icon">store</mat-icon>
+    @if (!collapsed()) {
+      <span class="logo-text">Maloprodaja</span>
+    }
+  </div>
+
+  <mat-nav-list class="nav-list">
+    @for (item of visibleItems(); track item.route) {
+      <a
+        mat-list-item
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [matTooltip]="collapsed() ? item.label : ''"
+        matTooltipPosition="right"
+        class="nav-item"
+        [attr.aria-label]="item.label"
+      >
+        <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+        @if (!collapsed()) {
+          <span matListItemTitle>{{ item.label }}</span>
+        }
+      </a>
+    }
+  </mat-nav-list>
+</nav>

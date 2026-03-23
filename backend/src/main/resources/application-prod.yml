@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    ba.maloprodaja: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+springdoc:
+  swagger-ui:
+    enabled: false

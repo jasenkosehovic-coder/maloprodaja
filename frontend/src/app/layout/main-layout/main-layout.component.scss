@@ -1,0 +1,31 @@
+@use 'variables' as vars;
+
+.layout-container {
+  height: 100vh;
+  display: flex;
+}
+
+.sidebar-panel {
+  width: vars.$sidebar-width;
+  background: vars.$sidebar-bg;
+  border-right: none;
+  transition: width vars.$transition-normal;
+  overflow: hidden;
+
+  &.collapsed {
+    width: vars.$sidebar-collapsed-width;
+  }
+}
+
+.content-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: vars.$surface-100;
+  padding: vars.$spacing-lg;
+}

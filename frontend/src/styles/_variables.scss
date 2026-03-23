@@ -1,0 +1,94 @@
+// ============================================================
+// Maloprodaja — SCSS Variables
+// ============================================================
+
+// Brand colours
+$primary-50:  #e8eaf6;
+$primary-100: #c5cae9;
+$primary-200: #9fa8da;
+$primary-300: #7986cb;
+$primary-400: #5c6bc0;
+$primary-500: #3f51b5;  // Main brand colour (Indigo 500)
+$primary-600: #3949ab;
+$primary-700: #303f9f;
+$primary-800: #283593;
+$primary-900: #1a237e;
+
+$accent-400:  #26c6da;
+$accent-500:  #00bcd4;  // Cyan accent
+$accent-600:  #00acc1;
+
+$warn-400:    #ef5350;
+$warn-500:    #f44336;
+$warn-600:    #e53935;
+
+// Neutral / surface colours
+$surface-white:  #ffffff;
+$surface-50:     #fafafa;
+$surface-100:    #f5f5f5;
+$surface-200:    #eeeeee;
+$surface-300:    #e0e0e0;
+$surface-700:    #616161;
+$surface-900:    #212121;
+
+// Sidebar
+$sidebar-width:         240px;
+$sidebar-collapsed-width: 64px;
+$sidebar-bg:            $primary-700;
+$sidebar-active-bg:     $primary-500;
+$sidebar-text:          rgba(255, 255, 255, 0.87);
+$sidebar-icon:          rgba(255, 255, 255, 0.70);
+
+// Topbar
+$topbar-height:         64px;
+$topbar-bg:             $primary-700;
+$topbar-text:           #ffffff;
+
+// Spacing scale (matches Material Design 8px grid)
+$spacing-xs:   4px;
+$spacing-sm:   8px;
+$spacing-md:  16px;
+$spacing-lg:  24px;
+$spacing-xl:  32px;
+$spacing-2xl: 48px;
+
+// Border radius
+$radius-sm:   4px;
+$radius-md:   8px;
+$radius-lg:  12px;
+$radius-xl:  16px;
+$radius-full: 9999px;
+
+// Shadows
+$shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+$shadow-md:  0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+$shadow-lg:  0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10);
+
+// Typography
+$font-family-base:    'Roboto', 'Helvetica Neue', Arial, sans-serif;
+$font-size-xs:   11px;
+$font-size-sm:   12px;
+$font-size-base: 14px;
+$font-size-md:   16px;
+$font-size-lg:   18px;
+$font-size-xl:   20px;
+$font-size-2xl:  24px;
+
+// Z-index layers
+$z-sidebar:   200;
+$z-topbar:    300;
+$z-overlay:   400;
+$z-dialog:    500;
+$z-snackbar:  600;
+$z-tooltip:   700;
+
+// Transitions
+$transition-fast:   150ms ease;
+$transition-normal: 250ms ease;
+$transition-slow:   400ms ease;
+
+// Breakpoints (aligned with Angular Material)
+$bp-xs:  599px;
+$bp-sm:  959px;
+$bp-md: 1279px;
+$bp-lg: 1919px;
