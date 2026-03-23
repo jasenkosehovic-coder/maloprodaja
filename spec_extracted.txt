@@ -1,0 +1,153 @@
+PROGRAM ZA MALOPRODAJU (specifikacija)
+O Aplikaciji opcenito
+Zelim da napravimo program za maloprodaju, veleprodaju i materijalno knjigovodstvo. Zelim web based aplikaciju koja se sastoji od dva git projekta: java spring boot back-end i angular material design fron-end i da koristi postgres sql database. Koristi code first princip za kreiranje tabela u bazi iz entiteta. Svaki entitet mora imati nasljedjenu klasu za sys_created_date, sys_modified_date, sys_modified_by, sys_created_by i da se unose podaci na unos i update korisnika u tabeli. 
+Zelim napraviti modernu web aplikaciju sa glavnim top taskbar manijem u kojem ce postojiti izbornici i koji ce se pojavljivati role based na osnovu role prijavljenog korsnika. 
+Login forma za prijavu korisnika prema razlicitim ulogama (administrator, korisnik, knjigovodja). Svaka od uloga ima različite izbornike i svakom korisniku se mogu dodijeliti određeni izbornici. Koristit jwt token i refresh tokem tako da se uradi logout nakon 1h neaktivnosti, a sesija se produzava ako je korisnik radi u aplikaciji.
+Arhitektura aplikacije treba da podrzava da svaka kompanije ima listu poslovnica, a svaka poslovnica ima listu korsinika. Svaki korisnik zavisno od uloge ima listu izbornika, s tim da administrator u kompaniji ima pregled liste svih poslovnica i moze praviti izvjestaje/preglede za poslovnicu ili za sve poslovnice iz kompanije. Kod spremanja podataka u bazu obavezno navesti id kompanije, id poslovnice i id korisnika radi lakseg indeksiranja izvjestaja.
+Kod prikaza podataka u tabeli prikazi uvijek podatke za tekuci dan (racuni) ili godinu (dokumenti, fakture)
+Potrebno je napraviti listu taskova za ovu aplikaciju, prvo login pa onda ovim redosljedom:
+Izbornik Šifarnici:
+Glavni šifarnik artikala u kompaniji(administrator, knjigovodja)
+Unos/izmjena i deaktivacija artikla na nivou kompanije,
+pretraga artikala po kriterijima,
+sortiranje prema kolonama,
+izvoz u excel, csv, pdf
+import iz excela
+Grupe artikala u kompaniji (administrator, knjigovodja)
+Svaki artikal pripada nekoj grupi artikala,
+Unos/izmjena i deaktivacija grupa,
+pretraga grupa po kriterijima,
+izvoz u excel, csv, pdf
+import iz excela
+Artikli u poslovnici (administrator, knjigovodja, korisnik)
+pretraga po kriterijima,
+izvoz u excel, csv, pdf
+import iz excela
+Kalkulacija maloprodajnih cijena na osnovu vpc, marze, popusta i pdv-a
+kalkulacija cijene na kom iz pakovanja
+zaliha, popust, marza, pdv, mpv, mpc…
+definisanje min zalihe i optimalne
+ispis naljepnica za oznacene artikle ispis zadnje cijene iz ulaznog dokumenta,
+ispisati naljepnice sa popustom.
+definisanje popusta prema grupi artikala, proizvodjacu, dobavljacu…
+tip marže: 
+fiksna marža,
+fiksna cijena,
+slobodna marža,
+diferencirana marža.
+Barkodovi artikala u kompaniji (administrator, knjigovodja, korisnik)
+Unos/izmjena i brisanje,
+pretraga po kriterijima,
+izvoz u excel, csv, pdf
+import iz excela
+Proizvođači u kompaniji (administrator, knjigovodja)
+Unos/izmjena i deaktivacija,
+pretraga po kriterijima,
+izvoz u excel, csv, pdf
+import iz excela
+Dobavljači u kompaniji (administrator, knjigovodja)
+Unos/izmjena i deaktivacija,
+pretraga po kriterijima,
+izvoz u excel, csv, pdf
+import iz excela
+Kupci u kompaniji (administrator, knjigovodja, korisnik)
+Unos/izmjena i deaktivacija,
+pretraga po kriterijima,
+pregled kupovine za kupca,
+izvoz u excel, csv, pdf
+import iz excela
+Korisnici u kompaniji i poslovnici (administrator)
+Unos/izmjena i deaktivacija,
+pretraga po kriterijima,
+definisanje uloga i tipa korisnika.
+Izbornik blagajna:
+Blagajna (korisnik, administrator)
+prodaja robe dodaj stavke racuna i kupca
+plaćanje (gotovina, kartica, virman),
+fisklizacija racuna i zatvaranje
+štampa A4 računa,
+kreiranje reklamiranog racuna samo neke stavke sa racuna
+storno računa,
+promjena sredstva plaćanja,
+pregled stavki racuna
+izdavanje posudbi,
+kreiraj racun iz posudbe,
+ispisi A4 posudbu za kupca
+storniraj posudbu,
+pravljenje ponude,
+kreiraj racun iz ponude,
+ispiši A4 ponudu za kupca,,
+veleprodaja (virman),
+pregled zalihe po drugim poslovnicama,
+pregled računa prema načinu placanja za pariod,
+pregled storniranih računa,
+zaključiti dan
+popust na sve u periodu od-do
+izvjestaji (korisnik, administrator, knjigovodja)
+rekapitulacija blagajne za period do-do prema nacinu placanja i ukupno report pdf
+stornirane stavke za period od-do
+pregled realizacije za period
+promet artikala za period od-do
+Fiskalni printer:
+Fiskalni (korisnik, administrator) za printere EPSON i Tring
+Dnevni izvjestaj
+Presijek stanja
+Periodicni izvjestaj od-do
+Test printera
+Status printera
+postavke printera
+nefiskalni dokument
+Depozit blagajna
+Duplikat dokumenta
+Dokumenti
+Ulazne fakture u poslovnici (administrator, knjigovodja)
+pregled ulaza robe,
+dodati/izmjeniti novu kalkulaciju,
+storno kalkulacije,
+pretraga prema kriterijima,
+ispis ulazne fakture,
+štampa naljepnica za fakturu,
+kalkulacija nove cijene pri unosu i kreiranje nivelacije autoimatski,
+popust za artikal iz fakture
+import pocetnog stanja artikala
+izvoz u excel, csv, pdf
+Otpremnicau poslovnici (administrator, knjigovodja)
+unos, izmjena i storno,
+slanje robe u drugu poslovnicu,
+pretraga po kriterijima,
+ispis dokumenta,
+ispis naljepnica.
+izvoz u excel, csv, pdf
+Pregled nivelacija
+pregled nivelacije prema knjiženju,
+štampa nivelacija
+Izvještaji
+Knjiga blagajni u kompaniji (administrator, knjigovodja, korisnik)
+pregled po poslovnici,
+po sredstvima plačanja,
+po artiklima pregled,
+Trgovačka knjiga u poslovnici i kompaniji  (administrator, knjigovodja)
+pregled za period,
+pretraga,
+štampa liste.
+Pregled artikala bez izlaza  (administrator, knjigovodja)
+pregled za period po poslovnicama
+Pregled stanja zaliha u kompaniji (administrator)
+stanje po poslovnicama,
+filter prema kriterijima,
+prema min i optimalnoj zalihi,
+vrijednost zalihe po tarifama,
+stanje zaliha ukupno i pojedinačno,
+štampa izvještaja.
+Lager lista (administrator, knjigovodja)
+Pregled dokumenata za period prema tipu (administrator, knjigovodja)
+Nivelacija
+Postavke
+Programski parametri  (administrator)
+zaglavlje računa,
+zaglavlje dokumenta,
+parametri programa,
+postavke poslovnice,
+fiskalni printeri,
+Chet između poslovnica  (administrator, knjigovodja, korisnik)
+O programu  (administrator, knjigovodja, korisnik)

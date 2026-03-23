@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3.exe --version)",
+      "Bash(python.exe --version)",
+      "Bash(py --version)",
+      "Bash(where python:*)",
+      "Bash(where py:*)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(data[0][''''text'''']\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

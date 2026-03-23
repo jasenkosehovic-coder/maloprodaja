@@ -1,0 +1,55 @@
+  Kriticna pitanja za tebe:                                                                                                              
+                                                                                                                                           1. Zemlja i fiskalizacija                                                                                                              
+                                                                                                                                          - U kojoj državi se koristi aplikacija? (BiH, Srbija, Hrvatska?)
+Koristi se u BIH ali raditi preko interfesja tako da se moze uvijek dodati nova drzava ili printer implementacija                                                                         
+- Koji konkretni modeli EPSON i Tring printera trebaju biti podržani?
+EPSON koji koriste E-link server i tring fisical server                                                                  
+- Da li veleprodajni račun prolazi kroz fiskalni printer ili ne?                                                                       
+  DA
+                                                                                                                                         2. Multi-tenant model                                                                                                                                                                                                                                                    - Da li jedna instalacija služi više kompanija, ili se aplikacija instalira posebno za svaku kompaniju?
+Da koristi se kao SaaS i svi koriste istu aplikaciju na cloudu
+- Ko kreira novu kompaniju — superadmin ili je to van scope?
+Kreira se rucno preko baze kompanija i poslovnica                                                                           
+                                                                                                                                           3. Cijene i marža                                                                                                                      
+                                                                                                                                           - Šta tačno znači diferencirana marža? (po kupcu, količini, periodu?)
+Diferencirana marza po kupcu
+- Potvrdi: MPC = maloprodajna cijena, MPV = maloprodajni iznos/vrijednost? - ne ovo je veleprodajna cijena, greska je treba pisati VPC
+- Kad se unese nova faktura s drugom cijenom — nivelacija mijenja cijenu za svu zalihu ili samo za novu robu? 
+Da na svu zalihu i treba upisati u bazu nivelacija kolicinu, cijenu MPC i VPC i iznos nivelacije                          
+                                                                                                                                           4. Reklamacija / Storno                                                                                                                
+                                                                                                                                           - Reklamirani račun = povrat robe koji vraća zalihu?
+da vraca zalihu i novac u blagajnu ili na karticu                                                                                     - Može li se stornirati fiskalizirani račun i kako?
+da kada se stornira racun pravi se reklamirani racun sa svim ili samo nekim stavkama sa racuna i vraca se novac u blagajnu i fiskalni printer                                                                                                                                           
+
+5. Posudba
+                                                                                                                                           - Da li posudba rezervira robu iz zalihe?
+da samo rezervise kolicinu ali ne dodaje iznos u blagajnu i printer
+- Koliko dugo posudba može biti otvorena?
+do kraja tekuce godine
+                                                                                                                                           6. Zakljucivanje dana
+                                                                                                                                           - Može li se prodavati nakon zaključivanja za taj dan?
+ne moze
+- Da li zaključivanje automatski šalje dnevni fiskalni izvještaj na printer?
+da                                                             
+
+7. Medjuposlovnicni transfer                                                                                                                                                                                                                                                     
+
+- Da li primajuća poslovnica treba potvrditi prijem robe ili se automatski prenosi?                                                       
+da kada jedna poslovnica posalje drugoj, druga mora potvrditi ulazni document i onda se zaliha mjenja u jednoj i drugoj poslovnici, kao i cijena u drugoj ako je bila razlicita i kreira se nivelacija cijene
+
+  8. Dozvole korisnika                                                                                                                      
+
+  - Rola definira bazni pristup, ali administrator može ručno dodati/oduzeti pojedine izbornike svakom korisniku?   
+da administrator mijenja izbornike za svakog korisnika i izmjene se spasavaju u bazu
+                        
+  9. Import iz Excela                                                                                                                    
+  
+  - Da li postoji postojeći Excel template za import artikala, ili trebamo sami definirati format?                             
+ne postoji sam osmisli
+             
+  10. Chat                                                                                                                               
+  
+  - Da li chat treba biti realtime (WebSocket) ili obično slanje poruka?   
+da realtime                                                      
+- Čuvaju li se poruke trajno?
+da
