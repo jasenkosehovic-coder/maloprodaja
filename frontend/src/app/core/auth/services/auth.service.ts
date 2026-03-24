@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import {
@@ -11,6 +11,12 @@ import {
   RefreshTokenRequest,
   Uloga,
 } from '../models/auth.models';
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
 
 const ACCESS_TOKEN_KEY = 'mp_access_token';
 const REFRESH_TOKEN_KEY = 'mp_refresh_token';
@@ -41,8 +47,9 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, request)
+      .post<ApiResponse<LoginResponse>>(`${environment.apiUrl}/auth/login`, request)
       .pipe(
+        map((r) => r.data),
         tap((response) => this.persistSession(response))
       );
   }
@@ -51,8 +58,11 @@ export class AuthService {
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
     const body: RefreshTokenRequest = { refreshToken: refreshToken ?? '' };
     return this.http
-      .post<LoginResponse>(`${environment.apiUrl}/auth/refresh`, body)
-      .pipe(tap((response) => this.persistSession(response)));
+      .post<ApiResponse<LoginResponse>>(`${environment.apiUrl}/auth/refresh`, body)
+      .pipe(
+        map((r) => r.data),
+        tap((response) => this.persistSession(response))
+      );
   }
 
   logout(): void {

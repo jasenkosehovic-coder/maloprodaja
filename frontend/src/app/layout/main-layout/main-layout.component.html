@@ -1,19 +1,6 @@
-<mat-sidenav-container class="layout-container" autosize>
-  <mat-sidenav
-    #sidenav
-    class="sidebar-panel"
-    [mode]="'side'"
-    [opened]="sidebarOpen()"
-    [class.collapsed]="!sidebarOpen()"
-  >
-    <app-sidebar [collapsed]="!sidebarOpen()" />
-  </mat-sidenav>
-
-  <mat-sidenav-content class="content-panel">
-    <app-topbar (menuToggle)="toggleSidebar()" />
-
-    <main id="main-content" class="main-content">
-      <router-outlet />
-    </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+<div class="layout-container">
+  <app-topbar />
+  <main id="main-content" class="main-content">
+    <router-outlet />
+  </main>
+</div>

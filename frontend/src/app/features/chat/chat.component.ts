@@ -62,8 +62,14 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.wsService.connect('global');
   }
 
+  private previousMessageCount = 0;
+
   ngAfterViewChecked(): void {
-    this.scrollToBottom();
+    const current = this.messages().length;
+    if (current !== this.previousMessageCount) {
+      this.previousMessageCount = current;
+      this.scrollToBottom();
+    }
   }
 
   ngOnDestroy(): void {
@@ -83,10 +89,6 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
       event.preventDefault();
       this.onSendMessage();
     }
-  }
-
-  isMine(senderUsername: string): boolean {
-    return senderUsername === this.currentUsername();
   }
 
   private scrollToBottom(): void {

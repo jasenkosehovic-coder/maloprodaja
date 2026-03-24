@@ -4,6 +4,7 @@ import ba.maloprodaja.auth.dto.LoginRequestDTO;
 import ba.maloprodaja.auth.dto.LoginResponseDTO;
 import ba.maloprodaja.auth.entity.Korisnik;
 import ba.maloprodaja.auth.repository.KorisnikRepository;
+import ba.maloprodaja.common.exception.BusinessException;
 import ba.maloprodaja.common.security.JwtProperties;
 import ba.maloprodaja.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class AuthService implements IAuthService {
                 .orElseThrow(() -> new UsernameNotFoundException("Korisnik nije pronađen: " + username));
 
         if (!jwtUtil.validateToken(refreshToken, korisnik)) {
-            throw new IllegalArgumentException("Refresh token nije validan ili je istekao.");
+            throw new BusinessException("Refresh token nije validan ili je istekao.");
         }
 
         String newToken = jwtUtil.generateToken(korisnik);

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
+import { roleGuard } from './core/auth/guards/role.guard';
 
 export const APP_ROUTES: Routes = [
   {
@@ -53,6 +54,7 @@ export const APP_ROUTES: Routes = [
           import('./features/fiskalni/fiskalni.routes').then(
             (m) => m.FISKALNI_ROUTES
           ),
+        canActivate: [roleGuard('SUPER_ADMIN', 'ADMIN', 'MENADZER')],
         title: 'Fiskalni uređaj — Maloprodaja',
       },
       {
@@ -61,6 +63,7 @@ export const APP_ROUTES: Routes = [
           import('./features/izvjestaji/izvjestaji.routes').then(
             (m) => m.IZVJESTAJI_ROUTES
           ),
+        canActivate: [roleGuard('SUPER_ADMIN', 'ADMIN', 'MENADZER')],
         title: 'Izvještaji — Maloprodaja',
       },
       {
@@ -77,6 +80,7 @@ export const APP_ROUTES: Routes = [
           import('./features/korisnici/korisnici.routes').then(
             (m) => m.KORISNICI_ROUTES
           ),
+        canActivate: [roleGuard('SUPER_ADMIN', 'ADMIN')],
         title: 'Korisnici — Maloprodaja',
       },
       {
@@ -85,6 +89,7 @@ export const APP_ROUTES: Routes = [
           import('./features/postavke/postavke.routes').then(
             (m) => m.POSTAVKE_ROUTES
           ),
+        canActivate: [roleGuard('SUPER_ADMIN', 'ADMIN')],
         title: 'Postavke — Maloprodaja',
       },
     ],

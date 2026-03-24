@@ -42,6 +42,13 @@ frontend/package-lock.json
 frontend/yarn.lock
 
 # ========================
+# Playwright E2E
+# ========================
+frontend/e2e/reports/
+frontend/test-results/
+frontend/playwright-report/
+
+# ========================
 # Backend — Java / Maven
 # ========================
 backend/target/

@@ -39,7 +39,7 @@ public class KorisnikDTO {
     ) {}
 
     public record KorisnikIzbornikaDTO(
-            String izbornikKljuc,
+            @NotBlank @Size(max = 50) String izbornikKljuc,
             boolean aktivan
     ) {}
 }

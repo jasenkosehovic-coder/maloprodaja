@@ -6,8 +6,7 @@ import { debounceTime } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from './auth.service';
 
-const INACTIVITY_TIMEOUT_MS: number =
-  (environment as { inactivityTimeoutMs?: number }).inactivityTimeoutMs ?? 3600000;
+const INACTIVITY_TIMEOUT_MS: number = environment.inactivityTimeoutMs;
 
 const ACTIVITY_EVENTS = [
   'mousemove',

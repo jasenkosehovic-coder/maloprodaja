@@ -1,31 +1,101 @@
 <mat-toolbar class="topbar" role="banner">
-  <button
-    mat-icon-button
-    (click)="onMenuToggle()"
-    aria-label="Otvori/zatvori navigacioni meni"
-  >
-    <mat-icon>menu</mat-icon>
-  </button>
 
-  <span class="app-title">Maloprodaja</span>
+  <!-- Lijevo: logo + poslovnica -->
+  <div class="topbar-brand">
+    <span class="app-title">Maloprodaja</span>
+    @if (poslovnicaNaziv()) {
+      <span class="poslovnica-badge">
+        <mat-icon aria-hidden="true">store</mat-icon>
+        {{ poslovnicaNaziv() }}
+      </span>
+    }
+  </div>
 
-  @if (poslovnicaNaziv()) {
-    <span class="poslovnica-badge">
-      <mat-icon>store</mat-icon>
-      {{ poslovnicaNaziv() }}
-    </span>
-  }
+  <!-- Centar: navigacijski izbornici -->
+  <nav class="nav-menu" aria-label="Glavna navigacija">
+
+    @if (showSifarnici()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuSifarnici" aria-label="Šifarnici izbornik">
+        Šifarnici <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuSifarnici="matMenu">
+        @for (item of navGroups().sifarnici; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+    @if (showBlagajna()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuBlagajna" aria-label="Blagajna izbornik">
+        Blagajna <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuBlagajna="matMenu">
+        @for (item of navGroups().blagajna; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+    @if (showFiskalni()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuFiskalni" aria-label="Fiskalni izbornik">
+        Fiskalni <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuFiskalni="matMenu">
+        @for (item of navGroups().fiskalni; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+    @if (showDokumenti()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuDokumenti" aria-label="Dokumenti izbornik">
+        Dokumenti <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuDokumenti="matMenu">
+        @for (item of navGroups().dokumenti; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+    @if (showIzvjestaji()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuIzvjestaji" aria-label="Izvještaji izbornik">
+        Izvještaji <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuIzvjestaji="matMenu">
+        @for (item of navGroups().izvjestaji; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+    @if (showPostavke()) {
+      <button mat-button class="nav-menu-btn" [matMenuTriggerFor]="menuPostavke" aria-label="Postavke izbornik">
+        Postavke <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
+      </button>
+      <mat-menu #menuPostavke="matMenu">
+        @for (item of navGroups().postavke; track item.route) {
+          <a mat-menu-item [routerLink]="item.route" routerLinkActive="active-menu-item">{{ item.label }}</a>
+        }
+      </mat-menu>
+    }
+
+  </nav>
 
   <span class="spacer"></span>
 
-  <button
-    mat-icon-button
-    routerLink="/chat"
-    aria-label="Otvori chat"
-    matTooltip="Chat"
-  >
-    <mat-icon>chat</mat-icon>
-  </button>
+  <!-- Desno: chat + korisnik meni -->
+  @if (showChat()) {
+    <button
+      mat-icon-button
+      routerLink="/chat"
+      aria-label="Otvori chat"
+      matTooltip="Chat"
+      class="topbar-icon-btn"
+    >
+      <mat-icon>chat</mat-icon>
+    </button>
+  }
 
   <button
     mat-button
@@ -33,27 +103,28 @@
     class="user-menu-btn"
     aria-label="Meni korisnika"
   >
-    <mat-icon>account_circle</mat-icon>
+    <mat-icon aria-hidden="true">account_circle</mat-icon>
     <span class="user-name">{{ displayName() }}</span>
-    <mat-icon>arrow_drop_down</mat-icon>
+    <mat-icon aria-hidden="true">arrow_drop_down</mat-icon>
   </button>
 
   <mat-menu #userMenu="matMenu" xPosition="before">
     @if (korisnik(); as k) {
-      <div class="menu-user-info">
+      <div class="menu-user-info" aria-hidden="true">
         <span class="menu-user-name">{{ k.ime }} {{ k.prezime }}</span>
         <span class="menu-user-role">{{ k.uloga }}</span>
       </div>
       <mat-divider />
     }
-    <button mat-menu-item routerLink="/postavke">
-      <mat-icon>settings</mat-icon>
+    <button mat-menu-item routerLink="/postavke/parametri">
+      <mat-icon aria-hidden="true">settings</mat-icon>
       <span>Postavke</span>
     </button>
     <mat-divider />
     <button mat-menu-item (click)="onLogout()">
-      <mat-icon>logout</mat-icon>
+      <mat-icon aria-hidden="true">logout</mat-icon>
       <span>Odjava</span>
     </button>
   </mat-menu>
+
 </mat-toolbar>

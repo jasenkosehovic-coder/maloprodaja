@@ -8,22 +8,33 @@
   background-color: vars.$topbar-bg;
   color: vars.$topbar-text;
   box-shadow: vars.$shadow-sm;
-  gap: vars.$spacing-sm;
   padding: 0 vars.$spacing-md;
+  gap: 0;
+  display: flex;
+  align-items: center;
+}
+
+// --- Brand ---
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-sm;
+  flex-shrink: 0;
 }
 
 .app-title {
   font-size: vars.$font-size-xl;
   font-weight: 500;
   letter-spacing: 0.5px;
-  margin-left: vars.$spacing-sm;
+  color: vars.$topbar-text;
+  white-space: nowrap;
 }
 
 .poslovnica-badge {
   display: flex;
   align-items: center;
   gap: vars.$spacing-xs;
-  margin-left: vars.$spacing-lg;
   padding: vars.$spacing-xs vars.$spacing-sm;
   background: rgba(255, 255, 255, 0.15);
   border-radius: vars.$radius-full;
@@ -37,15 +48,57 @@
   }
 }
 
+// --- Navigation ---
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: vars.$spacing-lg;
+}
+
+.nav-menu-btn {
+  color: vars.$topbar-text;
+  font-size: 14px;
+  font-weight: 500;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+// --- Spacer ---
+
 .spacer {
   flex: 1;
+}
+
+// --- Right side ---
+
+.topbar-icon-btn {
+  color: vars.$topbar-text;
 }
 
 .user-menu-btn {
   color: vars.$topbar-text;
   gap: vars.$spacing-xs;
+  display: flex;
+  align-items: center;
 
-  mat-icon:first-child {
+  mat-icon:first-of-type {
     font-size: 28px;
     width: 28px;
     height: 28px;
@@ -60,6 +113,8 @@
     white-space: nowrap;
   }
 }
+
+// --- User menu panel ---
 
 .menu-user-info {
   display: flex;
@@ -76,4 +131,9 @@
     color: vars.$surface-700;
     text-transform: capitalize;
   }
+}
+
+// Active menu item highlight
+:global(.active-menu-item) {
+  font-weight: 600;
 }

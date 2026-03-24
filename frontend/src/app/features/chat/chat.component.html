@@ -39,10 +39,10 @@
           } @else {
             <div
               class="message"
-              [class.mine]="isMine(msg.senderUsername)"
-              [class.theirs]="!isMine(msg.senderUsername)"
+              [class.mine]="msg.senderUsername === currentUsername()"
+              [class.theirs]="msg.senderUsername !== currentUsername()"
             >
-              @if (!isMine(msg.senderUsername)) {
+              @if (msg.senderUsername !== currentUsername()) {
                 <div class="message-meta">
                   <span class="sender-name">{{ msg.senderName }}</span>
                   <span class="sender-branch">{{ msg.poslovnicaNaziv }}</span>

@@ -1,8 +1,8 @@
 import {
   Directive,
-  OnInit,
   TemplateRef,
   ViewContainerRef,
+  effect,
   inject,
   input,
 } from '@angular/core';
@@ -11,6 +11,7 @@ import { Uloga } from '../../core/auth/models/auth.models';
 
 /**
  * Structural directive that conditionally renders content based on user roles.
+ * Uses effect() to reactively track role changes.
  *
  * Usage:
  *   <button *appHasRole="['ADMIN', 'SUPER_ADMIN']">Admin only</button>
@@ -19,19 +20,23 @@ import { Uloga } from '../../core/auth/models/auth.models';
   selector: '[appHasRole]',
   standalone: true,
 })
-export class HasRoleDirective implements OnInit {
+export class HasRoleDirective {
   private readonly templateRef = inject(TemplateRef<unknown>);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly authService = inject(AuthService);
 
   appHasRole = input.required<Uloga[]>();
 
-  ngOnInit(): void {
-    const allowed = this.appHasRole();
-    if (this.authService.hasRole(...allowed)) {
-      this.viewContainerRef.createEmbeddedView(this.templateRef);
-    } else {
-      this.viewContainerRef.clear();
-    }
+  constructor() {
+    effect(() => {
+      const allowed = this.appHasRole();
+      if (this.authService.hasRole(...allowed)) {
+        if (!this.viewContainerRef.length) {
+          this.viewContainerRef.createEmbeddedView(this.templateRef);
+        }
+      } else {
+        this.viewContainerRef.clear();
+      }
+    });
   }
 }

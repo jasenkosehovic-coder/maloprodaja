@@ -1,8 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
-  OnInit,
   inject,
   input,
   output,
@@ -54,9 +52,8 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SearchFilterComponent implements OnInit {
+export class SearchFilterComponent {
   private readonly fb = inject(NonNullableFormBuilder);
-  private readonly destroyRef = inject(DestroyRef);
 
   placeholder = input('Pretraži...');
   debounce = input(300);
@@ -65,11 +62,11 @@ export class SearchFilterComponent implements OnInit {
 
   searchControl = this.fb.control('');
 
-  ngOnInit(): void {
+  constructor() {
     this.searchControl.valueChanges.pipe(
       debounceTime(this.debounce()),
       distinctUntilChanged(),
-      takeUntilDestroyed(this.destroyRef)
+      takeUntilDestroyed()
     ).subscribe((value) => {
       this.searchChange.emit(value);
     });

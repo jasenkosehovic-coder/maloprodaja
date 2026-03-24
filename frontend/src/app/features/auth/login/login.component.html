@@ -35,11 +35,11 @@
           />
           <mat-icon matPrefix>person</mat-icon>
           @if (usernameControl.hasError('required') && usernameControl.touched) {
-            <mat-error id="username-error" role="alert">
+            <mat-error id="username-required-error" role="alert">
               Korisničko ime je obavezno.
             </mat-error>
           } @else if (usernameControl.hasError('minlength') && usernameControl.touched) {
-            <mat-error id="username-error" role="alert">
+            <mat-error id="username-minlength-error" role="alert">
               Korisničko ime mora imati najmanje 3 znaka.
             </mat-error>
           }
@@ -67,11 +67,11 @@
             <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           @if (passwordControl.hasError('required') && passwordControl.touched) {
-            <mat-error id="password-error" role="alert">
+            <mat-error id="password-required-error" role="alert">
               Lozinka je obavezna.
             </mat-error>
           } @else if (passwordControl.hasError('minlength') && passwordControl.touched) {
-            <mat-error id="password-error" role="alert">
+            <mat-error id="password-minlength-error" role="alert">
               Lozinka mora imati najmanje 4 znaka.
             </mat-error>
           }
@@ -83,7 +83,6 @@
           type="submit"
           class="login-btn full-width"
           [disabled]="form.invalid || isSubmitting()"
-          aria-live="polite"
         >
           @if (isSubmitting()) {
             <span>Prijava u toku...</span>

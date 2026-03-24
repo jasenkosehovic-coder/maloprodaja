@@ -67,7 +67,7 @@ public class KorisnikController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<KorisnikDTO.KorisnikIzbornikaDTO>>> updateIzbornici(
             @PathVariable Long id,
-            @RequestBody List<KorisnikDTO.KorisnikIzbornikaDTO> izbornici
+            @Valid @RequestBody List<KorisnikDTO.KorisnikIzbornikaDTO> izbornici
     ) {
         return ResponseEntity.ok(ApiResponse.ok(korisnikService.updateIzbornici(id, izbornici)));
     }

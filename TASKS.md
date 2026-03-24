@@ -29,7 +29,7 @@
   - AuthService signal-based, authGuard, roleGuard
   - JWT interceptor sa auto-refresh (401 → refresh → retry)
   - InactivityService — auto-logout nakon 1h neaktivnosti
-  - Dinamički meni po ulozi (SidebarComponent)
+  - Dinamički meni po ulozi (top meni)
 
 ---
 

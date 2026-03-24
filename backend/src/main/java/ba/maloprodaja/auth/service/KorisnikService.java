@@ -5,6 +5,7 @@ import ba.maloprodaja.auth.entity.Korisnik;
 import ba.maloprodaja.auth.entity.KorisnikIzbornik;
 import ba.maloprodaja.auth.repository.KorisnikIzborniciRepository;
 import ba.maloprodaja.auth.repository.KorisnikRepository;
+import ba.maloprodaja.common.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +55,7 @@ public class KorisnikService implements IKorisnikService {
     @Transactional
     public KorisnikDTO.KorisnikListItemDTO update(Long id, KorisnikDTO.UpdateKorisnikDTO dto) {
         Korisnik korisnik = korisnikRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Korisnik nije pronađen: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Korisnik", id));
 
         if (dto.ime() != null) korisnik.setIme(dto.ime());
         if (dto.prezime() != null) korisnik.setPrezime(dto.prezime());
@@ -70,7 +71,7 @@ public class KorisnikService implements IKorisnikService {
     @Transactional
     public void deactivate(Long id) {
         Korisnik korisnik = korisnikRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Korisnik nije pronađen: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Korisnik", id));
         korisnik.setAktivan(false);
         korisnikRepository.save(korisnik);
         log.info("Korisnik deaktiviran: id={}", id);
