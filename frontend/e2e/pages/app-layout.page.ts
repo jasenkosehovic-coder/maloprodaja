@@ -37,15 +37,17 @@ export class AppLayoutPage {
     this.postavkeMenuItem = page.getByRole('menuitem', { name: /postavke/i });
     this.userRoleInMenu   = page.locator('.menu-user-role');
 
+    // Nav dropdown trigger buttons in the topbar
     this.sidebar       = page.getByRole('navigation', { name: /glavna navigacija/i });
-    this.navBlagajna   = page.getByRole('link', { name: /blagajna/i });
-    this.navDokumenti  = page.getByRole('link', { name: /dokumenti/i });
-    this.navSifarnici  = page.getByRole('link', { name: /šifarnici/i });
-    this.navFiskalni   = page.getByRole('link', { name: /fiskalni/i });
-    this.navIzvjestaji = page.getByRole('link', { name: /izvještaji/i });
-    this.navChat       = page.getByRole('link', { name: /chat/i });
-    this.navKorisnici  = page.getByRole('link', { name: /korisnici/i });
-    this.navPostavke   = page.getByRole('link', { name: /postavke/i });
+    this.navSifarnici  = page.getByRole('button', { name: /šifarnici izbornik/i });
+    this.navBlagajna   = page.getByRole('button', { name: /blagajna izbornik/i });
+    this.navFiskalni   = page.getByRole('button', { name: /fiskalni izbornik/i });
+    this.navDokumenti  = page.getByRole('button', { name: /dokumenti izbornik/i });
+    this.navIzvjestaji = page.getByRole('button', { name: /izvještaji izbornik/i });
+    this.navPostavke   = page.getByRole('button', { name: /postavke izbornik/i });
+    this.navChat       = page.getByRole('button', { name: /otvori chat/i });
+    // navKorisnici is inside the Šifarnici dropdown — only visible when the menu is open
+    this.navKorisnici  = page.getByRole('menuitem', { name: /^korisnici$/i });
   }
 
   async openUserMenu(): Promise<void> {

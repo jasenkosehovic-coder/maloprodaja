@@ -57,27 +57,38 @@ test.describe('User menu — odjava', () => {
   });
 });
 
-test.describe('Sidebar navigacija — ADMIN uloga', () => {
-  test('prikazuje sve navigacijske stavke dostupne ADMIN-u', async ({ page }) => {
+test.describe('Topbar navigacija — ADMIN uloga', () => {
+  test('prikazuje sve dropdown izbornike dostupne ADMIN-u', async ({ page }) => {
     await injectMockSession(page, 'ADMIN');
     await page.goto('/blagajna');
     const appLayout = new AppLayoutPage(page);
 
-    await expect(appLayout.navBlagajna).toBeVisible();
-    await expect(appLayout.navDokumenti).toBeVisible();
     await expect(appLayout.navSifarnici).toBeVisible();
-    await expect(appLayout.navChat).toBeVisible();
+    await expect(appLayout.navBlagajna).toBeVisible();
     await expect(appLayout.navFiskalni).toBeVisible();
+    await expect(appLayout.navDokumenti).toBeVisible();
     await expect(appLayout.navIzvjestaji).toBeVisible();
-    await expect(appLayout.navKorisnici).toBeVisible();
     await expect(appLayout.navPostavke).toBeVisible();
+    await expect(appLayout.navChat).toBeVisible();
   });
 
-  test('klik na Korisnici navigira na /korisnici', async ({ page }) => {
+  test('Šifarnici dropdown sadrži Korisnici stavku za ADMIN-a', async ({ page }) => {
     await injectMockSession(page, 'ADMIN');
     await page.goto('/blagajna');
-    await new AppLayoutPage(page).navKorisnici.click();
-    await expect(page).toHaveURL(/\/korisnici/);
+    const appLayout = new AppLayoutPage(page);
+
+    await appLayout.navSifarnici.click();
+    await expect(appLayout.navKorisnici).toBeVisible({ timeout: 3_000 });
+  });
+
+  test('klik na Korisnici navigira na /sifarnici/korisnici', async ({ page }) => {
+    await injectMockSession(page, 'ADMIN');
+    await page.goto('/blagajna');
+    const appLayout = new AppLayoutPage(page);
+
+    await appLayout.navSifarnici.click();
+    await appLayout.navKorisnici.click();
+    await expect(page).toHaveURL(/\/sifarnici\/korisnici/);
   });
 
   test('klik na Chat navigira na /chat', async ({ page }) => {
@@ -88,26 +99,28 @@ test.describe('Sidebar navigacija — ADMIN uloga', () => {
   });
 });
 
-test.describe('Sidebar navigacija — BLAGAJNIK uloga (ograničen pristup)', () => {
-  test('BLAGAJNIK ne vidi Fiskalni, Izvještaji, Korisnici, Postavke', async ({ page }) => {
+test.describe('Topbar navigacija — BLAGAJNIK uloga (ograničen pristup)', () => {
+  test('BLAGAJNIK vidi Šifarnici, Blagajna, Fiskalni, Izvještaji ali ne Dokumenti i Postavke', async ({ page }) => {
     await injectMockSession(page, 'BLAGAJNIK');
     await page.goto('/blagajna');
     const appLayout = new AppLayoutPage(page);
 
+    // BLAGAJNIK ima pristup ovim grupama
     await expect(appLayout.navBlagajna).toBeVisible();
-    await expect(appLayout.navDokumenti).toBeVisible();
+    await expect(appLayout.navSifarnici).toBeVisible();   // ima stavke za ALL/ADMIN_BLAG
+    await expect(appLayout.navFiskalni).toBeVisible();    // ADMIN_BLAG uključuje BLAGAJNIK
+    await expect(appLayout.navIzvjestaji).toBeVisible();  // Knjiga blagajni je ADMIN_MEN_BLAG
     await expect(appLayout.navChat).toBeVisible();
 
-    await expect(appLayout.navFiskalni).not.toBeVisible();
-    await expect(appLayout.navIzvjestaji).not.toBeVisible();
-    await expect(appLayout.navKorisnici).not.toBeVisible();
+    // BLAGAJNIK nema pristup ovim grupama
+    await expect(appLayout.navDokumenti).not.toBeVisible();
     await expect(appLayout.navPostavke).not.toBeVisible();
   });
 
-  test('BLAGAJNIK direktno na /korisnici dobija redirect', async ({ page }) => {
+  test('BLAGAJNIK direktno na /sifarnici/korisnici dobija redirect', async ({ page }) => {
     await injectMockSession(page, 'BLAGAJNIK');
-    await page.goto('/korisnici');
-    await expect(page).not.toHaveURL(/\/korisnici/);
+    await page.goto('/sifarnici/korisnici');
+    await expect(page).not.toHaveURL(/\/sifarnici\/korisnici/);
   });
 });
 
@@ -117,8 +130,11 @@ test.describe('Navigacija — browser history', () => {
     await page.goto('/blagajna');
     const appLayout = new AppLayoutPage(page);
 
-    await appLayout.navDokumenti.click();
-    await expect(page).toHaveURL(/\/dokumenti/);
+    // Otvoriti Šifarnici dropdown i kliknuti "Artikli u poslovnici"
+    await appLayout.navSifarnici.click();
+    await page.getByRole('menuitem', { name: /artikli u poslovnici/i }).click();
+    await expect(page).toHaveURL(/\/sifarnici\/artikli-poslovnica/);
+
     await page.goBack();
     await expect(page).toHaveURL(/\/blagajna/);
   });

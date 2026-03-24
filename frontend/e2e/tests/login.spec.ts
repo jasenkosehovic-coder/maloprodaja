@@ -177,7 +177,8 @@ test.describe('Login — happy path (mock API)', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockLoginResponse),
+        // Backend uvijek wrapa odgovor u ApiResponse<T> — mora biti { success, data }
+        body: JSON.stringify({ success: true, data: mockLoginResponse }),
       });
     });
 
@@ -192,7 +193,8 @@ test.describe('Login — happy path (mock API)', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockLoginResponse),
+        // Backend uvijek wrapa odgovor u ApiResponse<T> — mora biti { success, data }
+        body: JSON.stringify({ success: true, data: mockLoginResponse }),
       });
     });
 
