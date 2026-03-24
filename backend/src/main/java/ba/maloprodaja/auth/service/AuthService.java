@@ -4,6 +4,7 @@ import ba.maloprodaja.auth.dto.LoginRequestDTO;
 import ba.maloprodaja.auth.dto.LoginResponseDTO;
 import ba.maloprodaja.auth.entity.Korisnik;
 import ba.maloprodaja.auth.repository.KorisnikRepository;
+import ba.maloprodaja.common.security.JwtProperties;
 import ba.maloprodaja.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class AuthService implements IAuthService {
     private final AuthenticationManager authenticationManager;
     private final KorisnikRepository korisnikRepository;
     private final JwtUtil jwtUtil;
+    private final JwtProperties jwtProperties;
 
     @Override
     public LoginResponseDTO login(LoginRequestDTO request) {
@@ -57,14 +59,32 @@ public class AuthService implements IAuthService {
         return buildResponse(newToken, newRefreshToken, korisnik);
     }
 
+    @Override
+    public LoginResponseDTO.KorisnikInfo me(Korisnik korisnik) {
+        return toKorisnikInfo(korisnik);
+    }
+
     private LoginResponseDTO buildResponse(String token, String refreshToken, Korisnik korisnik) {
-        LoginResponseDTO.KorisnikInfo info = new LoginResponseDTO.KorisnikInfo(
+        return new LoginResponseDTO(
+                token,
+                refreshToken,
+                "Bearer",
+                jwtProperties.getExpirationMs() / 1000,
+                toKorisnikInfo(korisnik)
+        );
+    }
+
+    private LoginResponseDTO.KorisnikInfo toKorisnikInfo(Korisnik korisnik) {
+        return new LoginResponseDTO.KorisnikInfo(
                 korisnik.getId(),
                 korisnik.getUsername(),
                 korisnik.getIme(),
                 korisnik.getPrezime(),
-                korisnik.getUloga()
+                korisnik.getEmail(),
+                korisnik.getUloga(),
+                korisnik.getIdPoslovnice(),
+                null,
+                korisnik.isAktivan()
         );
-        return new LoginResponseDTO(token, refreshToken, info);
     }
 }

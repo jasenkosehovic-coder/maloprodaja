@@ -14,7 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { exhaustMap, Subject } from 'rxjs';
+import { catchError, EMPTY, exhaustMap, Subject } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -62,21 +62,21 @@ export class LoginComponent {
         exhaustMap(() => {
           this.isSubmitting.set(true);
           this.loginError.set(null);
-          return this.authService.login(this.form.getRawValue());
+          return this.authService.login(this.form.getRawValue()).pipe(
+            catchError((err) => {
+              this.isSubmitting.set(false);
+              const message =
+                err?.error?.message ?? 'Pogrešno korisničko ime ili lozinka.';
+              this.loginError.set(message);
+              return EMPTY;
+            })
+          );
         }),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe({
-        next: () => {
-          this.isSubmitting.set(false);
-          void this.router.navigate(['/']);
-        },
-        error: (err) => {
-          this.isSubmitting.set(false);
-          const message =
-            err?.error?.message ?? 'Pogrešno korisničko ime ili lozinka.';
-          this.loginError.set(message);
-        },
+      .subscribe(() => {
+        this.isSubmitting.set(false);
+        void this.router.navigate(['/']);
       });
   }
 

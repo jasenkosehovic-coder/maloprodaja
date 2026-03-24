@@ -12,23 +12,24 @@
 
 ---
 
-## FAZA 2 — Autentifikacija i RBAC 🔲 TODO
+## FAZA 2 — Autentifikacija i RBAC ✅ ZAVRŠENA
 
-- [ ] Implementiraj JWT autentifikaciju — backend
-  - Entiteti: Korisnik, RefreshToken
-  - JwtTokenProvider, JwtAuthenticationFilter, RefreshTokenService
+- [x] Implementiraj JWT autentifikaciju — backend
+  - Entiteti: Korisnik, KorisnikIzbornik
+  - JwtUtil, JwtAuthFilter, KorisnikDetailsService
   - AuthService, AuthController (POST /api/auth/login, /refresh, /logout, GET /me)
-  - Logout nakon 1h neaktivnosti
-- [ ] Implementiraj Spring Security konfiguraciju i RBAC
-  - SecurityConfig (whitelist, CSRF off, stateless)
-  - Entitet KorisnikIzbornik (override izbornika po korisniku)
-  - KorisnikService sa logikom uloga i izbornika
-- [ ] Implementiraj Angular autentifikaciju i layout
-  - LoginComponent (ReactiveForm)
+  - uloga + poslovnicaId u JWT claims
+- [x] Implementiraj Spring Security konfiguraciju i RBAC
+  - SecurityConfig (whitelist, CSRF off, stateless, @EnableMethodSecurity)
+  - KorisnikUloga: SUPER_ADMIN, ADMIN, MENADZER, BLAGAJNIK, SKLADISTAR
+  - KorisnikIzbornik entity + KorisnikService + KorisnikController
+  - Flyway V2 migracija za korisnik_izbornici
+- [x] Implementiraj Angular autentifikaciju i layout
+  - LoginComponent (ReactiveForm, signal-based)
   - AuthService signal-based, authGuard, roleGuard
-  - JWT interceptor sa auto-refresh
-  - Automatski logout na 1h neaktivnosti
-  - Dinamički meni po ulozi
+  - JWT interceptor sa auto-refresh (401 → refresh → retry)
+  - InactivityService — auto-logout nakon 1h neaktivnosti
+  - Dinamički meni po ulozi (SidebarComponent)
 
 ---
 
@@ -154,7 +155,7 @@
 | Faza | Status | Taskovi |
 |---|---|---|
 | 1 — Infrastruktura | ✅ Završena | 7/7 |
-| 2 — Auth & RBAC | 🔲 TODO | 0/3 |
+| 2 — Auth & RBAC | ✅ Završena | 3/3 |
 | 3 — Šifrarnici | 🔲 TODO | 0/3 |
 | 4 — Blagajna | 🔲 TODO | 0/2 |
 | 5 — Fiskalizacija | 🔲 TODO | 0/2 |
@@ -163,4 +164,4 @@
 | 8 — Chat | 🔲 TODO | 0/1 |
 | 9 — Postavke | 🔲 TODO | 0/1 |
 | 10 — Deployment | 🔲 TODO | 0/1 |
-| **Ukupno** | **7/24** | **29%** |
+| **Ukupno** | **10/24** | **42%** |

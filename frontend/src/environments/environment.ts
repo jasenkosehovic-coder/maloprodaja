@@ -4,4 +4,5 @@ export const environment = {
   wsUrl: 'http://localhost:8080/ws',
   appName: 'Maloprodaja',
   version: '1.0.0',
+  inactivityTimeoutMs: 3600000,
 };

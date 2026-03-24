@@ -1,5 +1,6 @@
 package ba.maloprodaja.common.security;
 
+import ba.maloprodaja.auth.entity.Korisnik;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -26,14 +27,21 @@ public class JwtUtil {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, jwtProperties.getExpirationMs());
+        Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof Korisnik k) {
+            claims.put("uloga", k.getUloga().name());
+            if (k.getIdPoslovnice() != null) {
+                claims.put("poslovnicaId", k.getIdPoslovnice());
+            }
+        }
+        return buildToken(claims, userDetails, jwtProperties.getExpirationMs());
     }
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, jwtProperties.getRefreshExpirationMs());
+        return buildToken(new HashMap<>(), userDetails, jwtProperties.getRefreshExpirationMs());
     }
 
-    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails, long expirationMs) {
+    private String buildToken(Map<String, Object> extraClaims, UserDetails userDetails, long expirationMs) {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(userDetails.getUsername())

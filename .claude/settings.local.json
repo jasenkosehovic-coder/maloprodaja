@@ -28,7 +28,11 @@
       "Bash(taskkill /F /IM node.exe)",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
       "Bash(powershell -Command \"Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force; Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force\")",
-      "Bash(powershell -Command \"Get-Process node,java -ErrorAction SilentlyContinue | Select-Object Name, Id\")"
+      "Bash(powershell -Command \"Get-Process node,java -ErrorAction SilentlyContinue | Select-Object Name, Id\")",
+      "Bash(npm --version)",
+      "Bash(mvn compile:*)",
+      "Bash(netstat -ano)",
+      "Bash(cmd /c \"tasklist /FI \\\\\"PID eq 19692\\\\\" /FO LIST 2>&1\")"
     ]
   }
 }

@@ -3,8 +3,10 @@ package ba.maloprodaja.auth.dto;
 import ba.maloprodaja.auth.entity.KorisnikUloga;
 
 public record LoginResponseDTO(
-        String token,
+        String accessToken,
         String refreshToken,
+        String tokenType,
+        long expiresIn,
         KorisnikInfo korisnik
 ) {
     public record KorisnikInfo(
@@ -12,6 +14,10 @@ public record LoginResponseDTO(
             String username,
             String ime,
             String prezime,
-            KorisnikUloga uloga
+            String email,
+            KorisnikUloga uloga,
+            Long poslovnicaId,
+            String poslovnicaNaziv,
+            boolean aktivan
     ) {}
 }
