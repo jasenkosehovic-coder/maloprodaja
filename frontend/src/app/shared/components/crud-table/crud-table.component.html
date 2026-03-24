@@ -1,0 +1,542 @@
+<div class="crud-table-wrapper">
+
+  <!-- Top bar: delete many -->
+  @if (selectedCount > 0 && actions.delete) {
+    <div class="crud-bulk-bar" role="status" aria-live="polite">
+      <span>{{ selectedCount }} row(s) selected</span>
+      <button mat-raised-button color="warn" (click)="onDeleteManyClick()" aria-label="Delete selected rows">
+        <mat-icon>delete</mat-icon>
+        Delete selected
+      </button>
+    </div>
+  }
+
+  <!-- Table scroll wrapper -->
+  <div class="crud-table-scroll">
+    <table class="crud-table" role="grid" aria-label="Data table">
+      <thead>
+
+        <!-- Header row: column titles + master checkbox -->
+        <tr class="crud-header-row">
+          <th class="col-checkbox" scope="col">
+            <mat-checkbox
+              [checked]="allSelected"
+              [indeterminate]="someSelected"
+              (change)="toggleAll($event.checked)"
+              aria-label="Select all rows on this page">
+            </mat-checkbox>
+          </th>
+
+          @for (header of headers; track header) {
+            <th
+              [class]="'crud-th ' + getColClass(header)"
+              scope="col"
+              (click)="onHeaderClick(header)"
+              (keydown.enter)="onHeaderClick(header)"
+              (keydown.space)="onHeaderClick(header)"
+              tabindex="0"
+              role="columnheader"
+              [attr.aria-sort]="sortedColumn === header ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'">
+              <span class="crud-th-content">
+                {{ getField(header)?.label ?? header }}
+                @if (sortedColumn === header && sortDirection === 'asc') {
+                  <mat-icon class="sort-icon" aria-hidden="true">arrow_upward</mat-icon>
+                }
+                @if (sortedColumn === header && sortDirection === 'desc') {
+                  <mat-icon class="sort-icon" aria-hidden="true">arrow_downward</mat-icon>
+                }
+              </span>
+            </th>
+          }
+
+          <th class="col-actions" scope="col">
+            <span class="sr-only">Actions</span>
+          </th>
+        </tr>
+
+        <!-- Filter row -->
+        <tr class="crud-filter-row">
+          <td class="col-checkbox"></td>
+
+          @for (header of headers; track header) {
+            <td [class]="'crud-filter-cell ' + getColClass(header)">
+
+              @if (isFilterable(header)) {
+
+                <!-- Text / Email filter -->
+                @if (getFieldType(header) === 'text' || getFieldType(header) === 'email') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)"
+                      [placeholder]="getField(header)?.label ?? header" />
+                    @if (filters[header]) {
+                      <button matSuffix mat-icon-button (click)="filters[header] = null; onFilterChange()" aria-label="Clear filter">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </mat-form-field>
+                }
+
+                <!-- Number filter -->
+                @if (getFieldType(header) === 'number') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)"
+                      [placeholder]="getField(header)?.label ?? header" />
+                    @if (filters[header] !== null && filters[header] !== undefined && filters[header] !== '') {
+                      <button matSuffix mat-icon-button (click)="filters[header] = null; onFilterChange()" aria-label="Clear filter">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </mat-form-field>
+                }
+
+                <!-- Time filter -->
+                @if (getFieldType(header) === 'time') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      type="time"
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)" />
+                    @if (filters[header]) {
+                      <button matSuffix mat-icon-button (click)="filters[header] = null; onFilterChange()" aria-label="Clear filter">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </mat-form-field>
+                }
+
+                <!-- Boolean filter -->
+                @if (getFieldType(header) === 'boolean') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <mat-select
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)">
+                      <mat-option [value]="null">All</mat-option>
+                      <mat-option value="true">Yes</mat-option>
+                      <mat-option value="false">No</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                }
+
+                <!-- Select filter -->
+                @if (getFieldType(header) === 'select') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <mat-select
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)">
+                      <mat-option [value]="null">All</mat-option>
+                      @for (opt of getFieldOptions(header); track opt.value) {
+                        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                }
+
+                <!-- Multiselect filter -->
+                @if (getFieldType(header) === 'multiselect') {
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <mat-select
+                      multiple
+                      [(ngModel)]="filters[header]"
+                      (ngModelChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)">
+                      @for (opt of getFieldOptions(header); track opt.value) {
+                        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                }
+
+                <!-- Date filter -->
+                @if (getFieldType(header) === 'date') {
+                  <div class="date-filter-group">
+                    <mat-form-field class="filter-field date-filter-field" appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>From</mat-label>
+                      <input
+                        matInput
+                        [matDatepicker]="pickerFrom"
+                        [value]="getDateFilter(header).from"
+                        (dateChange)="setDateFilterFrom(header, $event.value)"
+                        [attr.aria-label]="'Filter from date for ' + (getField(header)?.label ?? header)" />
+                      <mat-datepicker-toggle matIconSuffix [for]="pickerFrom" aria-label="Open from date picker"></mat-datepicker-toggle>
+                      <mat-datepicker #pickerFrom></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field class="filter-field date-filter-field" appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>To</mat-label>
+                      <input
+                        matInput
+                        [matDatepicker]="pickerTo"
+                        [value]="getDateFilter(header).to"
+                        (dateChange)="setDateFilterTo(header, $event.value)"
+                        [attr.aria-label]="'Filter to date for ' + (getField(header)?.label ?? header)" />
+                      <mat-datepicker-toggle matIconSuffix [for]="pickerTo" aria-label="Open to date picker"></mat-datepicker-toggle>
+                      <mat-datepicker #pickerTo></mat-datepicker>
+                    </mat-form-field>
+
+                    @if (hasActiveDateFilter(header)) {
+                      <button
+                        mat-icon-button
+                        class="date-clear-btn"
+                        (click)="clearDateFilter(header)"
+                        aria-label="Clear date filter">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                  </div>
+                }
+
+              }
+            </td>
+          }
+
+          <!-- Add button in filter row -->
+          <td class="col-actions crud-add-cell">
+            @if (actions.add) {
+              <button
+                mat-mini-fab
+                color="primary"
+                (click)="onAddClick()"
+                aria-label="Add new row"
+                matTooltip="Add new row">
+                <mat-icon>add</mat-icon>
+              </button>
+            }
+          </td>
+        </tr>
+
+      </thead>
+
+      <tbody>
+        @if (pagedData.length === 0) {
+          <tr>
+            <td [attr.colspan]="headers.length + 2" class="crud-empty-cell" role="cell">
+              <div class="crud-empty-state" role="status">
+                <mat-icon aria-hidden="true">inbox</mat-icon>
+                <span>No data available</span>
+              </div>
+            </td>
+          </tr>
+        }
+
+        @for (row of pagedData; track row[idField]) {
+          <tr
+            class="crud-row"
+            [class.crud-row-selected]="isSelected(row)"
+            [ngClass]="rowStyleClass ? rowStyleClass(row) : {}"
+            (click)="onRowClick($event, row)"
+            role="row"
+            [attr.aria-selected]="isSelected(row)">
+
+            <!-- Checkbox cell -->
+            <td class="col-checkbox" role="gridcell">
+              <mat-checkbox
+                [checked]="isSelected(row)"
+                (change)="toggleRow(row)"
+                [attr.aria-label]="'Select row'">
+              </mat-checkbox>
+            </td>
+
+            <!-- Data cells -->
+            @for (header of headers; track header) {
+              <td
+                [class]="'crud-cell ' + getColClass(header)"
+                role="gridcell">
+
+                @if (getFieldType(header) === 'boolean') {
+                  <mat-checkbox
+                    [checked]="row[header]"
+                    [disabled]="true"
+                    [attr.aria-label]="(getField(header)?.label ?? header) + ': ' + (row[header] ? 'Yes' : 'No')">
+                  </mat-checkbox>
+                } @else {
+                  <span
+                    class="crud-cell-text"
+                    [matTooltip]="getCellTooltip(row, header)"
+                    matTooltipShowDelay="500">
+                    {{ formatCellValue(row, header) }}
+                  </span>
+                }
+
+              </td>
+            }
+
+            <!-- Action buttons -->
+            <td class="col-actions crud-row-actions" role="gridcell">
+              @if (actions.edit) {
+                <button
+                  mat-icon-button
+                  color="primary"
+                  (click)="onEditClick(row)"
+                  [attr.aria-label]="'Edit row'"
+                  matTooltip="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (actions.delete) {
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="onDeleteClick(row)"
+                  [attr.aria-label]="'Delete row'"
+                  matTooltip="Delete">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </td>
+
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer: pagination + export -->
+  <div class="crud-footer" role="navigation" aria-label="Table pagination and export">
+
+    <div class="crud-footer-left">
+      <!-- Rows per page -->
+      <label for="pageSizeSelect" class="page-size-label">Rows per page:</label>
+      <mat-form-field class="page-size-field" appearance="outline" subscriptSizing="dynamic">
+        <mat-select
+          id="pageSizeSelect"
+          [(ngModel)]="pageSize"
+          (ngModelChange)="onPageSizeChange()"
+          aria-label="Rows per page">
+          @for (opt of pageSizeOptions; track opt) {
+            <mat-option [value]="opt">{{ opt }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Export buttons -->
+      @if (actions.export) {
+        <button
+          mat-icon-button
+          (click)="exportFilteredToCsv()"
+          aria-label="Export to CSV"
+          matTooltip="Export CSV">
+          <mat-icon>file_download</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          (click)="exportPdf()"
+          aria-label="Export to PDF"
+          matTooltip="Export PDF">
+          <mat-icon>picture_as_pdf</mat-icon>
+        </button>
+      }
+    </div>
+
+    <div class="crud-footer-right">
+      <span class="crud-records-info" aria-live="polite">
+        {{ startRecord }}–{{ endRecord }} of {{ sortedData.length }}
+      </span>
+
+      <!-- Custom pagination -->
+      <div class="crud-pagination" role="group" aria-label="Page navigation">
+        <button
+          mat-icon-button
+          (click)="prevPage()"
+          [disabled]="currentPage === 1"
+          aria-label="Previous page">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+
+        @for (page of paginationPages; track page) {
+          @if (isPaginationDots(page)) {
+            <span class="pagination-dots" aria-hidden="true">…</span>
+          } @else {
+            <button
+              mat-button
+              class="pagination-page-btn"
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)"
+              [attr.aria-label]="'Page ' + page"
+              [attr.aria-current]="page === currentPage ? 'page' : null">
+              {{ page }}
+            </button>
+          }
+        }
+
+        <button
+          mat-icon-button
+          (click)="nextPage()"
+          [disabled]="currentPage === totalPages"
+          aria-label="Next page">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ─── Add / Edit Modal ──────────────────────────────────────────────────────── -->
+@if (modalVisible) {
+  <div class="crud-modal-backdrop" role="dialog" aria-modal="true" [attr.aria-label]="getModalTitle()">
+    <div class="crud-modal">
+      <div class="crud-modal-header">
+        <h2 class="crud-modal-title" id="crud-modal-title">{{ getModalTitle() }}</h2>
+        <button mat-icon-button (click)="closeModal()" aria-label="Close dialog">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="crud-modal-body">
+        <form #editForm="ngForm" novalidate autocomplete="off">
+          <div class="crud-form-grid">
+            @for (field of visibleFields; track field.key) {
+              <div class="crud-form-field-wrap">
+
+                @if (isSimpleInput(field)) {
+                  <mat-form-field appearance="outline" class="crud-form-field">
+                    <mat-label>{{ field.label }}<span *ngIf="field.required" aria-hidden="true"> *</span></mat-label>
+                    <input
+                      matInput
+                      [id]="'field-' + field.key"
+                      [name]="field.key"
+                      [type]="getInputType(field)"
+                      [(ngModel)]="editingRow[field.key]"
+                      (ngModelChange)="onFieldChange(field)"
+                      [required]="!!field.required"
+                      [disabled]="!!field.readOnly"
+                      [placeholder]="field.placeholder ?? ''"
+                      [attr.min]="field.min ?? null"
+                      [attr.max]="field.max ?? null"
+                      [attr.pattern]="field.pattern ?? null"
+                      [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null"
+                      [attr.aria-invalid]="fieldErrors[field.key] ? 'true' : null" />
+                    @if (fieldErrors[field.key]) {
+                      <mat-error [id]="'err-' + field.key" role="alert">{{ fieldErrors[field.key] }}</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+                @if (field.type === 'boolean') {
+                  <div class="crud-form-checkbox-wrap">
+                    <mat-checkbox
+                      [id]="'field-' + field.key"
+                      [name]="field.key"
+                      [(ngModel)]="editingRow[field.key]"
+                      [disabled]="!!field.readOnly">
+                      {{ field.label }}
+                    </mat-checkbox>
+                  </div>
+                }
+
+                @if (field.type === 'select') {
+                  <mat-form-field appearance="outline" class="crud-form-field">
+                    <mat-label>{{ field.label }}<span *ngIf="field.required" aria-hidden="true"> *</span></mat-label>
+                    <mat-select
+                      [id]="'field-' + field.key"
+                      [name]="field.key"
+                      [(ngModel)]="editingRow[field.key]"
+                      (ngModelChange)="onFieldChange(field)"
+                      [required]="!!field.required"
+                      [disabled]="!!field.readOnly"
+                      [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
+                      @if (!field.required) {
+                        <mat-option [value]="null">-- None --</mat-option>
+                      }
+                      @for (opt of field.options ?? []; track opt.value) {
+                        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                      }
+                    </mat-select>
+                    @if (fieldErrors[field.key]) {
+                      <mat-error [id]="'err-' + field.key" role="alert">{{ fieldErrors[field.key] }}</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+                @if (field.type === 'multiselect') {
+                  <mat-form-field appearance="outline" class="crud-form-field">
+                    <mat-label>{{ field.label }}<span *ngIf="field.required" aria-hidden="true"> *</span></mat-label>
+                    <mat-select
+                      [id]="'field-' + field.key"
+                      [name]="field.key"
+                      multiple
+                      [(ngModel)]="editingRow[field.key]"
+                      (ngModelChange)="onFieldChange(field)"
+                      [required]="!!field.required"
+                      [disabled]="!!field.readOnly"
+                      [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
+                      @for (opt of field.options ?? []; track opt.value) {
+                        <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                      }
+                    </mat-select>
+                    @if (fieldErrors[field.key]) {
+                      <mat-error [id]="'err-' + field.key" role="alert">{{ fieldErrors[field.key] }}</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+              </div>
+            }
+          </div>
+        </form>
+      </div>
+
+      <div class="crud-modal-footer">
+        <button mat-button (click)="closeModal()">Cancel</button>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="onSaveEdit()"
+          [disabled]="saving">
+          @if (saving) {
+            <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+            Saving...
+          } @else {
+            Save
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ─── Delete Confirmation Modal ─────────────────────────────────────────────── -->
+@if (deleteModalVisible) {
+  <div class="crud-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title">
+    <div class="crud-modal crud-modal-sm">
+      <div class="crud-modal-header">
+        <h2 class="crud-modal-title" id="delete-dialog-title">
+          <mat-icon class="delete-icon" aria-hidden="true">warning</mat-icon>
+          Confirm Delete
+        </h2>
+        <button mat-icon-button (click)="closeDeleteModal()" aria-label="Close dialog">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="crud-modal-body">
+        <p id="delete-dialog-desc">
+          @if (deleteManyMode) {
+            Are you sure you want to delete {{ selectedCount }} selected row(s)? This action cannot be undone.
+          } @else {
+            Are you sure you want to delete this item? This action cannot be undone.
+          }
+        </p>
+      </div>
+
+      <div class="crud-modal-footer">
+        <button mat-button (click)="closeDeleteModal()">Cancel</button>
+        <button mat-raised-button color="warn" (click)="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+}
