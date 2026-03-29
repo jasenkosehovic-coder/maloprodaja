@@ -57,6 +57,12 @@ public class KorisnikController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @GetMapping("/izbornici/dostupni")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<String>>> getAvailableIzbornici() {
+        return ResponseEntity.ok(ApiResponse.ok(korisnikService.getAvailableIzbornici()));
+    }
+
     @GetMapping("/{id}/izbornici")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<List<KorisnikDTO.KorisnikIzbornikaDTO>>> getIzbornici(@PathVariable Long id) {

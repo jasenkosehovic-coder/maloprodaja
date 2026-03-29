@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,9 +28,20 @@ public class KorisnikService implements IKorisnikService {
 
     @Override
     public List<KorisnikDTO.KorisnikListItemDTO> listAll(Long idKompanije) {
-        return korisnikRepository.findByIdKompanije(idKompanije)
+        List<Korisnik> korisnici = korisnikRepository.findByIdKompanije(idKompanije);
+
+        List<Long> ids = korisnici.stream().map(Korisnik::getId).toList();
+
+        Map<Long, List<String>> izborniciByKorisnik = korisnikIzborniciRepository
+                .findByKorisnikIdIn(ids)
                 .stream()
-                .map(this::toListItemDTO)
+                .collect(Collectors.groupingBy(
+                        KorisnikIzbornik::getKorisnikId,
+                        Collectors.mapping(KorisnikIzbornik::getIzbornikKljuc, Collectors.toList())
+                ));
+
+        return korisnici.stream()
+                .map(k -> toListItemDTO(k, izborniciByKorisnik.getOrDefault(k.getId(), List.of())))
                 .toList();
     }
 
@@ -48,7 +61,7 @@ public class KorisnikService implements IKorisnikService {
 
         Korisnik saved = korisnikRepository.save(korisnik);
         log.info("Kreiran novi korisnik: username='{}'", saved.getUsername());
-        return toListItemDTO(saved);
+        return toListItemDTO(saved, List.of());
     }
 
     @Override
@@ -63,8 +76,11 @@ public class KorisnikService implements IKorisnikService {
         if (dto.uloga() != null) korisnik.setUloga(dto.uloga());
         if (dto.poslovnicaId() != null) korisnik.setIdPoslovnice(dto.poslovnicaId());
         if (dto.aktivan() != null) korisnik.setAktivan(dto.aktivan());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            korisnik.setPasswordHash(passwordEncoder.encode(dto.password()));
+        }
 
-        return toListItemDTO(korisnikRepository.save(korisnik));
+        return toListItemDTO(korisnikRepository.save(korisnik), List.of());
     }
 
     @Override
@@ -75,6 +91,11 @@ public class KorisnikService implements IKorisnikService {
         korisnik.setAktivan(false);
         korisnikRepository.save(korisnik);
         log.info("Korisnik deaktiviran: id={}", id);
+    }
+
+    @Override
+    public List<String> getAvailableIzbornici() {
+        return korisnikIzborniciRepository.findDistinctIzbornikKljucevi();
     }
 
     @Override
@@ -107,7 +128,7 @@ public class KorisnikService implements IKorisnikService {
         return getIzbornici(korisnikId);
     }
 
-    private KorisnikDTO.KorisnikListItemDTO toListItemDTO(Korisnik k) {
+    private KorisnikDTO.KorisnikListItemDTO toListItemDTO(Korisnik k, List<String> izbornici) {
         return new KorisnikDTO.KorisnikListItemDTO(
                 k.getId(),
                 k.getUsername(),
@@ -116,7 +137,8 @@ public class KorisnikService implements IKorisnikService {
                 k.getEmail(),
                 k.getUloga(),
                 k.getIdPoslovnice(),
-                k.isAktivan()
+                k.isAktivan(),
+                izbornici
         );
     }
 }

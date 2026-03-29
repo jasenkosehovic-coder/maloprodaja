@@ -1,0 +1,24 @@
+<div class="korisnici-page">
+  <div class="page-header">
+    <h2>Korisnici</h2>
+    <p class="subtitle">Upravljanje korisnicima sistema</p>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje korisnika"></mat-progress-bar>
+
+  <app-crud-table
+    [headers]="tableHeaders"
+    [data]="korisnici"
+    [fields]="fields"
+    [actions]="tableActions"
+    [externalSave]="true"
+    [externalDelete]="true"
+    [idField]="'id'"
+    [pdfHeader]="pdfHeader()"
+    exportName="Korisnici"
+    (add)="onCreate($event)"
+    (edit)="onUpdate($event)"
+    (delete)="onDeactivate($event)"
+    (deleteMany)="onDeactivateMany($event)">
+  </app-crud-table>
+</div>

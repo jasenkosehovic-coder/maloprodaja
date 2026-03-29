@@ -13,6 +13,13 @@ public interface KorisnikIzborniciRepository extends JpaRepository<KorisnikIzbor
 
     List<KorisnikIzbornik> findByKorisnikId(Long korisnikId);
 
+    List<KorisnikIzbornik> findByKorisnikIdIn(java.util.Collection<Long> korisnikIds);
+
+    long countByKorisnikId(Long korisnikId);
+
+    @Query("SELECT DISTINCT k.izbornikKljuc FROM KorisnikIzbornik k ORDER BY k.izbornikKljuc")
+    List<String> findDistinctIzbornikKljucevi();
+
     @Modifying
     @Transactional
     @Query("DELETE FROM KorisnikIzbornik k WHERE k.korisnikId = :korisnikId")

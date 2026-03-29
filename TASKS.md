@@ -21,7 +21,7 @@
   - uloga + poslovnicaId u JWT claims
 - [x] Implementiraj Spring Security konfiguraciju i RBAC
   - SecurityConfig (whitelist, CSRF off, stateless, @EnableMethodSecurity)
-  - KorisnikUloga: SUPER_ADMIN, ADMIN, MENADZER, BLAGAJNIK, SKLADISTAR
+  - KorisnikUloga: SUPER_ADMIN, ADMIN, MENADZER, BLAGAJNIK, KNJIGOVODŽA
   - KorisnikIzbornik entity + KorisnikService + KorisnikController
   - Flyway V2 migracija za korisnik_izbornici
 - [x] Implementiraj Angular autentifikaciju i layout

@@ -21,6 +21,12 @@ export interface KorisnikInfo {
   uloga: Uloga;
   poslovnicaId: number;
   poslovnicaNaziv: string;
+  poslovnicaAdresa: string;
+  poslovnicaGrad: string;
+  kompanijaNaziv: string;
+  kompanijaAdresa: string;
+  kompanijaGrad: string;
+  kompanijaLogo?: string;
   aktivan: boolean;
 }
 
@@ -29,7 +35,7 @@ export type Uloga =
   | 'ADMIN'
   | 'MENADZER'
   | 'BLAGAJNIK'
-  | 'SKLADISTAR';
+  | 'KNJIGOVODJA';
 
 export interface RefreshTokenRequest {
   refreshToken: string;

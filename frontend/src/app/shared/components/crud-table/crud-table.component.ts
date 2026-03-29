@@ -20,15 +20,11 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatNativeDateModule } from '@angular/material/core';
+import { ErrorStateMatcher, MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption } from './crud-field-config';
-
-// jsPDF imports
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } from './crud-field-config';
 
 @Component({
   selector: 'app-crud-table',
@@ -66,6 +62,7 @@ export class CrudTableComponent implements OnChanges {
   @Input() rowStyleClass: ((row: any) => any) | null = null;
   @Input() saving = false;
   @Input() idField: string = 'id';
+  @Input() pdfHeader: CrudPdfHeader | null = null;
 
   @Output() selectionChange = new EventEmitter<any[]>();
   @Output() add = new EventEmitter<any>();
@@ -101,6 +98,18 @@ export class CrudTableComponent implements OnChanges {
   modalMode: 'add' | 'edit' = 'add';
   editingRow: any = {};
   fieldErrors: Record<string, string | null> = {};
+  formValid = true;
+
+  private readonly errorMatchers: Record<string, ErrorStateMatcher> = {};
+
+  getErrorMatcher(key: string): ErrorStateMatcher {
+    if (!this.errorMatchers[key]) {
+      this.errorMatchers[key] = {
+        isErrorState: () => !!this.fieldErrors[key],
+      };
+    }
+    return this.errorMatchers[key];
+  }
 
   // Delete modal
   deleteModalVisible = false;
@@ -311,6 +320,7 @@ export class CrudTableComponent implements OnChanges {
     this.modalMode = 'add';
     this.editingRow = this.buildDefaultRow();
     this.fieldErrors = {};
+    this.updateFormValid();
     this.modalVisible = true;
     setTimeout(() => this.focusFirstField(), 100);
   }
@@ -323,6 +333,7 @@ export class CrudTableComponent implements OnChanges {
     this.modalMode = 'edit';
     this.editingRow = this.normalizeRowForForm({ ...row });
     this.fieldErrors = {};
+    this.updateFormValid();
     this.modalVisible = true;
     setTimeout(() => this.focusFirstField(), 100);
   }
@@ -413,11 +424,18 @@ export class CrudTableComponent implements OnChanges {
   private validateField(field: CrudFieldConfig, value: any): string | null {
     const isEmpty = value === null || value === undefined || value === '';
 
-    if (field.required && isEmpty) {
+    const isRequired = field.required || (field.requiredOnAdd && this.modalMode === 'add');
+    if (isRequired && isEmpty) {
       return field.requiredMessage ?? `${field.label} is required.`;
     }
 
     if (isEmpty) return null;
+
+    if (field.type === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) {
+        return field.patternMessage ?? 'Unesite ispravnu email adresu.';
+      }
+    }
 
     if (field.type === 'number') {
       const num = Number(value);
@@ -464,6 +482,13 @@ export class CrudTableComponent implements OnChanges {
   onFieldChange(field: CrudFieldConfig): void {
     const val = this.editingRow[field.key];
     this.fieldErrors[field.key] = this.validateField(field, val);
+    this.updateFormValid();
+  }
+
+  private updateFormValid(): void {
+    this.formValid = this.visibleFields
+      .filter(f => !this.isFieldDisabled(f))
+      .every(f => this.validateField(f, this.editingRow[f.key]) === null);
   }
 
   private focusFirstField(): void {
@@ -729,11 +754,18 @@ export class CrudTableComponent implements OnChanges {
 
   // ─── Export ───────────────────────────────────────────────────────────────────
 
+  private get exportData(): any[] {
+    if (this.selectedIds.size > 0) {
+      return this.sortedData.filter(row => this.selectedIds.has(row[this.idField]));
+    }
+    return this.sortedData;
+  }
+
   exportFilteredToCsv(): void {
     const visibleHeaders = this.headers;
     const labels = visibleHeaders.map(h => this.getField(h)?.label ?? h);
 
-    const rows = this.sortedData.map(row =>
+    const rows = this.exportData.map(row =>
       visibleHeaders.map(h => {
         const val = this.formatCellValue(row, h);
         return `"${String(val).replace(/"/g, '""')}"`;
@@ -751,31 +783,85 @@ export class CrudTableComponent implements OnChanges {
   }
 
   exportPdf(): void {
-    const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
-    const visibleHeaders = this.headers;
-    const labels = visibleHeaders.map(h => this.getField(h)?.label ?? h);
-
-    const bodyData = this.sortedData.map(row =>
-      visibleHeaders.map(h => this.formatCellValue(row, h))
+    const labels = this.headers.map(h => this.getField(h)?.label ?? h);
+    const rows = this.exportData.map(row =>
+      this.headers.map(h => this.formatCellValue(row, h))
     );
 
     const now = new Date();
-    const dateStr = `${now.getDate().toString().padStart(2, '0')}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const dateStr =
+      `${now.getDate().toString().padStart(2, '0')}.` +
+      `${(now.getMonth() + 1).toString().padStart(2, '0')}.` +
+      `${now.getFullYear()} ` +
+      `${now.getHours().toString().padStart(2, '0')}:` +
+      `${now.getMinutes().toString().padStart(2, '0')}`;
 
-    doc.setFontSize(14);
-    doc.text(this.exportName, 14, 15);
-    doc.setFontSize(9);
-    doc.text(`Exported: ${dateStr}`, 14, 22);
+    const h = this.pdfHeader;
+    let headerHtml = '';
+    if (h?.kompanijaNaziv) {
+      const parts = [h.kompanijaNaziv, h.kompanijaAdresa, h.kompanijaGrad].filter(Boolean);
+      headerHtml += `<div class="hdr-kompanija">${this.escHtml(parts.join(', '))}</div>`;
+    }
+    if (h?.poslovnicaNaziv) {
+      const parts = [h.poslovnicaNaziv, h.poslovnicaAdresa, h.poslovnicaGrad].filter(Boolean);
+      headerHtml += `<div class="hdr-poslovnica">${this.escHtml(parts.join(', '))}</div>`;
+    }
 
-    autoTable(doc, {
-      head: [labels],
-      body: bodyData,
-      startY: 28,
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [63, 81, 181] },
-    });
+    const thead = labels.map(l => `<th>${this.escHtml(l)}</th>`).join('');
+    const tbody = rows.map(row =>
+      `<tr>${row.map(cell => `<td>${this.escHtml(String(cell))}</td>`).join('')}</tr>`
+    ).join('');
 
-    doc.save(`${this.exportName}.pdf`);
+    const html = `<!DOCTYPE html>
+<html lang="bs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${this.escHtml(this.exportName)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11px; padding: 24px; color: #222; }
+    .report-header { margin-bottom: 14px; }
+    .hdr-kompanija { font-size: 15px; font-weight: bold; }
+    .hdr-poslovnica { font-size: 11px; color: #555; margin-top: 3px; }
+    .report-title { font-size: 17px; font-weight: bold; margin-top: 10px; }
+    .report-date { font-size: 10px; color: #888; margin-top: 3px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th { background: #3f51b5; color: #fff; padding: 6px 7px; text-align: left; font-size: 10px; white-space: nowrap; }
+    td { padding: 4px 7px; border-bottom: 1px solid #e0e0e0; font-size: 10px; }
+    tr:nth-child(even) td { background: #f5f5f5; }
+    .print-btn { margin-top: 16px; padding: 7px 20px; background: #3f51b5; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    @media print {
+      .print-btn { display: none; }
+      body { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="report-header">
+    ${headerHtml}
+    <div class="report-title">${this.escHtml(this.exportName)}</div>
+    <div class="report-date">Datum izvoza: ${dateStr}</div>
+  </div>
+  <table>
+    <thead><tr>${thead}</tr></thead>
+    <tbody>${tbody}</tbody>
+  </table>
+  <button class="print-btn" onclick="window.print()">Štampaj / Sačuvaj PDF</button>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  }
+
+  private escHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   // ─── Modal form helpers ───────────────────────────────────────────────────────
@@ -790,12 +876,17 @@ export class CrudTableComponent implements OnChanges {
       case 'email': return 'email';
       case 'date': return 'date';
       case 'time': return 'time';
+      case 'password': return 'password';
       default: return 'text';
     }
   }
 
   isSimpleInput(field: CrudFieldConfig): boolean {
-    return ['text', 'number', 'email', 'date', 'time'].includes(field.type);
+    return ['text', 'number', 'email', 'date', 'time', 'password'].includes(field.type);
+  }
+
+  isFieldDisabled(field: CrudFieldConfig): boolean {
+    return !!field.readOnly || (!!field.readOnlyOnEdit && this.modalMode === 'edit');
   }
 
   // ─── Pagination display helpers ───────────────────────────────────────────────

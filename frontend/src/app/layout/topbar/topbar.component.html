@@ -1,9 +1,15 @@
 <mat-toolbar class="topbar" role="banner">
 
-  <!-- Lijevo: logo + poslovnica -->
+  <!-- Lijevo: logo + naziv kompanije + poslovnica -->
   <div class="topbar-brand">
-    <span class="app-title">Maloprodaja</span>
+    @if (kompanijaLogo()) {
+      <img class="brand-logo" [src]="kompanijaLogo()" alt="Logo" />
+    }
+    @if (kompanijaNaziv()) {
+      <span class="brand-name">{{ kompanijaNaziv() }}</span>
+    }
     @if (poslovnicaNaziv()) {
+      <span class="brand-divider" aria-hidden="true"></span>
       <span class="poslovnica-badge">
         <mat-icon aria-hidden="true">store</mat-icon>
         {{ poslovnicaNaziv() }}

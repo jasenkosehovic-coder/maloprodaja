@@ -34,7 +34,9 @@
       "Bash(netstat -ano)",
       "Bash(cmd /c \"tasklist /FI \\\\\"PID eq 19692\\\\\" /FO LIST 2>&1\")",
       "Bash(npm install:*)",
-      "Bash(find C:UsersJasenkoDocumentsJavaMaloprodaja -name *.json -path */package.json -not -path */node_modules/*)"
+      "Bash(find C:UsersJasenkoDocumentsJavaMaloprodaja -name *.json -path */package.json -not -path */node_modules/*)",
+      "Bash(mvn test-compile:*)",
+      "Bash(mvn clean:*)"
     ]
   }
 }

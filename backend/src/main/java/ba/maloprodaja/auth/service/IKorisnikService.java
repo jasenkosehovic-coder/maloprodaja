@@ -14,6 +14,8 @@ public interface IKorisnikService {
 
     void deactivate(Long id);
 
+    List<String> getAvailableIzbornici();
+
     List<KorisnikDTO.KorisnikIzbornikaDTO> getIzbornici(Long korisnikId);
 
     List<KorisnikDTO.KorisnikIzbornikaDTO> updateIzbornici(Long korisnikId, List<KorisnikDTO.KorisnikIzbornikaDTO> izbornici);

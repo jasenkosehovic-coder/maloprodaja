@@ -351,7 +351,8 @@ Maloprodaja/
 | Uloga | Pristup |
 |---|---|
 | **Administrator** | Sve poslovnice kompanije, svi moduli, izvještaji za cijelu kompaniju |
-| **Korisnik** | Blagajna, ograničeni šifrarnici |
+| **Blagajnik** | Blagajna ili korisnik, ograničeni šifrarnici |
 | **Knjigovodja** | Dokumenti, fakture, izvještaji, šifrarnici |
+| **Menadžer** | izvještaji, šifrarnici |
 
 > Administrator može ručno dodati ili oduzeti pojedinačne izbornike svakom korisniku — sprema se u bazu.

@@ -21,7 +21,7 @@ interface NavItem {
   roles: Uloga[];
 }
 
-const ALL: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER', 'BLAGAJNIK', 'SKLADISTAR'];
+const ALL: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER', 'BLAGAJNIK', 'KNJIGOVODJA'];
 const ADMIN: Uloga[] = ['SUPER_ADMIN', 'ADMIN'];
 const ADMIN_MEN: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER'];
 const ADMIN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'BLAGAJNIK'];
@@ -35,7 +35,7 @@ const SIFARNICI_ITEMS: NavItem[] = [
   { label: 'Proizvođači', route: '/sifarnici/proizvodjaci', roles: ADMIN_MEN },
   { label: 'Dobavljači', route: '/sifarnici/dobavljaci', roles: ADMIN_MEN },
   { label: 'Kupci', route: '/sifarnici/kupci', roles: ALL },
-  { label: 'Korisnici', route: '/sifarnici/korisnici', roles: ADMIN },
+  { label: 'Korisnici', route: '/korisnici', roles: ADMIN },
 ];
 
 const BLAGAJNA_ITEMS: NavItem[] = [
@@ -96,6 +96,8 @@ export class TopbarComponent {
   readonly displayName = this.authService.displayName;
   readonly korisnik = this.authService.korisnik;
   readonly poslovnicaNaziv = computed(() => this.authService.korisnik()?.poslovnicaNaziv ?? '');
+  readonly kompanijaNaziv = computed(() => this.authService.korisnik()?.kompanijaNaziv ?? '');
+  readonly kompanijaLogo = computed(() => this.authService.korisnik()?.kompanijaLogo ?? null);
   readonly showChat = computed(() => this.authService.isLoggedIn());
 
   readonly navGroups = computed(() => {

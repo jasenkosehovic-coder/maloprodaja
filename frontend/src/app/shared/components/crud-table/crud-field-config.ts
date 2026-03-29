@@ -1,4 +1,13 @@
-export type CrudFieldType = 'text' | 'number' | 'email' | 'date' | 'time' | 'boolean' | 'select' | 'multiselect';
+export interface CrudPdfHeader {
+  kompanijaNaziv?: string;
+  kompanijaAdresa?: string;
+  kompanijaGrad?: string;
+  poslovnicaNaziv?: string;
+  poslovnicaAdresa?: string;
+  poslovnicaGrad?: string;
+}
+
+export type CrudFieldType = 'text' | 'number' | 'email' | 'date' | 'time' | 'boolean' | 'select' | 'multiselect' | 'password';
 
 export interface CrudFieldOption {
   label: string;
@@ -31,4 +40,6 @@ export interface CrudFieldConfig {
   maxMessage?: string;
   patternMessage?: string;
   generalErrorMessage?: string;
+  requiredOnAdd?: boolean;
+  readOnlyOnEdit?: boolean;
 }

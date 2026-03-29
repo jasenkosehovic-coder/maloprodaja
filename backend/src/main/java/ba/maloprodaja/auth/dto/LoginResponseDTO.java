@@ -18,6 +18,12 @@ public record LoginResponseDTO(
             KorisnikUloga uloga,
             Long poslovnicaId,
             String poslovnicaNaziv,
+            String poslovnicaAdresa,
+            String poslovnicaGrad,
+            String kompanijaNaziv,
+            String kompanijaAdresa,
+            String kompanijaGrad,
+            String kompanijaLogo,
             boolean aktivan
     ) {}
 }

@@ -5,5 +5,5 @@ public enum KorisnikUloga {
     ADMIN,
     MENADZER,
     BLAGAJNIK,
-    SKLADISTAR
+    KNJIGOVODJA
 }

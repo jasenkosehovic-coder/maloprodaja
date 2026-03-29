@@ -404,7 +404,7 @@
 
                 @if (isSimpleInput(field)) {
                   <mat-form-field appearance="outline" class="crud-form-field">
-                    <mat-label>{{ field.label }}<span *ngIf="field.required" aria-hidden="true"> *</span></mat-label>
+                    <mat-label>{{ field.label }}<span *ngIf="field.required || field.requiredOnAdd" aria-hidden="true"> *</span></mat-label>
                     <input
                       matInput
                       [id]="'field-' + field.key"
@@ -413,11 +413,11 @@
                       [(ngModel)]="editingRow[field.key]"
                       (ngModelChange)="onFieldChange(field)"
                       [required]="!!field.required"
-                      [disabled]="!!field.readOnly"
+                      [disabled]="isFieldDisabled(field)"
                       [placeholder]="field.placeholder ?? ''"
                       [attr.min]="field.min ?? null"
                       [attr.max]="field.max ?? null"
-                      [attr.pattern]="field.pattern ?? null"
+                      [errorStateMatcher]="getErrorMatcher(field.key)"
                       [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null"
                       [attr.aria-invalid]="fieldErrors[field.key] ? 'true' : null" />
                     @if (fieldErrors[field.key]) {
@@ -432,7 +432,7 @@
                       [id]="'field-' + field.key"
                       [name]="field.key"
                       [(ngModel)]="editingRow[field.key]"
-                      [disabled]="!!field.readOnly">
+                      [disabled]="isFieldDisabled(field)">
                       {{ field.label }}
                     </mat-checkbox>
                   </div>
@@ -447,7 +447,8 @@
                       [(ngModel)]="editingRow[field.key]"
                       (ngModelChange)="onFieldChange(field)"
                       [required]="!!field.required"
-                      [disabled]="!!field.readOnly"
+                      [disabled]="isFieldDisabled(field)"
+                      [errorStateMatcher]="getErrorMatcher(field.key)"
                       [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
                       @if (!field.required) {
                         <mat-option [value]="null">-- None --</mat-option>
@@ -472,7 +473,8 @@
                       [(ngModel)]="editingRow[field.key]"
                       (ngModelChange)="onFieldChange(field)"
                       [required]="!!field.required"
-                      [disabled]="!!field.readOnly"
+                      [disabled]="isFieldDisabled(field)"
+                      [errorStateMatcher]="getErrorMatcher(field.key)"
                       [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
                       @for (opt of field.options ?? []; track opt.value) {
                         <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
@@ -496,7 +498,7 @@
           mat-raised-button
           color="primary"
           (click)="onSaveEdit()"
-          [disabled]="saving">
+          [disabled]="saving || !formValid">
           @if (saving) {
             <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
             Saving...

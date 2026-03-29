@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public class KorisnikDTO {
 
     public record KorisnikListItemDTO(
@@ -16,7 +18,8 @@ public class KorisnikDTO {
             String email,
             KorisnikUloga uloga,
             Long poslovnicaId,
-            boolean aktivan
+            boolean aktivan,
+            List<String> izbornici
     ) {}
 
     public record CreateKorisnikDTO(
@@ -35,7 +38,8 @@ public class KorisnikDTO {
             @Email @Size(max = 150) String email,
             KorisnikUloga uloga,
             Long poslovnicaId,
-            Boolean aktivan
+            Boolean aktivan,
+            @Size(min = 6) String password
     ) {}
 
     public record KorisnikIzbornikaDTO(
