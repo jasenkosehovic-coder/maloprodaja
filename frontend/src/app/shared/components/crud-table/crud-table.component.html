@@ -3,10 +3,10 @@
   <!-- Top bar: delete many -->
   @if (selectedCount > 0 && actions.delete) {
     <div class="crud-bulk-bar" role="status" aria-live="polite">
-      <span>{{ selectedCount }} row(s) selected</span>
-      <button mat-raised-button color="warn" (click)="onDeleteManyClick()" aria-label="Delete selected rows">
+      <span>{{ selectedCount }} odabrano</span>
+      <button mat-raised-button color="warn" (click)="onDeleteManyClick()" aria-label="Obriši odabrane">
         <mat-icon>delete</mat-icon>
-        Delete selected
+        Obriši odabrane
       </button>
     </div>
   }
@@ -122,9 +122,9 @@
                       [(ngModel)]="filters[header]"
                       (ngModelChange)="onFilterChange()"
                       [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)">
-                      <mat-option [value]="null">All</mat-option>
-                      <mat-option value="true">Yes</mat-option>
-                      <mat-option value="false">No</mat-option>
+                      <mat-option [value]="null">Svi</mat-option>
+                      <mat-option value="true">Da</mat-option>
+                      <mat-option value="false">Ne</mat-option>
                     </mat-select>
                   </mat-form-field>
                 }
@@ -136,7 +136,7 @@
                       [(ngModel)]="filters[header]"
                       (ngModelChange)="onFilterChange()"
                       [attr.aria-label]="'Filter by ' + (getField(header)?.label ?? header)">
-                      <mat-option [value]="null">All</mat-option>
+                      <mat-option [value]="null">Svi</mat-option>
                       @for (opt of getFieldOptions(header); track opt.value) {
                         <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
                       }
@@ -159,43 +159,24 @@
                   </mat-form-field>
                 }
 
-                <!-- Date filter -->
+                <!-- Date filter (single datepicker, mode gte/lte/eq per field) -->
                 @if (getFieldType(header) === 'date') {
-                  <div class="date-filter-group">
-                    <mat-form-field class="filter-field date-filter-field" appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>From</mat-label>
-                      <input
-                        matInput
-                        [matDatepicker]="pickerFrom"
-                        [value]="getDateFilter(header).from"
-                        (dateChange)="setDateFilterFrom(header, $event.value)"
-                        [attr.aria-label]="'Filter from date for ' + (getField(header)?.label ?? header)" />
-                      <mat-datepicker-toggle matIconSuffix [for]="pickerFrom" aria-label="Open from date picker"></mat-datepicker-toggle>
-                      <mat-datepicker #pickerFrom></mat-datepicker>
-                    </mat-form-field>
-
-                    <mat-form-field class="filter-field date-filter-field" appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>To</mat-label>
-                      <input
-                        matInput
-                        [matDatepicker]="pickerTo"
-                        [value]="getDateFilter(header).to"
-                        (dateChange)="setDateFilterTo(header, $event.value)"
-                        [attr.aria-label]="'Filter to date for ' + (getField(header)?.label ?? header)" />
-                      <mat-datepicker-toggle matIconSuffix [for]="pickerTo" aria-label="Open to date picker"></mat-datepicker-toggle>
-                      <mat-datepicker #pickerTo></mat-datepicker>
-                    </mat-form-field>
-
-                    @if (hasActiveDateFilter(header)) {
-                      <button
-                        mat-icon-button
-                        class="date-clear-btn"
-                        (click)="clearDateFilter(header)"
-                        aria-label="Clear date filter">
+                  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      [matDatepicker]="datePicker"
+                      [(ngModel)]="filters[header]"
+                      (dateChange)="onFilterChange()"
+                      [attr.aria-label]="'Filter ' + (getField(header)?.label ?? header)"
+                      [placeholder]="getField(header)?.label ?? header" />
+                    <mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle>
+                    <mat-datepicker #datePicker></mat-datepicker>
+                    @if (filters[header]) {
+                      <button matSuffix mat-icon-button (click)="filters[header] = null; onFilterChange()" aria-label="Očisti filter">
                         <mat-icon>close</mat-icon>
                       </button>
                     }
-                  </div>
+                  </mat-form-field>
                 }
 
               }
@@ -209,8 +190,8 @@
                 mat-mini-fab
                 color="primary"
                 (click)="onAddClick()"
-                aria-label="Add new row"
-                matTooltip="Add new row">
+                aria-label="Dodaj novi red"
+                matTooltip="Dodaj novi red">
                 <mat-icon>add</mat-icon>
               </button>
             }
@@ -225,7 +206,7 @@
             <td [attr.colspan]="headers.length + 2" class="crud-empty-cell" role="cell">
               <div class="crud-empty-state" role="status">
                 <mat-icon aria-hidden="true">inbox</mat-icon>
-                <span>No data available</span>
+                <span>Nema podataka</span>
               </div>
             </td>
           </tr>
@@ -281,7 +262,7 @@
                   color="primary"
                   (click)="onEditClick(row)"
                   [attr.aria-label]="'Edit row'"
-                  matTooltip="Edit">
+                  matTooltip="Uredi">
                   <mat-icon>edit</mat-icon>
                 </button>
               }
@@ -290,8 +271,8 @@
                   mat-icon-button
                   color="warn"
                   (click)="onDeleteClick(row)"
-                  [attr.aria-label]="'Delete row'"
-                  matTooltip="Delete">
+                  [attr.aria-label]="'Obriši red'"
+                  matTooltip="Obriši">
                   <mat-icon>delete</mat-icon>
                 </button>
               }
@@ -308,7 +289,7 @@
 
     <div class="crud-footer-left">
       <!-- Rows per page -->
-      <label for="pageSizeSelect" class="page-size-label">Rows per page:</label>
+      <label for="pageSizeSelect" class="page-size-label">Redova po stranici:</label>
       <mat-form-field class="page-size-field" appearance="outline" subscriptSizing="dynamic">
         <mat-select
           id="pageSizeSelect"
@@ -450,10 +431,10 @@
                       [disabled]="isFieldDisabled(field)"
                       [errorStateMatcher]="getErrorMatcher(field.key)"
                       [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
-                      @if (!field.required) {
-                        <mat-option [value]="null">-- None --</mat-option>
+                      @if (!field.required && !field.hideEmptyOption) {
+                        <mat-option [value]="null">-- Nije odabrano --</mat-option>
                       }
-                      @for (opt of field.options ?? []; track opt.value) {
+                      @for (opt of getFieldOptionsForMode(field); track opt.value) {
                         <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
                       }
                     </mat-select>
@@ -476,10 +457,33 @@
                       [disabled]="isFieldDisabled(field)"
                       [errorStateMatcher]="getErrorMatcher(field.key)"
                       [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null">
-                      @for (opt of field.options ?? []; track opt.value) {
+                      @for (opt of getFieldOptionsForMode(field); track opt.value) {
                         <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
                       }
                     </mat-select>
+                    @if (fieldErrors[field.key]) {
+                      <mat-error [id]="'err-' + field.key" role="alert">{{ fieldErrors[field.key] }}</mat-error>
+                    }
+                  </mat-form-field>
+                }
+
+                @if (field.type === 'date') {
+                  <mat-form-field appearance="outline" class="crud-form-field">
+                    <mat-label>{{ field.label }}<span *ngIf="field.required || field.requiredOnAdd" aria-hidden="true"> *</span></mat-label>
+                    <input
+                      matInput
+                      [id]="'field-' + field.key"
+                      [name]="field.key"
+                      [matDatepicker]="fieldDatepicker"
+                      [(ngModel)]="editingRow[field.key]"
+                      (ngModelChange)="onFieldChange(field)"
+                      [required]="!!field.required"
+                      [disabled]="isFieldDisabled(field)"
+                      [errorStateMatcher]="getErrorMatcher(field.key)"
+                      [attr.aria-describedby]="fieldErrors[field.key] ? 'err-' + field.key : null"
+                      [attr.aria-invalid]="fieldErrors[field.key] ? 'true' : null" />
+                    <mat-datepicker-toggle matIconSuffix [for]="fieldDatepicker"></mat-datepicker-toggle>
+                    <mat-datepicker #fieldDatepicker></mat-datepicker>
                     @if (fieldErrors[field.key]) {
                       <mat-error [id]="'err-' + field.key" role="alert">{{ fieldErrors[field.key] }}</mat-error>
                     }
@@ -493,7 +497,7 @@
       </div>
 
       <div class="crud-modal-footer">
-        <button mat-button (click)="closeModal()">Cancel</button>
+        <button mat-button (click)="closeModal()">Odustani</button>
         <button
           mat-raised-button
           color="primary"
@@ -501,9 +505,9 @@
           [disabled]="saving || !formValid">
           @if (saving) {
             <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
-            Saving...
+            Čuvanje...
           } @else {
-            Save
+            Sačuvaj
           }
         </button>
       </div>
@@ -518,7 +522,7 @@
       <div class="crud-modal-header">
         <h2 class="crud-modal-title" id="delete-dialog-title">
           <mat-icon class="delete-icon" aria-hidden="true">warning</mat-icon>
-          Confirm Delete
+          Potvrda brisanja
         </h2>
         <button mat-icon-button (click)="closeDeleteModal()" aria-label="Close dialog">
           <mat-icon>close</mat-icon>
@@ -528,16 +532,16 @@
       <div class="crud-modal-body">
         <p id="delete-dialog-desc">
           @if (deleteManyMode) {
-            Are you sure you want to delete {{ selectedCount }} selected row(s)? This action cannot be undone.
+            Da li ste sigurni da želite obrisati {{ selectedCount }} odabranih stavki?
           } @else {
-            Are you sure you want to delete this item? This action cannot be undone.
+            Da li ste sigurni da želite obrisati ovu stavku?
           }
         </p>
       </div>
 
       <div class="crud-modal-footer">
-        <button mat-button (click)="closeDeleteModal()">Cancel</button>
-        <button mat-raised-button color="warn" (click)="confirmDelete()">Delete</button>
+        <button mat-button (click)="closeDeleteModal()">Odustani</button>
+        <button mat-raised-button color="warn" (click)="confirmDelete()">Obriši</button>
       </div>
     </div>
   </div>

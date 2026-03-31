@@ -31,6 +31,8 @@ export interface CrudFieldConfig {
   defaultValue?: any;
   placeholder?: string;
   options?: CrudFieldOption[];
+  addOptions?: CrudFieldOption[]; // used instead of options when modalMode === 'add'
+  hideEmptyOption?: boolean; // suppress the automatic "-- Nije odabrano --" null option
   validationMessage?: string;
   min?: number | string;
   max?: number | string;
@@ -42,4 +44,5 @@ export interface CrudFieldConfig {
   generalErrorMessage?: string;
   requiredOnAdd?: boolean;
   readOnlyOnEdit?: boolean;
+  dateFilterMode?: 'eq' | 'gte' | 'lte';
 }

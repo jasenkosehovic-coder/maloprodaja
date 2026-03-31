@@ -5,5 +5,8 @@ public record PoslovnicaDTO(
         String naziv,
         String adresa,
         String grad,
+        String telefon,
+        String email,
+        String pib,
         Long idKompanije
 ) {}

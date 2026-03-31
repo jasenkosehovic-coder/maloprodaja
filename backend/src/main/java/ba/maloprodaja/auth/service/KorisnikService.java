@@ -120,7 +120,6 @@ public class KorisnikService implements IKorisnikService {
             e.setIzbornikKljuc(dto.izbornikKljuc());
             e.setAktivan(dto.aktivan());
             e.setIdKompanije(k.getIdKompanije());
-            e.setIdPoslovnice(k.getIdPoslovnice());
             return e;
         }).toList();
 

@@ -18,6 +18,7 @@ import { CrudActionsConfig, CrudFieldConfig, CrudPdfHeader } from '../../shared/
 import { AuthService } from '../../core/auth/services/auth.service';
 import { KorisniciService } from './korisnici.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { OptionsService, AppOptions } from '../../core/services/options.service';
 import { KorisnikListItem, CreateKorisnik, UpdateKorisnik } from './korisnici.models';
 import { PoslovnicaService, PoslovnicaOption } from './poslovnica.service';
 
@@ -32,6 +33,7 @@ import { PoslovnicaService, PoslovnicaOption } from './poslovnica.service';
 export class KorisniciComponent implements OnInit {
   private readonly korisniciService = inject(KorisniciService);
   private readonly poslovnicaService = inject(PoslovnicaService);
+  private readonly optionsService = inject(OptionsService);
   private readonly notification = inject(NotificationService);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -67,7 +69,7 @@ export class KorisniciComponent implements OnInit {
 
   fields: CrudFieldConfig[] = [];
 
-  private buildFields(poslovnice: PoslovnicaOption[], availableIzbornici: string[]): CrudFieldConfig[] {
+  private buildFields(poslovnice: PoslovnicaOption[], availableIzbornici: string[], options: AppOptions): CrudFieldConfig[] {
     return [
       {
         key: 'id',
@@ -121,13 +123,7 @@ export class KorisniciComponent implements OnInit {
         type: 'select',
         required: true,
         requiredMessage: 'Uloga je obavezna.',
-        options: [
-          { label: 'Super Admin', value: 'SUPER_ADMIN' },
-          { label: 'Admin poslovnice', value: 'ADMIN' },
-          { label: 'Menadžer', value: 'MENADZER' },
-          { label: 'Blagajnik', value: 'BLAGAJNIK' },
-          { label: 'Knjigovođa', value: 'KNJIGOVODJA' },
-        ],
+        options: options.uloge,
       },
       {
         key: 'poslovnicaId',
@@ -158,10 +154,11 @@ export class KorisniciComponent implements OnInit {
     forkJoin([
       this.poslovnicaService.getAll().pipe(catchError(() => of([] as PoslovnicaOption[]))),
       this.korisniciService.getAvailableIzbornici().pipe(catchError(() => of([] as string[]))),
+      this.optionsService.getOptions(),
     ]).pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(([poslovnice, izbornici]) => {
+      .subscribe(([poslovnice, izbornici, options]) => {
         this.poslovnice = poslovnice;
-        this.fields = this.buildFields(poslovnice, izbornici);
+        this.fields = this.buildFields(poslovnice, izbornici, options);
         this.loadKorisnici();
       });
   }

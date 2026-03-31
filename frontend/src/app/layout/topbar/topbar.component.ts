@@ -28,14 +28,11 @@ const ADMIN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'BLAGAJNIK'];
 const ADMIN_MEN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER', 'BLAGAJNIK'];
 
 const SIFARNICI_ITEMS: NavItem[] = [
-  { label: 'Artikli', route: '/sifarnici/artikli', roles: ADMIN_MEN },
-  { label: 'Grupe artikala', route: '/sifarnici/grupe-artikala', roles: ADMIN_MEN },
-  { label: 'Artikli u poslovnici', route: '/sifarnici/artikli-poslovnica', roles: ALL },
-  { label: 'Barkodovi', route: '/sifarnici/barkodovi', roles: ALL },
-  { label: 'Proizvođači', route: '/sifarnici/proizvodjaci', roles: ADMIN_MEN },
-  { label: 'Dobavljači', route: '/sifarnici/dobavljaci', roles: ADMIN_MEN },
-  { label: 'Kupci', route: '/sifarnici/kupci', roles: ALL },
-  { label: 'Korisnici', route: '/korisnici', roles: ADMIN },
+  { label: 'Artikli',      route: '/sifarnici/artikli',       roles: ADMIN_MEN },
+  { label: 'Kupci',        route: '/sifarnici/kupci',         roles: ALL },
+  { label: 'Dobavljači',   route: '/sifarnici/dobavljaci',    roles: ADMIN_MEN },
+  { label: 'Proizvođači',  route: '/sifarnici/proizvodjaci',  roles: ADMIN_MEN },
+  { label: 'Korisnici',    route: '/korisnici',               roles: ADMIN },
 ];
 
 const BLAGAJNA_ITEMS: NavItem[] = [

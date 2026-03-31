@@ -1,6 +1,6 @@
 package ba.maloprodaja.auth.entity;
 
-import ba.maloprodaja.common.entity.BaseEntity;
+import ba.maloprodaja.common.entity.KompanijaBaseEntity;
 import ba.maloprodaja.kompanija.entity.Kompanija;
 import ba.maloprodaja.poslovnica.entity.Poslovnica;
 import jakarta.persistence.*;
@@ -18,7 +18,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "korisnici")
-public class Korisnik extends BaseEntity implements UserDetails {
+public class Korisnik extends KompanijaBaseEntity implements UserDetails {
 
     @Column(name = "username", unique = true, nullable = false, length = 50)
     private String username;
@@ -45,7 +45,10 @@ public class Korisnik extends BaseEntity implements UserDetails {
     @Column(name = "uloga", nullable = false, columnDefinition = "varchar(20)")
     private KorisnikUloga uloga;
 
-    // ---- Read-only navigation (writes go through idKompanije / idPoslovnice in BaseEntity) ----
+    @Column(name = "id_poslovnice")
+    private Long idPoslovnice;
+
+    // ---- Read-only navigation (writes go through idKompanije / idPoslovnice) ----
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_kompanije", insertable = false, updatable = false)

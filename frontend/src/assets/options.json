@@ -1,0 +1,24 @@
+{
+  "uloge": [
+    { "label": "Super Admin",       "value": "SUPER_ADMIN"  },
+    { "label": "Admin poslovnice",  "value": "ADMIN"        },
+    { "label": "Menadžer",          "value": "MENADZER"     },
+    { "label": "Blagajnik",         "value": "BLAGAJNIK"    },
+    { "label": "Knjigovođa",        "value": "KNJIGOVODJA"  }
+  ],
+  "jediniceMjere": [
+    { "label": "KOM",  "value": "KOM"  },
+    { "label": "KG",   "value": "KG"   },
+    { "label": "L",    "value": "L"    },
+    { "label": "M",    "value": "M"    },
+    { "label": "M2",   "value": "M2"   },
+    { "label": "PAK",  "value": "PAK"  },
+    { "label": "SET",  "value": "SET"  }
+  ],
+  "tipoviMarze": [
+    { "label": "Slobodna",       "value": "SLOBODNA"       },
+    { "label": "Fiksna marža",   "value": "FIKSNA_MARZA"   },
+    { "label": "Fiksna cijena",  "value": "FIKSNA_CIJENA"  },
+    { "label": "Diferencirana",  "value": "DIFERENCIRANA"  }
+  ]
+}

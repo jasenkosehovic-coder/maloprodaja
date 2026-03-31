@@ -22,7 +22,7 @@ public class PoslovnicaService implements IPoslovnicaService {
         log.debug("Fetching active poslovnice for idKompanije={}", idKompanije);
         return poslovnicaRepository.findByIdKompanije(idKompanije).stream()
                 .filter(p -> p.isAktivan())
-                .map(p -> new PoslovnicaDTO(p.getId(), p.getNaziv(), p.getAdresa(), p.getGrad(), p.getIdKompanije()))
+                .map(p -> new PoslovnicaDTO(p.getId(), p.getNaziv(), p.getAdresa(), p.getGrad(), p.getTelefon(), p.getEmail(), p.getPib(), p.getIdKompanije()))
                 .toList();
     }
 }

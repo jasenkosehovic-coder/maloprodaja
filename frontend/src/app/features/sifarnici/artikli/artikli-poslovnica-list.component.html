@@ -1,0 +1,25 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Artikli u poslovnici</h2>
+    <p class="subtitle">Cijene, marže i stanje zaliha artikala u poslovnici</p>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje artikala u poslovnici"></mat-progress-bar>
+
+  <app-crud-table
+    [headers]="tableHeaders"
+    [data]="items"
+    [fields]="fields"
+    [actions]="tableActions"
+    [externalSave]="true"
+    [externalDelete]="true"
+    [idField]="'id'"
+    [saving]="isSaving"
+    [pdfHeader]="pdfHeader()"
+    exportName="ArtikliPoslovnica"
+    (add)="onCreate($event)"
+    (edit)="onUpdate($event)"
+    (delete)="onDeactivate($event)"
+    (deleteMany)="onDeactivateMany($event)">
+  </app-crud-table>
+</div>

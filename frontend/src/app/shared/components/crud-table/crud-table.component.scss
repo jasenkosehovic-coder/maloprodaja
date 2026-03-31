@@ -135,7 +135,44 @@
   }
 }
 
-// Date filter
+// Date range filter
+.date-range-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.filter-field-half {
+  min-width: 100px;
+  flex: 1;
+
+  ::ng-deep {
+    .mat-mdc-form-field-infix {
+      padding-top: 6px !important;
+      padding-bottom: 6px !important;
+      min-height: unset !important;
+    }
+
+    .mat-mdc-text-field-wrapper {
+      padding: 0 8px;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
+
+    .mdc-notched-outline__notch {
+      border-right: none;
+    }
+
+    input.mat-mdc-input-element {
+      font-size: 13px;
+    }
+  }
+}
+
+// Legacy date filter helpers (kept for compatibility)
 .date-filter-group {
   display: flex;
   align-items: center;

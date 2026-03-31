@@ -1,6 +1,6 @@
 package ba.maloprodaja.auth.entity;
 
-import ba.maloprodaja.common.entity.BaseEntity;
+import ba.maloprodaja.common.entity.KompanijaBaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "korisnik_izbornici",
         uniqueConstraints = @UniqueConstraint(columnNames = {"korisnik_id", "izbornik_kljuc"}))
-public class KorisnikIzbornik extends BaseEntity {
+public class KorisnikIzbornik extends KompanijaBaseEntity {
 
     @Column(name = "korisnik_id", nullable = false)
     private Long korisnikId;

@@ -5,6 +5,7 @@ import {
   ElementRef,
   EventEmitter,
   inject,
+  Injectable,
   Input,
   OnChanges,
   Output,
@@ -20,11 +21,42 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { ErrorStateMatcher, MatNativeDateModule } from '@angular/material/core';
+import { DateAdapter, ErrorStateMatcher, MAT_DATE_FORMATS, MatDateFormats, MatNativeDateModule, NativeDateAdapter } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } from './crud-field-config';
+
+@Injectable()
+class DdMmYyyyDateAdapter extends NativeDateAdapter {
+  override format(date: Date, _displayFormat: string): string {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+  }
+
+  override parse(value: any): Date | null {
+    if (typeof value === 'string') {
+      const parts = value.split('-');
+      if (parts.length === 3 && parts[2].length === 4) {
+        const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        return isNaN(d.getTime()) ? null : d;
+      }
+    }
+    return super.parse(value);
+  }
+}
+
+const DD_MM_YYYY_FORMAT: MatDateFormats = {
+  parse: { dateInput: 'dd-MM-yyyy' },
+  display: {
+    dateInput: 'dd-MM-yyyy',
+    monthYearLabel: 'MMM yyyy',
+    dateA11yLabel: 'dd-MM-yyyy',
+    monthYearA11yLabel: 'MMMM yyyy',
+  },
+};
 
 @Component({
   selector: 'app-crud-table',
@@ -47,6 +79,10 @@ import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } fr
   templateUrl: './crud-table.component.html',
   styleUrl: './crud-table.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
+  providers: [
+    { provide: DateAdapter, useClass: DdMmYyyyDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMAT },
+  ],
 })
 export class CrudTableComponent implements OnChanges {
   @Input() headers: string[] = [];
@@ -124,6 +160,16 @@ export class CrudTableComponent implements OnChanges {
       this.internalData = [...(this.data || [])];
       this.currentPage = 1;
     }
+    if (changes['fields']) {
+      this.applyDefaultFilters();
+    }
+  }
+
+  private applyDefaultFilters(): void {
+    const aktivanField = this.fields.find(f => f.key === 'aktivan' && f.type === 'boolean');
+    if (aktivanField && this.filters['aktivan'] === undefined) {
+      this.filters['aktivan'] = 'true';
+    }
   }
 
   // ─── Computed Data ───────────────────────────────────────────────────────────
@@ -138,20 +184,17 @@ export class CrudTableComponent implements OnChanges {
         const dateFilter = this.dateFilters[key];
 
         if (field.type === 'date') {
-          const rawVal = row[key];
-          if (!rawVal) continue;
-          const cellDate = this.parseCellDate(rawVal);
-          if (!cellDate) continue;
-          if (dateFilter?.from) {
-            const from = new Date(dateFilter.from);
-            from.setHours(0, 0, 0, 0);
-            if (cellDate < from) return false;
-          }
-          if (dateFilter?.to) {
-            const to = new Date(dateFilter.to);
-            to.setHours(23, 59, 59, 999);
-            if (cellDate > to) return false;
-          }
+          if (!filterVal) continue;
+          const cellDate = this.parseCellDate(row[key]);
+          if (!cellDate) return false;
+          const filterDate = filterVal instanceof Date ? new Date(filterVal) : this.parseCellDate(filterVal);
+          if (!filterDate) continue;
+          cellDate.setHours(0, 0, 0, 0);
+          filterDate.setHours(0, 0, 0, 0);
+          const mode = field.dateFilterMode ?? 'eq';
+          if (mode === 'gte' && cellDate < filterDate) return false;
+          else if (mode === 'lte' && cellDate > filterDate) return false;
+          else if (mode === 'eq' && cellDate.getTime() !== filterDate.getTime()) return false;
           continue;
         }
 
@@ -357,7 +400,7 @@ export class CrudTableComponent implements OnChanges {
   private normalizeRowForForm(row: any): any {
     for (const field of this.fields) {
       if (field.type === 'date' && row[field.key]) {
-        row[field.key] = this.toInputDate(row[field.key]);
+        row[field.key] = this.parseCellDate(row[field.key]);
       } else if (field.type === 'time' && row[field.key]) {
         row[field.key] = this.toInputTime(row[field.key]);
       } else if (field.type === 'multiselect' && !Array.isArray(row[field.key])) {
@@ -398,7 +441,13 @@ export class CrudTableComponent implements OnChanges {
   private prepareRowForSave(row: any): any {
     for (const field of this.fields) {
       if (field.type === 'date' && row[field.key]) {
-        row[field.key] = this.fromInputDate(row[field.key]);
+        const d = row[field.key] instanceof Date ? row[field.key] : this.parseCellDate(row[field.key]);
+        if (d) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          row[field.key] = `${yyyy}-${mm}-${dd}`;
+        }
       } else if (field.type === 'time' && row[field.key]) {
         row[field.key] = this.fromInputTime(row[field.key]);
       }
@@ -645,6 +694,13 @@ export class CrudTableComponent implements OnChanges {
     return this.getField(key)?.options ?? [];
   }
 
+  getFieldOptionsForMode(field: CrudFieldConfig): CrudFieldOption[] {
+    if (this.modalMode === 'add' && field.addOptions) {
+      return field.addOptions;
+    }
+    return field.options ?? [];
+  }
+
   getColClass(key: string): string {
     const type = this.getFieldType(key);
     switch (type) {
@@ -665,7 +721,7 @@ export class CrudTableComponent implements OnChanges {
     const field = this.getField(key);
     if (val === null || val === undefined) return '';
 
-    if (field?.type === 'boolean') return val ? 'Yes' : 'No';
+    if (field?.type === 'boolean') return val ? 'Da' : 'Ne';
 
     if (field?.type === 'date') {
       const d = this.parseCellDate(val);
@@ -673,7 +729,7 @@ export class CrudTableComponent implements OnChanges {
       const dd = String(d.getDate()).padStart(2, '0');
       const mm = String(d.getMonth() + 1).padStart(2, '0');
       const yyyy = d.getFullYear();
-      return `${dd}-${mm}-${yyyy}`;
+      return `${dd}.${mm}.${yyyy}`;
     }
 
     if (field?.type === 'time') {
@@ -867,7 +923,7 @@ export class CrudTableComponent implements OnChanges {
   // ─── Modal form helpers ───────────────────────────────────────────────────────
 
   getModalTitle(): string {
-    return this.modalMode === 'add' ? 'Add item' : 'Edit item';
+    return this.modalMode === 'add' ? 'Dodaj stavku' : 'Uredi stavku';
   }
 
   getInputType(field: CrudFieldConfig): string {
@@ -882,7 +938,7 @@ export class CrudTableComponent implements OnChanges {
   }
 
   isSimpleInput(field: CrudFieldConfig): boolean {
-    return ['text', 'number', 'email', 'date', 'time', 'password'].includes(field.type);
+    return ['text', 'number', 'email', 'time', 'password'].includes(field.type);
   }
 
   isFieldDisabled(field: CrudFieldConfig): boolean {

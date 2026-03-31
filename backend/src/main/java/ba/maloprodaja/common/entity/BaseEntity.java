@@ -36,10 +36,4 @@ public abstract class BaseEntity {
     @LastModifiedBy
     @Column(name = "sys_modified_by")
     private Long sysModifiedBy;
-
-    @Column(name = "id_kompanije", nullable = false)
-    private Long idKompanije;
-
-    @Column(name = "id_poslovnice")
-    private Long idPoslovnice;
 }

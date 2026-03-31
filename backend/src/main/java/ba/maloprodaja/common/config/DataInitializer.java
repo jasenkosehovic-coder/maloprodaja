@@ -187,7 +187,6 @@ public class DataInitializer implements ApplicationRunner {
             i.setIzbornikKljuc(kljuc);
             i.setAktivan(true);
             i.setIdKompanije(korisnik.getIdKompanije());
-            i.setIdPoslovnice(korisnik.getIdPoslovnice());
             return i;
         }).toList();
 

@@ -42,6 +42,9 @@ public class Poslovnica {
     @Column(name = "email", length = 150)
     private String email;
 
+    @Column(name = "pib", length = 50)
+    private String pib;
+
     @Column(name = "aktivan", nullable = false)
     private boolean aktivan = true;
 
