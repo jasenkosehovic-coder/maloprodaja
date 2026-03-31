@@ -1,0 +1,141 @@
+<div class="page-container">
+
+  <app-page-header
+    [title]="'Otpremnica br. ' + (otpremnica()?.broj ?? '')"
+    subtitle="Detalji otpremnice"
+    icon="local_shipping"
+  >
+    <button mat-stroked-button (click)="nazad()" aria-label="Nazad na listu otpremnica">
+      <mat-icon>arrow_back</mat-icon>
+      Nazad
+    </button>
+  </app-page-header>
+
+  @if (isLoading()) {
+    <app-loading-spinner message="Učitavanje otpremnice..." />
+  } @else if (otpremnica() !== null) {
+
+    <div class="info-grid">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Broj</span>
+            <span class="info-value">{{ otpremnica()!.broj }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Datum</span>
+            <span class="info-value">{{ formatDatum(otpremnica()!.datum) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value">
+              <mat-chip-set aria-label="Status otpremnice">
+                <mat-chip [class]="getStatusClass(otpremnica()!.status)" disableRipple>
+                  {{ getStatusLabel(otpremnica()!.status) }}
+                </mat-chip>
+              </mat-chip-set>
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Pošiljalac</span>
+            <span class="info-value">{{ otpremnica()!.nazivPoslovnicePosiljaoca }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Primalac</span>
+            <span class="info-value">{{ otpremnica()!.nazivPoslovnicePrimaoca }}</span>
+          </div>
+          @if (otpremnica()!.napomena) {
+            <div class="info-row">
+              <span class="info-label">Napomena</span>
+              <span class="info-value">{{ otpremnica()!.napomena }}</span>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <mat-card appearance="outlined" class="stavke-card">
+      <mat-card-header>
+        <mat-card-title>Stavke otpremnice</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="otpremnica()!.stavke" aria-label="Stavke otpremnice">
+
+            <ng-container matColumnDef="sifra">
+              <th mat-header-cell *matHeaderCellDef>Šifra</th>
+              <td mat-cell *matCellDef="let row">{{ row.sifraArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="naziv">
+              <th mat-header-cell *matHeaderCellDef>Naziv</th>
+              <td mat-cell *matCellDef="let row">{{ row.nazivArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="kolicina">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.kolicina }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="vpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">VPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpcPosiljalac | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="mpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">MPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.mpcPosiljalac | currencyBam }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="stavkeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: stavkeColumns;"></tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="akcije-bar">
+      @if (otpremnica()!.status === 'KREIRANA') {
+        <button mat-raised-button color="primary" (click)="posalji()" aria-label="Pošalji otpremnicu">
+          <mat-icon>send</mat-icon>
+          Pošalji
+        </button>
+        <button mat-stroked-button color="warn" (click)="storno()" aria-label="Storniraj otpremnicu">
+          <mat-icon>cancel</mat-icon>
+          Storniraj
+        </button>
+      } @else if (otpremnica()!.status === 'POSLANA') {
+        <button mat-raised-button color="primary" (click)="potvrdiPrijem()" aria-label="Potvrdi prijem otpremnice">
+          <mat-icon>check_circle</mat-icon>
+          Potvrdi prijem
+        </button>
+        <button mat-stroked-button color="warn" (click)="storno()" aria-label="Storniraj otpremnicu">
+          <mat-icon>cancel</mat-icon>
+          Storniraj
+        </button>
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF otpremnice">
+          <mat-icon>picture_as_pdf</mat-icon>
+          Preuzmi PDF
+        </button>
+      } @else if (otpremnica()!.status === 'PRIMLJENA') {
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF otpremnice">
+          <mat-icon>picture_as_pdf</mat-icon>
+          Preuzmi PDF
+        </button>
+      }
+    </div>
+
+  } @else {
+    <div class="empty-state" role="status">
+      <mat-icon class="empty-icon">local_shipping</mat-icon>
+      <h3>Otpremnica nije pronađena</h3>
+      <button mat-raised-button color="primary" (click)="nazad()">Nazad na listu</button>
+    </div>
+  }
+
+</div>

@@ -35,19 +35,19 @@
 
 ## FAZA 3 — Šifrarnici 🔲 TODO
 
-- [ ] Implementiraj šifarnike — backend
-  - Entiteti: GrupaArtikala, ArtikalKompanija, ArtikalPoslovnica, Barkod, Proizvodjac, Dobavljac, Kupac, Popust
-  - Kalkulacija MPC: VPC + marža + PDV - popust
-  - Tipovi marže: FIKSNA_MARZA, FIKSNA_CIJENA, SLOBODNA, DIFERENCIRANA (po kupcu)
+- [x] Implementiraj šifarnike — backend
+  [x]  Entiteti: GrupaArtikala, ArtikalKompanija, ArtikalPoslovnica, Barkod, Proizvodjac, Dobavljac, Kupac, Popust
+  [x]  Kalkulacija MPC: VPC + marža + PDV - popust
+  [x]  Tipovi marže: FIKSNA_MARZA, FIKSNA_CIJENA, SLOBODNA, DIFERENCIRANA (po kupcu)
   - Popusti: po grupi, proizvođaču, dobavljaču, periodu, kupcu
-  - CRUD + filter + paginacija + deaktivacija za sve entitete
+  [x]  CRUD + filter + paginacija + deaktivacija za sve entitete
   - Historija kupovine za kupca
 - [ ] Implementiraj Export/Import (Excel, CSV, PDF) i naljepnice
-  - ExcelExportService, CsvExportService, PdfExportService (JasperReports)
-  - ExcelImportService sa definisanim templateima
-  - PDF naljepnice za artikle (barkod + cijena + popust)
-- [ ] Implementiraj šifarnike — Angular frontend
-  - Feature komponente za sve šifarnike (list + form)
+  [x] ExcelExportService, CsvExportService, PdfExportService (JasperReports)
+  [x] ExcelImportService sa definisanim templateima
+  - PDF naljepnice za artikle (barkod + cijena + popust + kalkulacija)
+- [x]  Implementiraj šifarnike — Angular frontend
+  [x]  Feature komponente za sve šifarnike (list + form)
   - Kalkulacija cijene komponenta
   - Ispis naljepnica komponenta
   - Historija kupovine za kupca
@@ -91,19 +91,91 @@
 
 ---
 
-## FAZA 6 — Dokumenti 🔲 TODO
+## FAZA 6 — Dokumenti ✅ ZAVRŠENA
 
-- [ ] Implementiraj dokumente — backend
-  - Entiteti: UlaznaFaktura, UlaznaFakturaStavka, Nivelacija, NivelacijaStavka, Otpremnica, OtpremnicaStavka
-  - Automatska nivelacija pri unosu fakture (mijenja MPC za SVU zalihu)
-  - Nivelacija čuva: količinu, mpcStaru, mpcNovu, vpc, iznosNivelacije
-  - Otpremnica: potvrda prijema od primajuće poslovnice → promjena zalihe + nivelacija ako je cijena različita
-  - Import početnog stanja artikala iz Excela
-  - Storno fakture i otpremnice
-- [ ] Implementiraj dokumente — Angular frontend
-  - UlaznaFaktura (list, forma s kalkulacijom, storno, ispis, naljepnice)
-  - Nivelacija (list, pregled, ispis)
-  - Otpremnica (list, forma, potvrda prijema, storno, ispis)
+### 6.1 — Data Layer (Backend)
+- [x] **V15 Flyway migracija** — tabele za sve dokumente:
+  - `ulazne_fakture` (id, id_kompanije, id_poslovnice, id_dobavljaca, broj, datum, datum_valute, status, ukupno_bez_pdv, ukupno_pdv, ukupno, napomena + audit)
+  - `ulazne_fakture_stavke` (id, id_fakture, id_artikla, kolicina, vpc, pdv_stopa, iznos_pdv, ukupno + audit)
+  - `nivelacije` (id, id_kompanije, id_poslovnice, id_fakture nullable, broj, datum, vrsta, napomena + audit)
+  - `nivelacije_stavke` (id, id_nivelacije, id_artikla, kolicina, vpc, mpc_stara, mpc_nova, iznos_nivelacije + audit)
+  - `otpremnice` (id, id_kompanije, id_poslovnice_posiljaoca, id_poslovnice_primaoca, broj, datum, status, napomena + audit)
+  - `otpremnice_stavke` (id, id_otpremnice, id_artikla, kolicina, vpc_posiljaoac, mpc_posiljalac + audit)
+- [x] **Enum-i**: `StatusFakture` (NACRT, POTVRDJENO, STORNIRANO), `StatusOtpremnice` (KREIRANA, POSLANA, PRIMLJENA, STORNIRANA), `VrstaNivelacije` (AUTOMATSKA_FAKTURA, AUTOMATSKA_OTPREMNICA, RUCNA)
+
+### 6.2 — Entiteti & Repozitoriji (Backend)
+- [x] `UlaznaFaktura` entity (extends PoslovnicaBaseEntity) + `UlaznaFakturaRepository`
+- [x] `UlaznaFakturaStavka` entity (extends BaseEntity, ManyToOne → UlaznaFaktura) + repozitorij
+- [x] `Nivelacija` entity (extends PoslovnicaBaseEntity) + `NivelacijaRepository`
+- [x] `NivelacijaStavka` entity (extends BaseEntity, ManyToOne → Nivelacija) + repozitorij
+- [x] `Otpremnica` entity (extends KompanijaBaseEntity, ima i id_poslovnice_posiljaoca i id_poslovnice_primaoca) + `OtpremnicaRepository`
+- [x] `OtpremnicaStavka` entity (extends BaseEntity, ManyToOne → Otpremnica) + repozitorij
+
+### 6.3 — Ulazna Faktura (Backend)
+- [x] **DTOs**: `UlaznaFakturaDTO` — `ListItemDTO`, `DetailDTO`, `CreateDTO`, `UpdateDTO`, `StavkaDTO`
+- [x] **`IUlaznaFakturaService`** + **`UlaznaFakturaService`**:
+  - `listAll(idKompanije, idPoslovnice)` → lista zaglavlja
+  - `findById(id)` → detalj sa stavkama
+  - `create(dto, idKompanije, idPoslovnice)` → kreira fakturu u statusu NACRT
+  - `update(id, dto)` → izmjena dok je NACRT
+  - `potvrdi(id)` → status POTVRDJENO + ažurira zalihu (`kolicina +=`) + okida automatsku nivelaciju ako se VPC promijenio
+  - `storno(id)` → status STORNIRANO + vraća zalihu (`kolicina -=`) + kreira storno nivelaciju
+- [x] **`UlaznaFakturaController`** (`/api/dokumenti/fakture`): GET list, GET /:id, POST, PUT /:id, POST /:id/potvrdi, POST /:id/storno
+
+### 6.4 — Nivelacija (Backend)
+- [x] **DTOs**: `NivelacijaDTO` — `ListItemDTO`, `DetailDTO`, `CreateRucnaDTO`, `StavkaDTO`
+- [x] **`INivelacijaService`** + **`NivelacijaService`**:
+  - `listAll(idKompanije, idPoslovnice)` → lista nivelacija
+  - `findById(id)` → detalj sa stavkama
+  - `kreirajAutomatsku(idFakture/idOtpremnice, stavke)` → interno, poziva UlaznaFakturaService / OtpremnicaService
+  - `kreirajRucnu(dto, idKompanije, idPoslovnice)` → ručna nivelacija za korekciju cijena
+- [x] **`NivelacijaController`** (`/api/dokumenti/nivelacije`): GET list, GET /:id, POST (ručna)
+
+### 6.5 — Otpremnica (Backend)
+- [x] **DTOs**: `OtpremnicaDTO` — `ListItemDTO`, `DetailDTO`, `CreateDTO`, `PotvrdiPrijemDTO`, `StavkaDTO`
+- [x] **`IOtpremnicaService`** + **`OtpremnicaService`**:
+  - `listAll(idKompanije, idPoslovnice)` → lista (i poslane i primljene)
+  - `findById(id)` → detalj sa stavkama
+  - `create(dto, idKompanije, idPoslovnicePosaljioca)` → status KREIRANA, smanjuje zalihu pošiljaoca (`kolicina -=`)
+  - `posalji(id)` → status POSLANA
+  - `potvrdiPrijem(id, dto)` → status PRIMLJENA + povećava zalihu primaoca (`kolicina +=`) + nivelacija ako je MPC različit
+  - `storno(id)` → status STORNIRANA + vraća zalihu pošiljaoca (ako nije primljena) ili oduzima od primaoca (ako je primljena)
+- [x] **`OtpremnicaController`** (`/api/dokumenti/otpremnice`): GET list, GET /:id, POST, POST /:id/posalji, POST /:id/potvrdi-prijem, POST /:id/storno
+
+### 6.6 — Import početnog stanja & PDF (Backend)
+- [x] **ExcelImportService** — `importPocetnoStanje(file, idKompanije, idPoslovnice)`:
+  - Template: sifra, naziv, kolicina, vpc, mpc
+  - Za svaki red: pronađi/kreiraj ArtikalKompanija → kreiraj/ažuriraj ArtikalPoslovnica (kolicina, vpc, mpc)
+  - Endpoint: POST `/api/dokumenti/import/pocetno-stanje`
+- [x] **PDF izvještaji** (JasperReports):
+  - Faktura PDF (zaglavlje + tabela stavki + zbrojevi) → GET `/api/dokumenti/fakture/:id/pdf`
+  - Otpremnica PDF → GET `/api/dokumenti/otpremnice/:id/pdf`
+  - Nivelacija PDF → GET `/api/dokumenti/nivelacije/:id/pdf`
+
+### 6.7 — Frontend: Modeli & Servisi
+- [x] `dokumenti.models.ts` — interfejsi za sve dokumente (UlaznaFaktura, Nivelacija, Otpremnica + stavke + DTO-i)
+- [x] `fakture.service.ts` — CRUD + potvrdi + storno + PDF download
+- [x] `nivelacije.service.ts` — list + findById + kreirajRucnu + PDF download
+- [x] `otpremnice.service.ts` — CRUD + posalji + potvrdiPrijem + storno + PDF download
+
+### 6.8 — Frontend: Ulazna Faktura komponente
+- [x] **`fakture-list`** — DataTable (broj, datum, dobavljač, status, ukupno) + filter po statusu
+- [x] **`faktura-form`** — zaglavlje (dobavljač, datum, broj, valuta) + dinamička tabela stavki + kalkulacija zbrojeva + submit kao NACRT
+- [x] **`faktura-detail`** — read-only prikaz + gumbi: Potvrdi / Storno / Štampaj PDF
+
+### 6.9 — Frontend: Nivelacija komponente
+- [x] **`nivelacije-list`** — DataTable (broj, datum, vrsta chip) + filter
+- [x] **`nivelacija-detail`** — read-only tabela stavki (artikal, kolicina, vpc, mpcStara → mpcNova, iznos) + Štampaj PDF
+- [x] **`nivelacija-rucna-form`** — forma za ručnu nivelaciju (odabir artikala, unos novih cijena)
+
+### 6.10 — Frontend: Otpremnica komponente
+- [ ] **`otpremnice-list`** — DataTable + filter po statusu/poslovnici/datumu
+- [x] **`otpremnica-form`** — odabir primajuće poslovnice + dinamička tabela stavki (artikal, kolicina)
+- [x] **`otpremnica-detail`** — status-aware prikaz + gumbi ovisno o statusu (Pošalji / Potvrdi Prijem / Storno / Štampaj)
+
+### 6.11 — Routing & Integracija
+- [x] Ažuriraj `dokumenti.routes.ts` sa lazy-loaded rutama za sve komponente
+- [x] Dodaj navigacione stavke u top meni (role guard: ADMIN, MENADZER, KNJIGOVODJA)
 
 ---
 
@@ -156,12 +228,12 @@
 |---|---|---|
 | 1 — Infrastruktura | ✅ Završena | 7/7 |
 | 2 — Auth & RBAC | ✅ Završena | 3/3 |
-| 3 — Šifrarnici | 🔲 TODO | 0/3 |
+| 3 — Šifrarnici | 🔲 TODO | 2/3 |
 | 4 — Blagajna | 🔲 TODO | 0/2 |
 | 5 — Fiskalizacija | 🔲 TODO | 0/2 |
-| 6 — Dokumenti | 🔲 TODO | 0/2 |
+| 6 — Dokumenti | ✅ Završena | 11/11 |
 | 7 — Izvještaji | 🔲 TODO | 0/2 |
 | 8 — Chat | 🔲 TODO | 0/1 |
 | 9 — Postavke | 🔲 TODO | 0/1 |
 | 10 — Deployment | 🔲 TODO | 0/1 |
-| **Ukupno** | **10/24** | **42%** |
+| **Ukupno** | **23/33** | **70%** |

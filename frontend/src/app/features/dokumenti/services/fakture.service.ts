@@ -1,0 +1,57 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+
+import { environment } from '../../../../environments/environment';
+import { ApiResponse } from '../../../core/models/api-response.model';
+import {
+  UlaznaFakturaListItem,
+  UlaznaFakturaDetail,
+  CreateFakturaDTO,
+} from '../models/dokumenti.models';
+
+@Injectable({ providedIn: 'root' })
+export class FaktureService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl}/dokumenti/fakture`;
+
+  list(): Observable<UlaznaFakturaListItem[]> {
+    return this.http
+      .get<ApiResponse<UlaznaFakturaListItem[]>>(this.baseUrl)
+      .pipe(map(r => r.data));
+  }
+
+  findById(id: number): Observable<UlaznaFakturaDetail> {
+    return this.http
+      .get<ApiResponse<UlaznaFakturaDetail>>(`${this.baseUrl}/${id}`)
+      .pipe(map(r => r.data));
+  }
+
+  create(dto: CreateFakturaDTO): Observable<UlaznaFakturaDetail> {
+    return this.http
+      .post<ApiResponse<UlaznaFakturaDetail>>(this.baseUrl, dto)
+      .pipe(map(r => r.data));
+  }
+
+  update(id: number, dto: Partial<CreateFakturaDTO>): Observable<UlaznaFakturaDetail> {
+    return this.http
+      .put<ApiResponse<UlaznaFakturaDetail>>(`${this.baseUrl}/${id}`, dto)
+      .pipe(map(r => r.data));
+  }
+
+  potvrdi(id: number): Observable<void> {
+    return this.http
+      .post<ApiResponse<void>>(`${this.baseUrl}/${id}/potvrdi`, {})
+      .pipe(map(() => void 0));
+  }
+
+  storno(id: number): Observable<void> {
+    return this.http
+      .post<ApiResponse<void>>(`${this.baseUrl}/${id}/storno`, {})
+      .pipe(map(() => void 0));
+  }
+
+  downloadPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' });
+  }
+}

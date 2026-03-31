@@ -1,0 +1,86 @@
+<div class="page-container">
+  <app-page-header title="Nivelacije" subtitle="Pregled nivelacija cijena" icon="price_change">
+    <button mat-raised-button color="primary" (click)="otvoriRucnuFormu()" aria-label="Nova ručna nivelacija">
+      <mat-icon>add</mat-icon>
+      Nova ručna nivelacija
+    </button>
+  </app-page-header>
+
+  <div class="filter-bar">
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>Vrsta</mat-label>
+      <mat-select
+        [value]="filterVrsta()"
+        (selectionChange)="filterVrsta.set($event.value)"
+        aria-label="Filter po vrsti nivelacije"
+      >
+        @for (opt of vrstaOptions; track opt.value) {
+          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  @if (isLoading()) {
+    <app-loading-spinner message="Učitavanje nivelacija..." />
+  } @else if (filtrirane().length === 0) {
+    <div class="empty-state" role="status">
+      <mat-icon class="empty-icon">price_change</mat-icon>
+      <h3>Nema nivelacija</h3>
+      <p>Kreirajte prvu ručnu nivelaciju klikom na "Nova ručna nivelacija".</p>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="filtrirane()" aria-label="Lista nivelacija">
+
+        <ng-container matColumnDef="broj">
+          <th mat-header-cell *matHeaderCellDef>Broj</th>
+          <td mat-cell *matCellDef="let row">{{ row.broj }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="datum">
+          <th mat-header-cell *matHeaderCellDef>Datum</th>
+          <td mat-cell *matCellDef="let row">{{ formatDatum(row.datum) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="vrsta">
+          <th mat-header-cell *matHeaderCellDef>Vrsta</th>
+          <td mat-cell *matCellDef="let row">
+            <mat-chip-set aria-label="Vrsta nivelacije">
+              <mat-chip [class]="getVrstaClass(row.vrsta)" disableRipple>
+                {{ getVrstaLabel(row.vrsta) }}
+              </mat-chip>
+            </mat-chip-set>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="idFakture">
+          <th mat-header-cell *matHeaderCellDef>Faktura br.</th>
+          <td mat-cell *matCellDef="let row">{{ row.idFakture ?? '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="idOtpremnice">
+          <th mat-header-cell *matHeaderCellDef>Otpremnica br.</th>
+          <td mat-cell *matCellDef="let row">{{ row.idOtpremnice ?? '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="brojStavki">
+          <th mat-header-cell *matHeaderCellDef class="col-number">Br. stavki</th>
+          <td mat-cell *matCellDef="let row" class="col-number">{{ row.brojStavki }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="akcije">
+          <th mat-header-cell *matHeaderCellDef class="col-akcije">Akcije</th>
+          <td mat-cell *matCellDef="let row" class="col-akcije">
+            <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Pregled" aria-label="Pregled nivelacije">
+              <mat-icon>visibility</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  }
+</div>

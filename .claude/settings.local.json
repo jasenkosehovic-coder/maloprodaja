@@ -36,7 +36,9 @@
       "Bash(npm install:*)",
       "Bash(find C:UsersJasenkoDocumentsJavaMaloprodaja -name *.json -path */package.json -not -path */node_modules/*)",
       "Bash(mvn test-compile:*)",
-      "Bash(mvn clean:*)"
+      "Bash(mvn clean:*)",
+      "Bash(find /c/Users/Jasenko/.m2/repository/net/sf/jasperreports -name jasperreports-*.jar)",
+      "Bash(jar tf:*)"
     ]
   }
 }

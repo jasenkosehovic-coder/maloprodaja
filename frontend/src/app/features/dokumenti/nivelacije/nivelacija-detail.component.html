@@ -1,0 +1,144 @@
+<div class="page-container">
+
+  <app-page-header
+    [title]="'Nivelacija br. ' + (nivelacija()?.broj ?? '')"
+    subtitle="Detalji nivelacije cijena"
+    icon="price_change"
+  >
+    <button mat-stroked-button (click)="nazad()" aria-label="Nazad na listu nivelacija">
+      <mat-icon>arrow_back</mat-icon>
+      Nazad
+    </button>
+  </app-page-header>
+
+  @if (isLoading()) {
+    <app-loading-spinner message="Učitavanje nivelacije..." />
+  } @else if (nivelacija() !== null) {
+
+    <div class="info-grid">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Broj</span>
+            <span class="info-value">{{ nivelacija()!.broj }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Datum</span>
+            <span class="info-value">{{ formatDatum(nivelacija()!.datum) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Vrsta</span>
+            <span class="info-value">
+              <mat-chip-set aria-label="Vrsta nivelacije">
+                <mat-chip [class]="getVrstaClass(nivelacija()!.vrsta)" disableRipple>
+                  {{ getVrstaLabel(nivelacija()!.vrsta) }}
+                </mat-chip>
+              </mat-chip-set>
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Povez. faktura</span>
+            <span class="info-value">{{ nivelacija()!.idFakture ?? '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Povez. otpremnica</span>
+            <span class="info-value">{{ nivelacija()!.idOtpremnice ?? '—' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Ukupno nivelacije</span>
+            <span class="info-value iznos-ukupno">{{ nivelacija()!.ukupnoNivelacije | currencyBam }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    @if (nivelacija()!.napomena) {
+      <mat-card appearance="outlined" class="napomena-card">
+        <mat-card-content>
+          <p class="napomena-label">Napomena</p>
+          <p class="napomena-text">{{ nivelacija()!.napomena }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card appearance="outlined" class="stavke-card">
+      <mat-card-header>
+        <mat-card-title>Stavke nivelacije</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="nivelacija()!.stavke" aria-label="Stavke nivelacije">
+
+            <ng-container matColumnDef="sifra">
+              <th mat-header-cell *matHeaderCellDef>Šifra</th>
+              <td mat-cell *matCellDef="let row">{{ row.sifraArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="naziv">
+              <th mat-header-cell *matHeaderCellDef>Naziv</th>
+              <td mat-cell *matCellDef="let row">{{ row.nazivArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="kolicina">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.kolicina }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="vpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">VPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="mpcStara">
+              <th mat-header-cell *matHeaderCellDef class="col-right">MPC stara</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.mpcStara | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="mpcNova">
+              <th mat-header-cell *matHeaderCellDef class="col-right">MPC nova</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.mpcNova | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="iznosNivelacije">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Iznos nivelacije</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                <strong>{{ row.iznosNivelacije | currencyBam }}</strong>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="stavkeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: stavkeColumns;"></tr>
+            <tr class="mat-row footer-row">
+              <td class="mat-cell" colspan="6">
+                <strong>Ukupno:</strong>
+              </td>
+              <td class="mat-cell col-right">
+                <strong>{{ nivelacija()!.ukupnoNivelacije | currencyBam }}</strong>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="akcije-bar">
+      <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF nivelacije">
+        <mat-icon>picture_as_pdf</mat-icon>
+        Štampaj PDF
+      </button>
+    </div>
+
+  } @else {
+    <div class="empty-state" role="status">
+      <mat-icon class="empty-icon">price_change</mat-icon>
+      <h3>Nivelacija nije pronađena</h3>
+      <button mat-raised-button color="primary" (click)="nazad()">Nazad na listu</button>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,181 @@
+<div class="page-container">
+
+  <app-page-header
+    [title]="'Faktura br. ' + (faktura()?.broj ?? '')"
+    subtitle="Detalji ulazne fakture"
+    icon="receipt_long"
+  >
+    <button mat-stroked-button (click)="nazad()" aria-label="Nazad na listu faktura">
+      <mat-icon>arrow_back</mat-icon>
+      Nazad
+    </button>
+  </app-page-header>
+
+  @if (isLoading()) {
+    <app-loading-spinner message="Učitavanje fakture..." />
+  } @else if (faktura() !== null) {
+
+    <!-- Info kartice -->
+    <div class="info-grid">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Dobavljač</span>
+            <span class="info-value">{{ faktura()!.nazivDobavljaca }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Broj fakture</span>
+            <span class="info-value">{{ faktura()!.broj }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value">
+              <mat-chip-set aria-label="Status fakture">
+                <mat-chip [class]="getStatusClass(faktura()!.statusFakture)" disableRipple>
+                  {{ getStatusLabel(faktura()!.statusFakture) }}
+                </mat-chip>
+              </mat-chip-set>
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <div class="info-row">
+            <span class="info-label">Datum</span>
+            <span class="info-value">{{ formatDatum(faktura()!.datum) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Datum valute</span>
+            <span class="info-value">{{ formatDatum(faktura()!.datumValute) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Ukupno</span>
+            <span class="info-value iznos-ukupno">{{ faktura()!.ukupno | currencyBam }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    @if (faktura()!.napomena) {
+      <mat-card appearance="outlined" class="napomena-card">
+        <mat-card-content>
+          <p class="napomena-label">Napomena</p>
+          <p class="napomena-text">{{ faktura()!.napomena }}</p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <!-- Stavke tabela -->
+    <mat-card appearance="outlined" class="stavke-card">
+      <mat-card-header>
+        <mat-card-title>Stavke fakture</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="faktura()!.stavke" aria-label="Stavke ulazne fakture">
+
+            <ng-container matColumnDef="redniBroj">
+              <th mat-header-cell *matHeaderCellDef>#</th>
+              <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="sifra">
+              <th mat-header-cell *matHeaderCellDef>Šifra</th>
+              <td mat-cell *matCellDef="let row">{{ row.sifraArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="naziv">
+              <th mat-header-cell *matHeaderCellDef>Naziv artikla</th>
+              <td mat-cell *matCellDef="let row">{{ row.nazivArtikla }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="kolicina">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.kolicina }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="vpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">VPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="pdvStopa">
+              <th mat-header-cell *matHeaderCellDef class="col-right">PDV%</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.pdvStopa }}%</td>
+            </ng-container>
+
+            <ng-container matColumnDef="iznosPdv">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Iznos PDV</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.iznosPdv | currencyBam }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="ukupno">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Ukupno</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                <strong>{{ row.ukupno | currencyBam }}</strong>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="stavkeColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: stavkeColumns;"></tr>
+          </table>
+        </div>
+
+        <!-- Zbrojevi -->
+        <div class="zbrojevi" aria-label="Ukupni iznosi fakture">
+          <div class="zbroj-row">
+            <span class="zbroj-label">Bez PDV:</span>
+            <span class="zbroj-value">{{ faktura()!.ukupnoBezPdv | currencyBam }}</span>
+          </div>
+          <div class="zbroj-row">
+            <span class="zbroj-label">PDV:</span>
+            <span class="zbroj-value">{{ faktura()!.ukupnoPdv | currencyBam }}</span>
+          </div>
+          <mat-divider></mat-divider>
+          <div class="zbroj-row zbroj-ukupno">
+            <span class="zbroj-label">UKUPNO:</span>
+            <span class="zbroj-value">{{ faktura()!.ukupno | currencyBam }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Akcije bar -->
+    <div class="akcije-bar">
+      @if (faktura()!.statusFakture === 'NACRT') {
+        <button mat-raised-button color="primary" (click)="potvrdi()" aria-label="Potvrdi fakturu">
+          <mat-icon>check_circle</mat-icon>
+          Potvrdi
+        </button>
+        <button mat-stroked-button color="warn" (click)="storno()" aria-label="Storniraj fakturu">
+          <mat-icon>cancel</mat-icon>
+          Storniraj
+        </button>
+      } @else if (faktura()!.statusFakture === 'POTVRDJENO') {
+        <button mat-stroked-button color="warn" (click)="storno()" aria-label="Storniraj fakturu">
+          <mat-icon>cancel</mat-icon>
+          Storniraj
+        </button>
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF fakture">
+          <mat-icon>picture_as_pdf</mat-icon>
+          Preuzmi PDF
+        </button>
+      } @else {
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF fakture">
+          <mat-icon>picture_as_pdf</mat-icon>
+          Preuzmi PDF
+        </button>
+      }
+    </div>
+
+  } @else {
+    <div class="empty-state" role="status">
+      <mat-icon class="empty-icon">receipt_long</mat-icon>
+      <h3>Faktura nije pronađena</h3>
+      <button mat-raised-button color="primary" (click)="nazad()">Nazad na listu</button>
+    </div>
+  }
+
+</div>

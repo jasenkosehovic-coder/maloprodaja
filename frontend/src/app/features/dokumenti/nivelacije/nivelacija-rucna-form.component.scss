@@ -1,0 +1,83 @@
+.row-3col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+
+  mat-form-field {
+    width: 100%;
+  }
+}
+
+.stavke-divider {
+  margin: 8px 0 16px;
+}
+
+.stavke-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #424242;
+  }
+}
+
+.stavke-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.stavke-table {
+  width: 100%;
+  min-width: 600px;
+}
+
+.stavka-field-id {
+  width: 120px;
+  margin-bottom: -1.25em;
+}
+
+.stavka-field-broj {
+  width: 120px;
+  margin-bottom: -1.25em;
+}
+
+.col-right {
+  text-align: right;
+}
+
+.iznos-text {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.disabled-text {
+  font-size: 14px;
+  color: #757575;
+}
+
+.stavke-empty {
+  padding: 24px;
+  text-align: center;
+  color: #9e9e9e;
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  margin-bottom: 16px;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+mat-dialog-content {
+  min-width: 600px;
+  max-height: 80vh;
+}

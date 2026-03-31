@@ -21,14 +21,16 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Blagajna',    icon: 'point_of_sale',   route: '/blagajna' },
-  { label: 'Dokumenti',   icon: 'description',      route: '/dokumenti' },
-  { label: 'Šifarnici',   icon: 'category',         route: '/sifarnici' },
-  { label: 'Fiskalni',    icon: 'receipt_long',     route: '/fiskalni',    roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER'] },
-  { label: 'Izvještaji',  icon: 'bar_chart',        route: '/izvjestaji',  roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER'] },
-  { label: 'Chat',        icon: 'chat',             route: '/chat' },
-  { label: 'Korisnici',   icon: 'group',            route: '/korisnici',   roles: ['ADMIN', 'SUPER_ADMIN'] },
-  { label: 'Postavke',    icon: 'settings',         route: '/postavke',    roles: ['ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Blagajna',        icon: 'point_of_sale',   route: '/blagajna' },
+  { label: 'Ulazne fakture',  icon: 'receipt_long',    route: '/dokumenti/fakture',    roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA'] },
+  { label: 'Nivelacije',      icon: 'price_change',    route: '/dokumenti/nivelacije', roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA'] },
+  { label: 'Otpremnice',      icon: 'local_shipping',  route: '/dokumenti/otpremnice', roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA'] },
+  { label: 'Šifarnici',       icon: 'category',        route: '/sifarnici' },
+  { label: 'Fiskalni',        icon: 'receipt_long',    route: '/fiskalni',             roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER'] },
+  { label: 'Izvještaji',      icon: 'bar_chart',       route: '/izvjestaji',           roles: ['ADMIN', 'SUPER_ADMIN', 'MENADZER'] },
+  { label: 'Chat',            icon: 'chat',            route: '/chat' },
+  { label: 'Korisnici',       icon: 'group',           route: '/korisnici',            roles: ['ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Postavke',        icon: 'settings',        route: '/postavke',             roles: ['ADMIN', 'SUPER_ADMIN'] },
 ];
 
 @Component({

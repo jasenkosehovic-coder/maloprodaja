@@ -49,9 +49,9 @@ const FISKALNI_ITEMS: NavItem[] = [
 ];
 
 const DOKUMENTI_ITEMS: NavItem[] = [
-  { label: 'Ulazne fakture', route: '/dokumenti/ulazne-fakture', roles: ADMIN_MEN },
-  { label: 'Otpremnica', route: '/dokumenti/otpremnica', roles: ADMIN_MEN },
-  { label: 'Nivelacije', route: '/dokumenti/nivelacije', roles: ADMIN_MEN },
+  { label: 'Ulazne fakture', route: '/dokumenti/fakture',    roles: ADMIN_MEN },
+  { label: 'Otpremnice',     route: '/dokumenti/otpremnice', roles: ADMIN_MEN },
+  { label: 'Nivelacije',     route: '/dokumenti/nivelacije', roles: ADMIN_MEN },
 ];
 
 const IZVJESTAJI_ITEMS: NavItem[] = [
