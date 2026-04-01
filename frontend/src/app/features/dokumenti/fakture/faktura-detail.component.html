@@ -72,6 +72,38 @@
       </mat-card>
     }
 
+    @if (faktura()!.statusFakture === 'NACRT' && faktura()!.unesenoUkupnoBezPdv != null) {
+      <mat-card appearance="outlined" class="provjera-card">
+        <mat-card-header>
+          <mat-card-title>Provjera iznosa</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="provjera-row">
+            <span>Bez PDV — uneseno:</span>
+            <strong>{{ faktura()!.unesenoUkupnoBezPdv | currencyBam }}</strong>
+            <span>izračunato:</span>
+            <strong [class.iznos-ok]="iznosiSeSlazu()" [class.iznos-nok]="!iznosiSeSlazu()">
+              {{ izracunatoUkupnoBezPdv() | number:'1.2-4' }} KM
+            </strong>
+          </div>
+          <div class="provjera-row">
+            <span>Ukupno sa PDV — uneseno:</span>
+            <strong>{{ faktura()!.unesenoUkupno | currencyBam }}</strong>
+            <span>izračunato:</span>
+            <strong [class.iznos-ok]="iznosiSeSlazu()" [class.iznos-nok]="!iznosiSeSlazu()">
+              {{ izracunatoUkupno() | number:'1.2-4' }} KM
+            </strong>
+          </div>
+          @if (iznosiSeSlazu()) {
+            <p class="auto-potvrda-info">
+              <mat-icon>check_circle</mat-icon>
+              Iznosi se slažu — faktura će biti automatski potvrđena pri sljedećem dodavanju stavke.
+            </p>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
     <!-- Stavke -->
     <mat-card appearance="outlined" class="stavke-card">
       <mat-card-header>
@@ -203,8 +235,10 @@
                     <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Dodavanje u toku"></mat-progress-spinner>
                     Dodavanje...
                   } @else {
-                    <mat-icon>add</mat-icon>
-                    Dodaj
+                    <ng-container>
+                      <mat-icon>add</mat-icon>
+                      Dodaj
+                    </ng-container>
                   }
                 </button>
               </div>

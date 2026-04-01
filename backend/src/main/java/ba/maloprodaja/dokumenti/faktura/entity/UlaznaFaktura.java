@@ -53,6 +53,12 @@ public class UlaznaFaktura extends PoslovnicaBaseEntity {
     @Column(name = "napomena", length = 500)
     private String napomena;
 
+    @Column(name = "uneseno_ukupno_bez_pdv")
+    private BigDecimal unesenoUkupnoBezPdv;
+
+    @Column(name = "uneseno_ukupno")
+    private BigDecimal unesenoUkupno;
+
     @OneToMany(mappedBy = "faktura", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<UlaznaFakturaStavka> stavke = new ArrayList<>();
 }

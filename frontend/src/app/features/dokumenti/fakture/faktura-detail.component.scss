@@ -56,6 +56,48 @@
   margin: 0;
 }
 
+.provjera-card {
+  margin-bottom: 16px;
+}
+
+.provjera-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.iznos-ok {
+  color: #2e7d32;
+}
+
+.iznos-nok {
+  color: #c62828;
+}
+
+.auto-potvrda-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .stavke-card {
   margin-bottom: 16px;
 

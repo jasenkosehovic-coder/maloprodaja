@@ -14,6 +14,8 @@ export interface UlaznaFakturaListItem {
 export interface UlaznaFakturaDetail extends UlaznaFakturaListItem {
   idDobavljaca: number;
   napomena: string | null;
+  unesenoUkupnoBezPdv: number | null;
+  unesenoUkupno: number | null;
   stavke: FakturaStavka[];
 }
 

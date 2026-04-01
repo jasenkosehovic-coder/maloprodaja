@@ -91,6 +91,26 @@ export class FakturaDetailComponent implements OnInit {
     pdvStopa: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
   });
 
+  readonly izracunatoUkupnoBezPdv = computed(() => {
+    const f = this.faktura();
+    if (!f) return null;
+    return f.stavke.reduce((sum, s) => sum + (s.vpc * s.kolicina), 0);
+  });
+
+  readonly izracunatoUkupno = computed(() => {
+    const f = this.faktura();
+    if (!f) return null;
+    return f.stavke.reduce((sum, s) => sum + s.ukupno, 0);
+  });
+
+  readonly iznosiSeSlazu = computed(() => {
+    const f = this.faktura();
+    if (!f || f.unesenoUkupnoBezPdv == null || f.unesenoUkupno == null) return false;
+    const TOL = 0.01;
+    return Math.abs((this.izracunatoUkupnoBezPdv() ?? 0) - f.unesenoUkupnoBezPdv) <= TOL
+        && Math.abs((this.izracunatoUkupno() ?? 0) - f.unesenoUkupno) <= TOL;
+  });
+
   readonly mpcKalkulacija = computed(() => {
     const vpc = this.novStavkaForm.controls.vpc.value;
     const pdv = this.novStavkaForm.controls.pdvStopa.value;
@@ -213,7 +233,11 @@ export class FakturaDetailComponent implements OnInit {
         this.faktura.set(updated);
         this.novStavkaForm.reset();
         this.isAddingStavka.set(false);
-        this.snackBar.open('Stavka je uspješno dodana.', 'Zatvori', { duration: 2000 });
+        if (updated.statusFakture === 'POTVRDJENO') {
+          this.snackBar.open('Faktura je automatski potvrđena — iznosi se slažu.', 'Zatvori', { duration: 4000 });
+        } else {
+          this.snackBar.open('Stavka je uspješno dodana.', 'Zatvori', { duration: 2000 });
+        }
         this.cdr.markForCheck();
       });
   }

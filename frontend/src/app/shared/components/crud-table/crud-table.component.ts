@@ -21,7 +21,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { DateAdapter, ErrorStateMatcher, MAT_DATE_FORMATS, MatDateFormats, MatNativeDateModule, NativeDateAdapter } from '@angular/material/core';
+import { DateAdapter, ErrorStateMatcher, MAT_DATE_FORMATS, MatDateFormats, NativeDateAdapter } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -29,16 +29,16 @@ import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } fr
 
 @Injectable()
 class DdMmYyyyDateAdapter extends NativeDateAdapter {
-  override format(date: Date, _displayFormat: string): string {
+  override format(date: Date, _displayFormat: object): string {
     const dd = String(date.getDate()).padStart(2, '0');
     const mm = String(date.getMonth() + 1).padStart(2, '0');
     const yyyy = date.getFullYear();
-    return `${dd}-${mm}-${yyyy}`;
+    return `${dd}.${mm}.${yyyy}`;
   }
 
   override parse(value: any): Date | null {
     if (typeof value === 'string') {
-      const parts = value.split('-');
+      const parts = value.split('.');
       if (parts.length === 3 && parts[2].length === 4) {
         const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
         return isNaN(d.getTime()) ? null : d;
@@ -49,12 +49,12 @@ class DdMmYyyyDateAdapter extends NativeDateAdapter {
 }
 
 const DD_MM_YYYY_FORMAT: MatDateFormats = {
-  parse: { dateInput: 'dd-MM-yyyy' },
+  parse: { dateInput: { day: 'numeric', month: 'numeric', year: 'numeric' } },
   display: {
-    dateInput: 'dd-MM-yyyy',
-    monthYearLabel: 'MMM yyyy',
-    dateA11yLabel: 'dd-MM-yyyy',
-    monthYearA11yLabel: 'MMMM yyyy',
+    dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    monthYearLabel: { year: 'numeric', month: 'short' },
+    dateA11yLabel: { year: 'numeric', month: 'long', day: 'numeric' },
+    monthYearA11yLabel: { year: 'numeric', month: 'long' },
   },
 };
 
@@ -71,7 +71,6 @@ const DD_MM_YYYY_FORMAT: MatDateFormats = {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatNativeDateModule,
     MatProgressSpinnerModule,
     MatSelectModule,
     MatTooltipModule,

@@ -76,6 +76,13 @@ public class UlaznaFakturaController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        fakturaService.delete(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PostMapping("/{id}/potvrdi")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
     public ResponseEntity<ApiResponse<Void>> potvrdi(@PathVariable Long id) {

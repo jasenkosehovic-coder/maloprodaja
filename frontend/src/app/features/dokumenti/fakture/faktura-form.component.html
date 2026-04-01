@@ -8,9 +8,23 @@
 
       <!-- Dobavljač -->
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Dobavljač</mat-label>
-        <mat-select formControlName="idDobavljaca" aria-label="Odaberite dobavljača">
-          @for (d of dobavljaci(); track d.id) {
+        <mat-label>Dobavljač *</mat-label>
+        <mat-select formControlName="idDobavljaca" aria-label="Odaberite dobavljača" (closed)="dobavljacFilter.set('')">
+          <mat-option>
+            <div class="select-search-wrapper" (click)="$event.stopPropagation()">
+              <mat-icon class="select-search-icon">search</mat-icon>
+              <input
+                class="select-search-input"
+                type="text"
+                placeholder="Pretraži dobavljača..."
+                [value]="dobavljacFilter()"
+                (input)="dobavljacFilter.set($any($event.target).value)"
+                (keydown)="$event.stopPropagation()"
+                aria-label="Pretraga dobavljača"
+              />
+            </div>
+          </mat-option>
+          @for (d of filtriranIDobavljaci(); track d.id) {
             <mat-option [value]="d.id">{{ d.naziv }}</mat-option>
           }
         </mat-select>
@@ -53,7 +67,7 @@
       <!-- Iznosi -->
       <div class="row-2col">
         <mat-form-field appearance="outline">
-          <mat-label>Iznos bez PDV (KM)</mat-label>
+          <mat-label>Iznos bez PDV (KM) *</mat-label>
           <input
             matInput
             type="number"
@@ -63,10 +77,16 @@
             step="0.01"
             aria-label="Ukupan iznos bez PDV"
           />
+          @if (form.controls['ukupnoBezPdv'].hasError('required') && form.controls['ukupnoBezPdv'].touched) {
+            <mat-error role="alert" aria-live="polite">Iznos bez PDV je obavezan.</mat-error>
+          }
+          @if (form.controls['ukupnoBezPdv'].hasError('min')) {
+            <mat-error role="alert" aria-live="polite">Iznos ne može biti negativan.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Iznos sa PDV / Ukupno (KM)</mat-label>
+          <mat-label>Iznos sa PDV / Ukupno (KM) *</mat-label>
           <input
             matInput
             type="number"
@@ -76,6 +96,12 @@
             step="0.01"
             aria-label="Ukupan iznos sa PDV"
           />
+          @if (form.controls['ukupno'].hasError('required') && form.controls['ukupno'].touched) {
+            <mat-error role="alert" aria-live="polite">Ukupan iznos je obavezan.</mat-error>
+          }
+          @if (form.controls['ukupno'].hasError('min')) {
+            <mat-error role="alert" aria-live="polite">Iznos ne može biti negativan.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -105,8 +131,10 @@
       <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Snimanje u toku"></mat-progress-spinner>
       Snimanje...
     } @else {
-      <mat-icon>save</mat-icon>
-      Snimi
+      <ng-container>
+        <mat-icon>save</mat-icon>
+        Snimi
+      </ng-container>
     }
   </button>
 </mat-dialog-actions>

@@ -64,6 +64,12 @@ export class FaktureService {
       .pipe(map(r => r.data));
   }
 
+  delete(id: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse<void>>(`${this.baseUrl}/${id}`)
+      .pipe(map(() => void 0));
+  }
+
   downloadPdf(id: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/${id}/pdf`, { responseType: 'blob' });
   }

@@ -21,4 +21,6 @@ public interface IUlaznaFakturaService {
     void potvrdi(Long id);
 
     void storno(Long id);
+
+    void delete(Long id);
 }

@@ -1,106 +1,56 @@
 <div class="page-container">
-  <app-page-header title="Ulazne fakture" subtitle="Pregled i upravljanje ulaznim fakturama" icon="receipt_long">
-    <button mat-raised-button color="primary" (click)="otvoriFormu()" aria-label="Nova faktura">
-      <mat-icon>add</mat-icon>
-      Nova faktura
-    </button>
-  </app-page-header>
+  <app-page-header title="Ulazne fakture" subtitle="Pregled ulaznih faktura" icon="receipt_long" />
 
+  <!-- Filter bar -->
   <div class="filter-bar">
-    <mat-form-field appearance="outline" class="filter-select">
-      <mat-label>Status</mat-label>
-      <mat-select
-        [value]="filterStatus()"
-        (selectionChange)="filterStatus.set($event.value)"
-        aria-label="Filter po statusu fakture"
-      >
-        @for (opt of statusOptions; track opt.value) {
-          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-        }
-      </mat-select>
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Datum od</mat-label>
+      <input
+        matInput
+        [matDatepicker]="odPicker"
+        [value]="filterOd()"
+        (dateChange)="onOdChange($event.value)"
+        aria-label="Datum od"
+        readonly
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="odPicker" aria-label="Otvori kalendar za datum od"></mat-datepicker-toggle>
+      <mat-datepicker #odPicker></mat-datepicker>
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Datum do</mat-label>
+      <input
+        matInput
+        [matDatepicker]="doPicker"
+        [value]="filterDo()"
+        (dateChange)="filterDo.set($event.value)"
+        [min]="filterOd()"
+        aria-label="Datum do"
+        readonly
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="doPicker" aria-label="Otvori kalendar za datum do"></mat-datepicker-toggle>
+      <mat-datepicker #doPicker></mat-datepicker>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Poništi filtere">
+      <mat-icon>clear</mat-icon>
+      Poništi
+    </button>
   </div>
 
-  @if (isLoading()) {
-    <app-loading-spinner message="Učitavanje faktura..." />
-  } @else if (filtriraneFakture().length === 0) {
-    <div class="empty-state" role="status">
-      <mat-icon class="empty-icon">receipt_long</mat-icon>
-      <h3>Nema ulaznih faktura</h3>
-      <p>Kreirajte prvu ulaznu fakturu klikom na "Nova faktura".</p>
-    </div>
-  } @else {
-    <div class="table-wrapper">
-      <table mat-table [dataSource]="filtriraneFakture()" aria-label="Lista ulaznih faktura">
-
-        <ng-container matColumnDef="broj">
-          <th mat-header-cell *matHeaderCellDef>Broj</th>
-          <td mat-cell *matCellDef="let row">{{ row.broj }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="datum">
-          <th mat-header-cell *matHeaderCellDef>Datum</th>
-          <td mat-cell *matCellDef="let row">{{ formatDatum(row.datum) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="nazivDobavljaca">
-          <th mat-header-cell *matHeaderCellDef>Dobavljač</th>
-          <td mat-cell *matCellDef="let row">{{ row.nazivDobavljaca }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="statusFakture">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let row">
-            <mat-chip-set aria-label="Status fakture">
-              <mat-chip [class]="getStatusClass(row.statusFakture)" disableRipple>
-                {{ getStatusLabel(row.statusFakture) }}
-              </mat-chip>
-            </mat-chip-set>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="ukupno">
-          <th mat-header-cell *matHeaderCellDef class="col-number">Ukupno (KM)</th>
-          <td mat-cell *matCellDef="let row" class="col-number">{{ formatBroj(row.ukupno) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="akcije">
-          <th mat-header-cell *matHeaderCellDef class="col-akcije">Akcije</th>
-          <td mat-cell *matCellDef="let row" class="col-akcije">
-            @if (row.statusFakture === 'NACRT') {
-              <button mat-icon-button color="primary" (click)="otvoriFormu(row.id)" matTooltip="Uredi" aria-label="Uredi fakturu">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button color="accent" (click)="potvrdi(row)" matTooltip="Potvrdi" aria-label="Potvrdi fakturu">
-                <mat-icon>check_circle</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="storno(row)" matTooltip="Briši" aria-label="Storniraj fakturu">
-                <mat-icon>delete</mat-icon>
-              </button>
-            } @else if (row.statusFakture === 'POTVRDJENO') {
-              <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Pregled" aria-label="Pregled fakture">
-                <mat-icon>visibility</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="storno(row)" matTooltip="Storniraj" aria-label="Storniraj fakturu">
-                <mat-icon>cancel</mat-icon>
-              </button>
-              <button mat-icon-button (click)="downloadPdf(row)" matTooltip="Preuzmi PDF" aria-label="Preuzmi PDF fakture">
-                <mat-icon>picture_as_pdf</mat-icon>
-              </button>
-            } @else {
-              <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Pregled" aria-label="Pregled fakture">
-                <mat-icon>visibility</mat-icon>
-              </button>
-              <button mat-icon-button (click)="downloadPdf(row)" matTooltip="Preuzmi PDF" aria-label="Preuzmi PDF fakture">
-                <mat-icon>picture_as_pdf</mat-icon>
-              </button>
-            }
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </div>
-  }
+  <app-crud-table
+    [data]="filtriraneFakture()"
+    [headers]="['id', 'broj', 'datum', 'datumValute', 'nazivDobavljaca', 'statusFakture', 'ukupnoBezPdv', 'ukupno']"
+    [fields]="fields"
+    [actions]="actions"
+    [filterableColumns]="filterableColumns"
+    [externalAdd]="true"
+    [externalEdit]="true"
+    [externalDelete]="true"
+    [rowStyleClass]="rowStyleClass"
+    exportName="Ulazne fakture"
+    (addClick)="onAddClick()"
+    (editClick)="onEditClick($event)"
+    (delete)="onDelete($event)"
+  />
 </div>

@@ -34,6 +34,8 @@ public class UlaznaFakturaDTO {
             BigDecimal ukupnoPdv,
             BigDecimal ukupno,
             String napomena,
+            BigDecimal unesenoUkupnoBezPdv,
+            BigDecimal unesenoUkupno,
             List<StavkaDTO> stavke
     ) {}
 

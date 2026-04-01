@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -21,7 +22,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
 
@@ -52,7 +52,6 @@ export interface FakturaFormData {
     MatInputModule,
     MatSelectModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatProgressSpinnerModule,
     LoadingSpinnerComponent,
   ],
@@ -75,14 +74,21 @@ export class FakturaFormComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly dobavljaci = signal<Dobavljac[]>([]);
+  readonly dobavljacFilter = signal('');
+
+  readonly filtriranIDobavljaci = computed(() => {
+    const q = this.dobavljacFilter().toLowerCase().trim();
+    if (!q) return this.dobavljaci();
+    return this.dobavljaci().filter(d => d.naziv.toLowerCase().includes(q));
+  });
 
   readonly form = this.fb.group({
     idDobavljaca: this.fb.control<number | null>(null, Validators.required),
     broj: ['', [Validators.required, Validators.maxLength(50)]],
     datum: [new Date(), Validators.required],
     datumValute: this.fb.control<Date | null>(null),
-    ukupnoBezPdv: this.fb.control<number | null>(null),
-    ukupno: this.fb.control<number | null>(null),
+    ukupnoBezPdv: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+    ukupno: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     napomena: [''],
   });
 

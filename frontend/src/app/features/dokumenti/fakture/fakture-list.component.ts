@@ -10,21 +10,19 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 import { EMPTY } from 'rxjs';
-import { catchError, finalize, filter, switchMap } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { CrudTableComponent } from '../../../shared/components/crud-table/crud-table.component';
+import { CrudFieldConfig, CrudActionsConfig } from '../../../shared/components/crud-table/crud-field-config';
 import { NotificationService } from '../../../core/services/notification.service';
 import { FaktureService } from '../services/fakture.service';
 import { UlaznaFakturaListItem } from '../models/dokumenti.models';
@@ -34,16 +32,14 @@ import { FakturaFormComponent } from './faktura-form.component';
   selector: 'app-fakture-list',
   standalone: true,
   imports: [
-    CommonModule,
-    MatTableModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatSelectModule,
+    ReactiveFormsModule,
     MatFormFieldModule,
-    MatTooltipModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatIconModule,
+    MatButtonModule,
     PageHeaderComponent,
-    LoadingSpinnerComponent,
+    CrudTableComponent,
   ],
   templateUrl: './fakture-list.component.html',
   styleUrl: './fakture-list.component.scss',
@@ -59,22 +55,54 @@ export class FaktureListComponent implements OnInit {
 
   readonly fakture = signal<UlaznaFakturaListItem[]>([]);
   readonly isLoading = signal(false);
-  readonly filterStatus = signal<string>('');
+
+  readonly filterOd = signal<Date | null>(null);
+  readonly filterDo = signal<Date | null>(null);
 
   readonly filtriraneFakture = computed(() => {
-    const status = this.filterStatus();
-    const sve = this.fakture();
-    return status ? sve.filter(f => f.statusFakture === status) : sve;
+    let result = this.fakture();
+
+    const od = this.filterOd();
+    const do_ = this.filterDo();
+
+    if (od) {
+      const odMs = this.dayStart(od);
+      const doMs = do_ ? this.dayEnd(do_) : this.dayEnd(od);
+      result = result.filter(f => {
+        const d = this.parseDate(f.datum);
+        return d !== null && d >= odMs && d <= doMs;
+      });
+    }
+
+    return result;
   });
 
-  readonly displayedColumns = ['broj', 'datum', 'nazivDobavljaca', 'statusFakture', 'ukupno', 'akcije'];
-
-  readonly statusOptions = [
-    { value: '', label: 'Svi statusi' },
-    { value: 'NACRT', label: 'Nacrt' },
-    { value: 'POTVRDJENO', label: 'Potvrđeno' },
-    { value: 'STORNIRANO', label: 'Stornirano' },
+  readonly fields: CrudFieldConfig[] = [
+    { key: 'id', label: 'R.br.', type: 'number', visible: false },
+    { key: 'broj', label: 'Broj fakture', type: 'text', readOnly: true },
+    { key: 'datum', label: 'Datum', type: 'date', readOnly: true },
+    { key: 'datumValute', label: 'Datum valute', type: 'date', readOnly: true },
+    { key: 'nazivDobavljaca', label: 'Dobavljač', type: 'text', readOnly: true },
+    {
+      key: 'statusFakture', label: 'Status', type: 'select', readOnly: true,
+      options: [
+        { value: 'NACRT', label: 'Nacrt' },
+        { value: 'POTVRDJENO', label: 'Potvrđeno' },
+        { value: 'STORNIRANO', label: 'Stornirano' },
+      ],
+    },
+    { key: 'ukupnoBezPdv', label: 'Bez PDV (KM)', type: 'number', readOnly: true },
+    { key: 'ukupno', label: 'Ukupno (KM)', type: 'number', readOnly: true },
   ];
+
+  readonly actions: CrudActionsConfig = { add: true, edit: true, delete: true, export: true };
+
+  readonly filterableColumns = ['statusFakture', 'nazivDobavljaca', 'datumValute', 'datum', 'broj'];
+
+  readonly rowStyleClass = (row: UlaznaFakturaListItem) => ({
+    'row-potvrdjeno': row.statusFakture === 'POTVRDJENO',
+    'row-stornirano': row.statusFakture === 'STORNIRANO',
+  });
 
   ngOnInit(): void {
     this.ucitajPodatke();
@@ -96,17 +124,29 @@ export class FaktureListComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(data => {
-        this.fakture.set(data);
+        this.fakture.set([...data].sort((a, b) => b.id - a.id));
         this.cdr.markForCheck();
       });
   }
 
-  otvoriFormu(fakturaId?: number): void {
+  onOdChange(date: Date | null): void {
+    this.filterOd.set(date);
+    if (date && this.filterDo() && this.filterDo()! < date) {
+      this.filterDo.set(null);
+    }
+  }
+
+  resetFilters(): void {
+    this.filterOd.set(null);
+    this.filterDo.set(null);
+  }
+
+  onAddClick(): void {
     const dialogRef = this.dialog.open(FakturaFormComponent, {
       width: '900px',
       maxWidth: '95vw',
       disableClose: true,
-      data: { fakturaId: fakturaId ?? null },
+      data: { fakturaId: null },
     });
 
     dialogRef.afterClosed()
@@ -118,113 +158,54 @@ export class FaktureListComponent implements OnInit {
       });
   }
 
-  otvoriDetalj(id: number): void {
-    void this.router.navigate(['/dokumenti/fakture', id]);
+  onEditClick(row: UlaznaFakturaListItem): void {
+    void this.router.navigate(['/dokumenti/fakture', row.id]);
   }
 
-  potvrdi(faktura: UlaznaFakturaListItem): void {
-    const dialogData: ConfirmDialogData = {
-      title: 'Potvrda fakture',
-      message: `Jeste li sigurni da želite potvrditi fakturu broj "${faktura.broj}"?`,
-      confirmLabel: 'Potvrdi',
-      cancelLabel: 'Odustani',
-      confirmColor: 'primary',
-      icon: 'check_circle',
-    };
-
-    this.dialog.open(ConfirmDialogComponent, { data: dialogData })
-      .afterClosed()
-      .pipe(
-        filter(result => result === true),
-        switchMap(() => this.faktureService.potvrdi(faktura.id).pipe(
-          catchError(err => {
-            this.notification.error('Greška pri potvrđivanju fakture.');
-            console.error(err);
-            return EMPTY;
-          })
-        )),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(() => {
-        this.notification.success('Faktura je uspješno potvrđena.');
-        this.ucitajPodatke();
-      });
-  }
-
-  storno(faktura: UlaznaFakturaListItem): void {
-    const dialogData: ConfirmDialogData = {
-      title: 'Storniranje fakture',
-      message: `Jeste li sigurni da želite stornirati fakturu broj "${faktura.broj}"? Ova akcija se ne može poništiti.`,
-      confirmLabel: 'Storniraj',
-      cancelLabel: 'Odustani',
-      confirmColor: 'warn',
-      icon: 'cancel',
-    };
-
-    this.dialog.open(ConfirmDialogComponent, { data: dialogData })
-      .afterClosed()
-      .pipe(
-        filter(result => result === true),
-        switchMap(() => this.faktureService.storno(faktura.id).pipe(
-          catchError(err => {
-            this.notification.error('Greška pri storniranju fakture.');
-            console.error(err);
-            return EMPTY;
-          })
-        )),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(() => {
-        this.notification.success('Faktura je uspješno stornirana.');
-        this.ucitajPodatke();
-      });
-  }
-
-  downloadPdf(faktura: UlaznaFakturaListItem): void {
-    this.faktureService.downloadPdf(faktura.id)
+  onDelete(row: UlaznaFakturaListItem): void {
+    this.faktureService.findById(row.id)
       .pipe(
         catchError(err => {
-          this.notification.error('Greška pri preuzimanju PDF-a.');
+          this.notification.error('Greška pri provjeri fakture.');
           console.error(err);
           return EMPTY;
         }),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `faktura-${faktura.broj}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
+      .subscribe(detail => {
+        if (detail.stavke && detail.stavke.length > 0) {
+          this.notification.error(
+            `Faktura "${row.broj}" ima ${detail.stavke.length} stavku/stavki i ne može se brisati.`
+          );
+          return;
+        }
+        this.faktureService.delete(row.id)
+          .pipe(
+            catchError(err => {
+              this.notification.error('Greška pri brisanju fakture.');
+              console.error(err);
+              return EMPTY;
+            }),
+            takeUntilDestroyed(this.destroyRef)
+          )
+          .subscribe(() => {
+            this.notification.success(`Faktura "${row.broj}" je uspješno obrisana.`);
+            this.ucitajPodatke();
+          });
       });
   }
 
-  getStatusClass(status: string): string {
-    switch (status) {
-      case 'POTVRDJENO': return 'chip-success';
-      case 'STORNIRANO': return 'chip-error';
-      default: return 'chip-default';
-    }
+  private dayStart(d: Date): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   }
 
-  getStatusLabel(status: string): string {
-    switch (status) {
-      case 'NACRT': return 'Nacrt';
-      case 'POTVRDJENO': return 'Potvrđeno';
-      case 'STORNIRANO': return 'Stornirano';
-      default: return status;
-    }
+  private dayEnd(d: Date): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime();
   }
 
-  formatBroj(value: number): string {
-    return new Intl.NumberFormat('bs-BA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
-  }
-
-  formatDatum(datum: string): string {
-    if (!datum) return '';
-    const d = new Date(datum);
-    if (isNaN(d.getTime())) return datum;
-    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+  private parseDate(val: string | null | undefined): number | null {
+    if (!val) return null;
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d.getTime();
   }
 }
