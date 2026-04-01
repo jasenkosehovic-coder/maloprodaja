@@ -27,7 +27,7 @@ import { Router } from '@angular/router';
 
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { EMPTY } from 'rxjs';
-import { catchError, exhaustMap, finalize } from 'rxjs/operators';
+import { catchError, finalize } from 'rxjs/operators';
 
 import { NotificationService } from '../../../core/services/notification.service';
 import { FaktureService } from '../services/fakture.service';
@@ -164,21 +164,13 @@ export class FakturaFormComponent implements OnInit {
       napomena: formValue.napomena || null,
     };
 
-    const request$ = this.isEditMode
+    const isEdit = this.isEditMode;
+    const request$ = isEdit
       ? this.faktureService.update(this.dialogData.fakturaId!, dto)
       : this.faktureService.create(dto);
 
     this.isSaving.set(true);
     request$.pipe(
-      exhaustMap(result => {
-        const msg = this.isEditMode ? 'Faktura je uspješno ažurirana.' : 'Faktura je uspješno kreirana.';
-        this.notification.success(msg);
-        this.dialogRef.close(true);
-        if (!this.isEditMode) {
-          void this.router.navigate(['/dokumenti/fakture', result.id]);
-        }
-        return [result];
-      }),
       finalize(() => {
         this.isSaving.set(false);
         this.cdr.markForCheck();
@@ -189,7 +181,14 @@ export class FakturaFormComponent implements OnInit {
         return EMPTY;
       }),
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe();
+    ).subscribe(result => {
+      const msg = isEdit ? 'Faktura je uspješno ažurirana.' : 'Faktura je uspješno kreirana.';
+      this.notification.success(msg);
+      this.dialogRef.close(true);
+      if (!isEdit) {
+        void this.router.navigate(['/dokumenti/fakture', result.id]);
+      }
+    });
   }
 
   odustani(): void {
