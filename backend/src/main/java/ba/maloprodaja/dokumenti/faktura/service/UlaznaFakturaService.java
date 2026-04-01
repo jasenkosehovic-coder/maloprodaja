@@ -117,13 +117,19 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         faktura.setNapomena(dto.napomena());
         faktura.setStatus(StatusFakture.NACRT);
 
+        if (dto.ukupnoBezPdv() != null) {
+            faktura.setUkupnoBezPdv(dto.ukupnoBezPdv());
+        }
+        if (dto.ukupno() != null) {
+            faktura.setUkupno(dto.ukupno());
+            if (dto.ukupnoBezPdv() != null) {
+                faktura.setUkupnoPdv(dto.ukupno().subtract(dto.ukupnoBezPdv()));
+            } else {
+                faktura.setUkupnoPdv(BigDecimal.ZERO);
+            }
+        }
+
         UlaznaFaktura savedFaktura = fakturaRepository.save(faktura);
-
-        List<UlaznaFakturaStavka> stavke = kreirajStavke(dto.stavke(), savedFaktura);
-        stavkaRepository.saveAll(stavke);
-
-        azurirajZbrojeve(savedFaktura, stavke);
-        fakturaRepository.save(savedFaktura);
 
         log.info("Kreirana ulazna faktura: broj='{}', idKompanije={}, idPoslovnice={}", dto.broj(), idKompanije, idPoslovnice);
 
@@ -160,13 +166,6 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
             faktura.setNapomena(dto.napomena());
         }
 
-        if (dto.stavke() != null) {
-            stavkaRepository.deleteAll(stavkaRepository.findByFakturaId(id));
-            List<UlaznaFakturaStavka> noveStavke = kreirajStavke(dto.stavke(), faktura);
-            stavkaRepository.saveAll(noveStavke);
-            azurirajZbrojeve(faktura, noveStavke);
-        }
-
         fakturaRepository.save(faktura);
 
         log.info("Ažurirana ulazna faktura: id={}", id);
@@ -185,6 +184,10 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         }
 
         List<UlaznaFakturaStavka> stavke = stavkaRepository.findByFakturaId(id);
+
+        if (stavke.isEmpty()) {
+            throw new BusinessException("Faktura nema stavki i ne može biti potvrđena.");
+        }
 
         for (UlaznaFakturaStavka stavka : stavke) {
             ArtikalPoslovnica artikalPoslovnica = artikalPoslovnicaRepository
@@ -235,6 +238,64 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         fakturaRepository.save(faktura);
 
         log.info("Stornirana ulazna faktura: id={}", id);
+    }
+
+    @Override
+    @Transactional
+    public UlaznaFakturaDTO.DetailDTO addStavka(Long fakturaId, UlaznaFakturaDTO.AddStavkaDTO dto) {
+        UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
+
+        if (faktura.getStatus() != StatusFakture.NACRT) {
+            throw new BusinessException("Stavke je moguće dodavati samo na fakture u statusu NACRT.");
+        }
+
+        BigDecimal iznosPdv = izracunajIznosPdv(dto.vpc(), dto.kolicina(), dto.pdvStopa());
+        BigDecimal ukupnoStavka = dto.vpc().multiply(dto.kolicina()).add(iznosPdv).setScale(4, RoundingMode.HALF_UP);
+
+        UlaznaFakturaStavka stavka = new UlaznaFakturaStavka();
+        stavka.setFaktura(faktura);
+        stavka.setIdArtikla(dto.idArtikla());
+        stavka.setKolicina(dto.kolicina());
+        stavka.setVpc(dto.vpc());
+        stavka.setPdvStopa(dto.pdvStopa());
+        stavka.setIznosPdv(iznosPdv);
+        stavka.setUkupno(ukupnoStavka);
+        stavkaRepository.save(stavka);
+
+        List<UlaznaFakturaStavka> sveStavke = stavkaRepository.findByFakturaId(fakturaId);
+        azurirajZbrojeve(faktura, sveStavke);
+        fakturaRepository.save(faktura);
+
+        log.info("Dodana stavka na fakturu id={}, artikal id={}", fakturaId, dto.idArtikla());
+
+        return findById(fakturaId);
+    }
+
+    @Override
+    @Transactional
+    public void removeStavka(Long fakturaId, Long stavkaId) {
+        UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
+
+        if (faktura.getStatus() != StatusFakture.NACRT) {
+            throw new BusinessException("Stavke je moguće uklanjati samo sa faktura u statusu NACRT.");
+        }
+
+        UlaznaFakturaStavka stavka = stavkaRepository.findById(stavkaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFakturaStavka", stavkaId));
+
+        if (!stavka.getFaktura().getId().equals(fakturaId)) {
+            throw new BusinessException("Stavka sa ID=" + stavkaId + " ne pripada fakturi sa ID=" + fakturaId + ".");
+        }
+
+        stavkaRepository.delete(stavka);
+
+        List<UlaznaFakturaStavka> preostaleStavke = stavkaRepository.findByFakturaId(fakturaId);
+        azurirajZbrojeve(faktura, preostaleStavke);
+        fakturaRepository.save(faktura);
+
+        log.info("Uklonjena stavka id={} sa fakture id={}", stavkaId, fakturaId);
     }
 
     private List<UlaznaFakturaStavka> kreirajStavke(

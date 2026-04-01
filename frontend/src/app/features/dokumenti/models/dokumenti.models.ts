@@ -35,10 +35,11 @@ export interface CreateFakturaDTO {
   datum: string;
   datumValute: string | null;
   napomena: string | null;
-  stavke: CreateFakturaStavkaDTO[];
+  ukupnoBezPdv?: number | null;
+  ukupno?: number | null;
 }
 
-export interface CreateFakturaStavkaDTO {
+export interface AddFakturaStavkaDTO {
   idArtikla: number;
   kolicina: number;
   vpc: number;

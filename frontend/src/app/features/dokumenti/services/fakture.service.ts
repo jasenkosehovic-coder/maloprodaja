@@ -8,6 +8,7 @@ import {
   UlaznaFakturaListItem,
   UlaznaFakturaDetail,
   CreateFakturaDTO,
+  AddFakturaStavkaDTO,
 } from '../models/dokumenti.models';
 
 @Injectable({ providedIn: 'root' })
@@ -49,6 +50,18 @@ export class FaktureService {
     return this.http
       .post<ApiResponse<void>>(`${this.baseUrl}/${id}/storno`, {})
       .pipe(map(() => void 0));
+  }
+
+  addStavka(fakturaId: number, dto: AddFakturaStavkaDTO): Observable<UlaznaFakturaDetail> {
+    return this.http
+      .post<ApiResponse<UlaznaFakturaDetail>>(`${this.baseUrl}/${fakturaId}/stavke`, dto)
+      .pipe(map(r => r.data));
+  }
+
+  removeStavka(fakturaId: number, stavkaId: number): Observable<UlaznaFakturaDetail> {
+    return this.http
+      .delete<ApiResponse<UlaznaFakturaDetail>>(`${this.baseUrl}/${fakturaId}/stavke/${stavkaId}`)
+      .pipe(map(r => r.data));
   }
 
   downloadPdf(id: number): Observable<Blob> {

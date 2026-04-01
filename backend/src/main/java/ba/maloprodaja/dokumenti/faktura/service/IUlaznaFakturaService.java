@@ -14,6 +14,10 @@ public interface IUlaznaFakturaService {
 
     UlaznaFakturaDTO.DetailDTO update(Long id, UlaznaFakturaDTO.UpdateDTO dto);
 
+    UlaznaFakturaDTO.DetailDTO addStavka(Long fakturaId, UlaznaFakturaDTO.AddStavkaDTO dto);
+
+    void removeStavka(Long fakturaId, Long stavkaId);
+
     void potvrdi(Long id);
 
     void storno(Long id);
