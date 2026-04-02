@@ -31,6 +31,9 @@ public class UlaznaFakturaStavka extends BaseEntity {
     @Column(name = "pdv_stopa", nullable = false, precision = 10, scale = 4)
     private BigDecimal pdvStopa;
 
+    @Column(name = "popust", precision = 10, scale = 4)
+    private BigDecimal popust;
+
     @Column(name = "iznos_pdv", nullable = false, precision = 15, scale = 4)
     private BigDecimal iznosPdv = BigDecimal.ZERO;
 

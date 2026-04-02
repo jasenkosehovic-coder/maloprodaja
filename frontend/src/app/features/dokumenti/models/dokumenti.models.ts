@@ -26,6 +26,7 @@ export interface FakturaStavka {
   sifraArtikla: string;
   kolicina: number;
   vpc: number;
+  popust: number | null;
   pdvStopa: number;
   iznosPdv: number;
   ukupno: number;
@@ -45,7 +46,7 @@ export interface AddFakturaStavkaDTO {
   idArtikla: number;
   kolicina: number;
   vpc: number;
-  pdvStopa: number;
+  popust?: number | null;
 }
 
 // ===== Nivelacija =====

@@ -32,6 +32,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { CurrencyBamPipe } from '../../../shared/pipes/currency-bam.pipe';
+import { AuthService } from '../../../core/auth/services/auth.service';
 import { FaktureService } from '../services/fakture.service';
 import { AddFakturaStavkaDTO, UlaznaFakturaDetail } from '../models/dokumenti.models';
 import { ArtikliService } from '../../sifarnici/artikli/artikli.service';
@@ -63,6 +64,7 @@ import { ArtikalKompanija, ArtikalPoslovnica } from '../../sifarnici/artikli/art
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FakturaDetailComponent implements OnInit {
+  private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly faktureService = inject(FaktureService);
@@ -81,14 +83,27 @@ export class FakturaDetailComponent implements OnInit {
   readonly artikliKompanija = signal<ArtikalKompanija[]>([]);
   readonly artikliPoslovnica = signal<ArtikalPoslovnica[]>([]);
 
-  readonly stavkeColumns = ['redniBroj', 'sifra', 'naziv', 'kolicina', 'vpc', 'pdvStopa', 'iznosPdv', 'ukupno'];
-  readonly stavkeNacrtColumns = ['redniBroj', 'sifra', 'naziv', 'kolicina', 'vpc', 'pdvStopa', 'iznosPdv', 'ukupno', 'ukloni'];
+  readonly stavkeColumns = ['redniBroj', 'sifra', 'naziv', 'kolicina', 'vpc', 'popust', 'iznosPdv', 'ukupno'];
+  readonly stavkeNacrtColumns = ['redniBroj', 'sifra', 'naziv', 'kolicina', 'vpc', 'popust', 'iznosPdv', 'ukupno', 'ukloni'];
 
   readonly novStavkaForm = this.fb.group({
     idArtikla: this.fb.control<number | null>(null, Validators.required),
     kolicina: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001)]),
     vpc: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
-    pdvStopa: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+    popust: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100)]),
+  });
+
+  readonly artikalPretragaTekst = signal('');
+  readonly selectedArtikalPdv = signal<number | null>(null);
+  readonly selectedArtikalMarza = signal<number | null>(null);
+
+  readonly filteredArtikliKompanija = computed(() => {
+    const tekst = this.artikalPretragaTekst().toLowerCase().trim();
+    const lista = this.artikliKompanija();
+    if (!tekst) return lista;
+    return lista.filter(a =>
+      a.naziv.toLowerCase().includes(tekst) || a.sifra.toLowerCase().includes(tekst)
+    );
   });
 
   readonly izracunatoUkupnoBezPdv = computed(() => {
@@ -113,15 +128,18 @@ export class FakturaDetailComponent implements OnInit {
 
   readonly mpcKalkulacija = computed(() => {
     const vpc = this.novStavkaForm.controls.vpc.value;
-    const pdv = this.novStavkaForm.controls.pdvStopa.value;
+    const pdv = this.selectedArtikalPdv();
+    const marza = this.selectedArtikalMarza();
     if (vpc == null || pdv == null || vpc < 0 || pdv < 0) return null;
-    return vpc * (1 + pdv / 100);
+    const marzaFaktor = marza != null && marza > 0 ? (1 + marza / 100) : 1;
+    const raw = vpc * marzaFaktor * (1 + pdv / 100);
+    return Math.ceil(raw / 0.05) * 0.05;
   });
 
   readonly iznosSaPdvKalkulacija = computed(() => {
     const vpc = this.novStavkaForm.controls.vpc.value;
     const kolicina = this.novStavkaForm.controls.kolicina.value;
-    const pdv = this.novStavkaForm.controls.pdvStopa.value;
+    const pdv = this.selectedArtikalPdv();
     if (vpc == null || kolicina == null || pdv == null) return null;
     const osnova = vpc * kolicina;
     return osnova + osnova * (pdv / 100);
@@ -183,17 +201,22 @@ export class FakturaDetailComponent implements OnInit {
   }
 
   private onArtikalChange(idArtikla: number | null): void {
-    if (idArtikla == null) return;
+    if (idArtikla == null) {
+      this.selectedArtikalPdv.set(null);
+      this.selectedArtikalMarza.set(null);
+      return;
+    }
 
     const artikal = this.artikliKompanija().find(a => a.id === idArtikla);
     if (artikal) {
-      this.novStavkaForm.controls.pdvStopa.setValue(artikal.pdv);
+      this.selectedArtikalPdv.set(artikal.pdv);
     }
 
     const artPoslov = this.artikliPoslovnica().find(ap => ap.idArtikla === idArtikla);
     if (artPoslov?.vpc != null) {
       this.novStavkaForm.controls.vpc.setValue(artPoslov.vpc);
     }
+    this.selectedArtikalMarza.set(artPoslov?.marza ?? null);
 
     this.cdr.markForCheck();
   }
@@ -212,7 +235,7 @@ export class FakturaDetailComponent implements OnInit {
       idArtikla: formValue.idArtikla as number,
       kolicina: formValue.kolicina as number,
       vpc: formValue.vpc as number,
-      pdvStopa: formValue.pdvStopa as number,
+      popust: formValue.popust,
     };
 
     this.isSavingStavka.set(true);
@@ -223,7 +246,8 @@ export class FakturaDetailComponent implements OnInit {
           this.cdr.markForCheck();
         }),
         catchError(err => {
-          this.snackBar.open('Greška pri dodavanju stavke.', 'Zatvori', { duration: 3000 });
+          const msg = err?.error?.message ?? 'Greška pri dodavanju stavke.';
+          this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
           console.error(err);
           return EMPTY;
         }),
@@ -232,6 +256,9 @@ export class FakturaDetailComponent implements OnInit {
       .subscribe(updated => {
         this.faktura.set(updated);
         this.novStavkaForm.reset();
+        this.artikalPretragaTekst.set('');
+        this.selectedArtikalPdv.set(null);
+        this.selectedArtikalMarza.set(null);
         this.isAddingStavka.set(false);
         if (updated.statusFakture === 'POTVRDJENO') {
           this.snackBar.open('Faktura je automatski potvrđena — iznosi se slažu.', 'Zatvori', { duration: 4000 });
@@ -262,7 +289,8 @@ export class FakturaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.faktureService.removeStavka(f.id, stavkaId).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri uklanjanju stavke.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri uklanjanju stavke.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })
@@ -295,7 +323,8 @@ export class FakturaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.faktureService.potvrdi(f.id).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri potvrđivanju fakture.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri potvrđivanju fakture.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })
@@ -327,7 +356,8 @@ export class FakturaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.faktureService.storno(f.id).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri storniranju fakture.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri storniranju fakture.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })
@@ -354,10 +384,16 @@ export class FakturaDetailComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(blob => {
+        const f = this.faktura();
+        const poslovnicaId = this.authService.korisnik()?.poslovnicaId;
+        const id = f?.id ?? '';
+        const naziv = poslovnicaId
+          ? `Ulazna_faktura_${poslovnicaId}_${id}`
+          : `Ulazna_faktura_${id}`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `faktura-${f.broj}.pdf`;
+        a.download = `${naziv}.pdf`;
         a.click();
         URL.revokeObjectURL(url);
       });

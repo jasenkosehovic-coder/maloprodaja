@@ -24,6 +24,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { CrudTableComponent } from '../../../shared/components/crud-table/crud-table.component';
 import { CrudFieldConfig, CrudActionsConfig } from '../../../shared/components/crud-table/crud-field-config';
 import { NotificationService } from '../../../core/services/notification.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
+import { CrudPdfHeader } from '../../../shared/components/crud-table/crud-field-config';
 import { FaktureService } from '../services/fakture.service';
 import { UlaznaFakturaListItem } from '../models/dokumenti.models';
 import { FakturaFormComponent } from './faktura-form.component';
@@ -48,10 +50,24 @@ import { FakturaFormComponent } from './faktura-form.component';
 export class FaktureListComponent implements OnInit {
   private readonly faktureService = inject(FaktureService);
   private readonly notification = inject(NotificationService);
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+
+  readonly pdfHeader = computed<CrudPdfHeader | null>(() => {
+    const k = this.authService.korisnik();
+    if (!k) return null;
+    return {
+      kompanijaNaziv: k.kompanijaNaziv,
+      kompanijaAdresa: k.kompanijaAdresa,
+      kompanijaGrad: k.kompanijaGrad,
+      poslovnicaNaziv: k.poslovnicaId ? k.poslovnicaNaziv : undefined,
+      poslovnicaAdresa: k.poslovnicaId ? k.poslovnicaAdresa : undefined,
+      poslovnicaGrad: k.poslovnicaId ? k.poslovnicaGrad : undefined,
+    };
+  });
 
   readonly fakture = signal<UlaznaFakturaListItem[]>([]);
   readonly isLoading = signal(false);

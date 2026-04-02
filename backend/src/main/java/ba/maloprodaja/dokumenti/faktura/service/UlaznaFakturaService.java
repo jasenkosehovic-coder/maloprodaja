@@ -264,7 +264,11 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
             throw new BusinessException("Stavke je moguće dodavati samo na fakture u statusu NACRT.");
         }
 
-        BigDecimal iznosPdv = izracunajIznosPdv(dto.vpc(), dto.kolicina(), dto.pdvStopa());
+        ArtikalKompanija artikalKomp = artikalKompRepository.findById(dto.idArtikla())
+                .orElseThrow(() -> new ResourceNotFoundException("ArtikalKompanija", dto.idArtikla()));
+        BigDecimal pdvStopa = artikalKomp.getPdv();
+
+        BigDecimal iznosPdv = izracunajIznosPdv(dto.vpc(), dto.kolicina(), pdvStopa);
         BigDecimal ukupnoStavka = dto.vpc().multiply(dto.kolicina()).add(iznosPdv).setScale(4, RoundingMode.HALF_UP);
 
         UlaznaFakturaStavka stavka = new UlaznaFakturaStavka();
@@ -272,7 +276,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         stavka.setIdArtikla(dto.idArtikla());
         stavka.setKolicina(dto.kolicina());
         stavka.setVpc(dto.vpc());
-        stavka.setPdvStopa(dto.pdvStopa());
+        stavka.setPdvStopa(pdvStopa);
+        stavka.setPopust(dto.popust());
         stavka.setIznosPdv(iznosPdv);
         stavka.setUkupno(ukupnoStavka);
         stavkaRepository.save(stavka);
@@ -341,9 +346,23 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
     private List<UlaznaFakturaStavka> kreirajStavke(
             List<UlaznaFakturaDTO.CreateStavkaDTO> stavkeDtos,
             UlaznaFaktura faktura) {
+
+        List<Long> artikalIds = stavkeDtos.stream()
+                .map(UlaznaFakturaDTO.CreateStavkaDTO::idArtikla)
+                .distinct()
+                .toList();
+
+        Map<Long, BigDecimal> pdvStopeMap = artikalKompRepository.findAllById(artikalIds)
+                .stream()
+                .collect(Collectors.toMap(ArtikalKompanija::getId, ArtikalKompanija::getPdv));
+
         return stavkeDtos.stream()
                 .map(s -> {
-                    BigDecimal iznosPdv = izracunajIznosPdv(s.vpc(), s.kolicina(), s.pdvStopa());
+                    BigDecimal pdvStopa = pdvStopeMap.get(s.idArtikla());
+                    if (pdvStopa == null) {
+                        throw new ResourceNotFoundException("ArtikalKompanija", s.idArtikla());
+                    }
+                    BigDecimal iznosPdv = izracunajIznosPdv(s.vpc(), s.kolicina(), pdvStopa);
                     BigDecimal ukupno = s.vpc().multiply(s.kolicina()).add(iznosPdv).setScale(4, RoundingMode.HALF_UP);
 
                     UlaznaFakturaStavka stavka = new UlaznaFakturaStavka();
@@ -351,7 +370,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
                     stavka.setIdArtikla(s.idArtikla());
                     stavka.setKolicina(s.kolicina());
                     stavka.setVpc(s.vpc());
-                    stavka.setPdvStopa(s.pdvStopa());
+                    stavka.setPdvStopa(pdvStopa);
+                    stavka.setPopust(s.popust());
                     stavka.setIznosPdv(iznosPdv);
                     stavka.setUkupno(ukupno);
                     return stavka;
@@ -399,6 +419,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
                         artikalSifre.getOrDefault(s.getIdArtikla(), ""),
                         s.getKolicina(),
                         s.getVpc(),
+                        s.getPopust(),
                         s.getPdvStopa(),
                         s.getIznosPdv(),
                         s.getUkupno()

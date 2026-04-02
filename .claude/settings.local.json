@@ -38,7 +38,9 @@
       "Bash(mvn test-compile:*)",
       "Bash(mvn clean:*)",
       "Bash(find /c/Users/Jasenko/.m2/repository/net/sf/jasperreports -name jasperreports-*.jar)",
-      "Bash(jar tf:*)"
+      "Bash(jar tf:*)",
+      "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
+      "Bash(npx tsc:*)"
     ]
   }
 }

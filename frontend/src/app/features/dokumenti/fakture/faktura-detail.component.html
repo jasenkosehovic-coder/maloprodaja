@@ -135,7 +135,19 @@
               <mat-form-field appearance="outline" class="field-artikal">
                 <mat-label>Artikal</mat-label>
                 <mat-select formControlName="idArtikla" aria-label="Odaberite artikal">
-                  @for (a of artikliKompanija(); track a.id) {
+                  <mat-option>
+                    <div class="select-search-wrapper" (click)="$event.stopPropagation()">
+                      <input
+                        class="artikal-pretraga"
+                        placeholder="Pretraži artikal..."
+                        [value]="artikalPretragaTekst()"
+                        (input)="artikalPretragaTekst.set($any($event.target).value)"
+                        (keydown)="$event.stopPropagation()"
+                        aria-label="Pretraga artikala"
+                      />
+                    </div>
+                  </mat-option>
+                  @for (a of filteredArtikliKompanija(); track a.id) {
                     <mat-option [value]="a.id">{{ a.sifra }} — {{ a.naziv }}</mat-option>
                   }
                 </mat-select>
@@ -178,20 +190,21 @@
                 }
               </mat-form-field>
 
-              <!-- PDV stopa -->
+              <!-- Popust -->
               <mat-form-field appearance="outline" class="field-number">
-                <mat-label>PDV (%)</mat-label>
+                <mat-label>Popust (%)</mat-label>
                 <input
                   matInput
                   type="number"
-                  formControlName="pdvStopa"
-                  id="stavka-pdv"
+                  formControlName="popust"
+                  id="stavka-popust"
                   min="0"
+                  max="100"
                   step="0.01"
-                  aria-label="PDV stopa"
+                  aria-label="Popust u procentima"
                 />
-                @if (novStavkaForm.controls.pdvStopa.invalid && novStavkaForm.controls.pdvStopa.touched) {
-                  <mat-error role="alert" aria-live="polite">PDV stopa je obavezna.</mat-error>
+                @if (novStavkaForm.controls.popust.invalid && novStavkaForm.controls.popust.touched) {
+                  <mat-error role="alert" aria-live="polite">Popust mora biti između 0 i 100.</mat-error>
                 }
               </mat-form-field>
 
@@ -202,8 +215,11 @@
               <div class="kalkulacija" aria-live="polite">
                 @if (mpcKalkulacija() !== null) {
                   <span class="kalkulacija-item">
-                    <span class="kalkulacija-label">MPC (VPC + PDV):</span>
+                    <span class="kalkulacija-label">MPC (VPC + Marža + PDV):</span>
                     <strong>{{ mpcKalkulacija()! | currencyBam }}</strong>
+                    @if (selectedArtikalPdv() !== null) {
+                      <span class="kalkulacija-hint">PDV: {{ selectedArtikalPdv() }}%</span>
+                    }
                   </span>
                 }
                 @if (iznosSaPdvKalkulacija() !== null) {
@@ -218,7 +234,7 @@
                 <button
                   mat-button
                   type="button"
-                  (click)="isAddingStavka.set(false); novStavkaForm.reset()"
+                  (click)="isAddingStavka.set(false); novStavkaForm.reset(); artikalPretragaTekst.set(''); selectedArtikalPdv.set(null); selectedArtikalMarza.set(null)"
                   aria-label="Odustani od dodavanja stavke"
                 >
                   Odustani
@@ -276,9 +292,11 @@
                 <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
               </ng-container>
 
-              <ng-container matColumnDef="pdvStopa">
-                <th mat-header-cell *matHeaderCellDef class="col-right">PDV%</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.pdvStopa }}%</td>
+              <ng-container matColumnDef="popust">
+                <th mat-header-cell *matHeaderCellDef class="col-right">Popust%</th>
+                <td mat-cell *matCellDef="let row" class="col-right">
+                  {{ row.popust != null ? (row.popust + '%') : '—' }}
+                </td>
               </ng-container>
 
               <ng-container matColumnDef="iznosPdv">
@@ -339,9 +357,11 @@
                 <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
               </ng-container>
 
-              <ng-container matColumnDef="pdvStopa">
-                <th mat-header-cell *matHeaderCellDef class="col-right">PDV%</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.pdvStopa }}%</td>
+              <ng-container matColumnDef="popust">
+                <th mat-header-cell *matHeaderCellDef class="col-right">Popust%</th>
+                <td mat-cell *matCellDef="let row" class="col-right">
+                  {{ row.popust != null ? (row.popust + '%') : '—' }}
+                </td>
               </ng-container>
 
               <ng-container matColumnDef="iznosPdv">
@@ -405,14 +425,14 @@
           <mat-icon>cancel</mat-icon>
           Storniraj
         </button>
-        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF fakture">
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Prikaži PDF fakture">
           <mat-icon>picture_as_pdf</mat-icon>
-          Preuzmi PDF
+          Prikaži PDF
         </button>
       } @else {
-        <button mat-stroked-button (click)="downloadPdf()" aria-label="Preuzmi PDF fakture">
+        <button mat-stroked-button (click)="downloadPdf()" aria-label="Prikaži PDF fakture">
           <mat-icon>picture_as_pdf</mat-icon>
-          Preuzmi PDF
+          Prikaži PDF
         </button>
       }
     </div>

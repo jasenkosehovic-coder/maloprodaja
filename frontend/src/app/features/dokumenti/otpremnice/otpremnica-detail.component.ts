@@ -111,7 +111,8 @@ export class OtpremnicaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.otpremnicaService.posalji(o.id).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri slanju otpremnice.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri slanju otpremnice.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })
@@ -143,7 +144,8 @@ export class OtpremnicaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.otpremnicaService.potvrdiPrijem(o.id).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri potvrdi prijema otpremnice.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri potvrdi prijema otpremnice.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })
@@ -175,7 +177,8 @@ export class OtpremnicaDetailComponent implements OnInit {
         filter(result => result === true),
         switchMap(() => this.otpremnicaService.storno(o.id).pipe(
           catchError(err => {
-            this.snackBar.open('Greška pri storniranju otpremnice.', 'Zatvori', { duration: 3000 });
+            const msg = err?.error?.message ?? 'Greška pri storniranju otpremnice.';
+            this.snackBar.open(msg, 'Zatvori', { duration: 5000 });
             console.error(err);
             return EMPTY;
           })

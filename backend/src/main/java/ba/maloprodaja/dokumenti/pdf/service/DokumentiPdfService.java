@@ -14,12 +14,16 @@ import ba.maloprodaja.dokumenti.otpremnica.entity.Otpremnica;
 import ba.maloprodaja.dokumenti.otpremnica.entity.OtpremnicaStavka;
 import ba.maloprodaja.dokumenti.otpremnica.repository.OtpremnicaRepository;
 import ba.maloprodaja.dokumenti.otpremnica.repository.OtpremnicaStavkaRepository;
+import ba.maloprodaja.kompanija.entity.Kompanija;
+import ba.maloprodaja.kompanija.repository.KompanijaRepository;
 import ba.maloprodaja.poslovnica.entity.Poslovnica;
 import ba.maloprodaja.poslovnica.repository.PoslovnicaRepository;
 import ba.maloprodaja.sifarnici.artikalkomp.entity.ArtikalKompanija;
 import ba.maloprodaja.sifarnici.artikalkomp.repository.ArtikalKompanijeRepository;
 import ba.maloprodaja.sifarnici.dobavljac.entity.Dobavljac;
 import ba.maloprodaja.sifarnici.dobavljac.repository.DobavljacRepository;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jasperreports.engine.JRException;
@@ -37,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +59,7 @@ public class DokumentiPdfService {
     private final NivelacijaStavkaRepository nivelacijaStavkaRepository;
     private final OtpremnicaRepository otpremnicaRepository;
     private final OtpremnicaStavkaRepository otpremnicaStavkaRepository;
+    private final KompanijaRepository kompanijaRepository;
     private final PoslovnicaRepository poslovnicaRepository;
     private final DobavljacRepository dobavljacRepository;
     private final ArtikalKompanijeRepository artikalKompRepository;
@@ -72,6 +78,14 @@ public class DokumentiPdfService {
                 .map(Dobavljac::getNaziv)
                 .orElse("");
 
+        String nazivKompanije = kompanijaRepository.findById(faktura.getIdKompanije())
+                .map(Kompanija::getNaziv)
+                .orElse("");
+
+        String nazivPoslovnice = poslovnicaRepository.findById(faktura.getIdPoslovnice())
+                .map(Poslovnica::getNaziv)
+                .orElse("");
+
         List<FakturaStavkaRedDTO> redovi = stavke.stream()
                 .map(s -> {
                     ArtikalKompanija a = artikliMap.get(s.getIdArtikla());
@@ -80,7 +94,7 @@ public class DokumentiPdfService {
                             a != null ? a.getNaziv() : "",
                             s.getKolicina(),
                             s.getVpc(),
-                            s.getPdvStopa().multiply(BigDecimal.valueOf(100)).setScale(2, RoundingMode.HALF_UP),
+                            s.getPdvStopa().setScale(0, RoundingMode.HALF_UP),
                             s.getIznosPdv(),
                             s.getUkupno()
                     );
@@ -88,12 +102,15 @@ public class DokumentiPdfService {
                 .toList();
 
         Map<String, Object> params = new HashMap<>();
-        params.put("NASLOV", "ULAZNA FAKTURA br: " + faktura.getBroj());
-        params.put("DATUM", faktura.getDatum() != null ? faktura.getDatum().toString() : "");
-        params.put("DOBAVLJAC", nazivDobavljaca);
+        params.put("KOMPANIJA",      nazivKompanije);
+        params.put("POSLOVNICA",     nazivPoslovnice);
+        params.put("NASLOV",         "ULAZNA FAKTURA br: " + faktura.getBroj());
+        params.put("DATUM",          faktura.getDatum() != null ? faktura.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : "");
+        params.put("DOBAVLJAC",      nazivDobavljaca);
+        params.put("BROJ_DOKUMENTA", String.valueOf(faktura.getId()));
         params.put("UKUPNO_BEZ_PDV", faktura.getUkupnoBezPdv());
-        params.put("UKUPNO_PDV", faktura.getUkupnoPdv());
-        params.put("UKUPNO", faktura.getUkupno());
+        params.put("UKUPNO_PDV",     faktura.getUkupnoPdv());
+        params.put("UKUPNO",         faktura.getUkupno());
 
         JasperReport report = PdfReportBuilder.buildFakturaReport();
         return generisiPdf(report, params, redovi);
@@ -214,32 +231,40 @@ public class DokumentiPdfService {
     }
 
     // ---- DTO za redove tabela ----
+    // Namjerno klase umjesto record — JasperReports (Commons BeanUtils) traži JavaBean getere (getSifra()),
+    // a Java record exposes sifra() bez get-prefiksa.
 
-    public record FakturaStavkaRedDTO(
-            String sifra,
-            String naziv,
-            BigDecimal kolicina,
-            BigDecimal vpc,
-            BigDecimal pdvStopa,
-            BigDecimal iznosPdv,
-            BigDecimal ukupno
-    ) {}
+    @Getter
+    @AllArgsConstructor
+    public static class FakturaStavkaRedDTO {
+        private String sifra;
+        private String naziv;
+        private BigDecimal kolicina;
+        private BigDecimal vpc;
+        private BigDecimal pdvStopa;
+        private BigDecimal iznosPdv;
+        private BigDecimal ukupno;
+    }
 
-    public record NivelacijaStavkaRedDTO(
-            String sifra,
-            String naziv,
-            BigDecimal kolicina,
-            BigDecimal vpc,
-            BigDecimal mpcStara,
-            BigDecimal mpcNova,
-            BigDecimal iznosNivelacije
-    ) {}
+    @Getter
+    @AllArgsConstructor
+    public static class NivelacijaStavkaRedDTO {
+        private String sifra;
+        private String naziv;
+        private BigDecimal kolicina;
+        private BigDecimal vpc;
+        private BigDecimal mpcStara;
+        private BigDecimal mpcNova;
+        private BigDecimal iznosNivelacije;
+    }
 
-    public record OtpremnicaStavkaRedDTO(
-            String sifra,
-            String naziv,
-            BigDecimal kolicina,
-            BigDecimal vpc,
-            BigDecimal mpc
-    ) {}
+    @Getter
+    @AllArgsConstructor
+    public static class OtpremnicaStavkaRedDTO {
+        private String sifra;
+        private String naziv;
+        private BigDecimal kolicina;
+        private BigDecimal vpc;
+        private BigDecimal mpc;
+    }
 }

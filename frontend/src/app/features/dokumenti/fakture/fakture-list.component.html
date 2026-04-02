@@ -49,6 +49,7 @@
     [externalDelete]="true"
     [rowStyleClass]="rowStyleClass"
     exportName="Ulazne fakture"
+    [pdfHeader]="pdfHeader()"
     (addClick)="onAddClick()"
     (editClick)="onEditClick($event)"
     (delete)="onDelete($event)"

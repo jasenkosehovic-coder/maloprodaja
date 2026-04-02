@@ -37,6 +37,9 @@ export const authInterceptor: HttpInterceptorFn = (
           })
         );
       }
+      if (error.status === 401) {
+        authService.logout();
+      }
       return throwError(() => error);
     })
   );

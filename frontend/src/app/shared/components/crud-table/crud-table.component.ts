@@ -26,6 +26,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } from './crud-field-config';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 class DdMmYyyyDateAdapter extends NativeDateAdapter {
@@ -882,13 +883,14 @@ export class CrudTableComponent implements OnChanges {
     .report-title { font-size: 17px; font-weight: bold; margin-top: 10px; }
     .report-date { font-size: 10px; color: #888; margin-top: 3px; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th { background: #3f51b5; color: #fff; padding: 6px 7px; text-align: left; font-size: 10px; white-space: nowrap; }
+    th { background: #fff; color: #000; font-weight: bold; padding: 6px 7px; text-align: left; font-size: 10px; white-space: nowrap; border-bottom: 2px solid #000; }
     td { padding: 4px 7px; border-bottom: 1px solid #e0e0e0; font-size: 10px; }
     tr:nth-child(even) td { background: #f5f5f5; }
     .print-btn { margin-top: 16px; padding: 7px 20px; background: #3f51b5; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
     @media print {
+      @page { margin: 0; }
+      body { padding: 15mm; }
       .print-btn { display: none; }
-      body { padding: 10px; }
     }
   </style>
 </head>
@@ -909,6 +911,68 @@ export class CrudTableComponent implements OnChanges {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
+  }
+
+  exportExcel(): void {
+    const now = new Date();
+    const dateStr =
+      `${now.getDate().toString().padStart(2, '0')}.` +
+      `${(now.getMonth() + 1).toString().padStart(2, '0')}.` +
+      `${now.getFullYear()} ` +
+      `${now.getHours().toString().padStart(2, '0')}:` +
+      `${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const h = this.pdfHeader;
+    const labels = this.headers.map(key => this.getField(key)?.label ?? key);
+    const dataRows = this.exportData.map(row =>
+      this.headers.map(key => this.formatCellValue(row, key))
+    );
+
+    const kompanijaStr = h?.kompanijaNaziv
+      ? [h.kompanijaNaziv, h.kompanijaAdresa, h.kompanijaGrad].filter(Boolean).join(', ')
+      : '';
+    const poslovnicaStr = h?.poslovnicaNaziv
+      ? [h.poslovnicaNaziv, h.poslovnicaAdresa, h.poslovnicaGrad].filter(Boolean).join(', ')
+      : '';
+
+    // Fixed 7-row header — row 1 (idx 0) and row 7 (idx 6) are always bold
+    const aoa: any[][] = [
+      [kompanijaStr],           // row 1  — bold
+      [poslovnicaStr],          // row 2
+      [],                       // row 3  — empty
+      [this.exportName],        // row 4
+      [`Datum izvoza: ${dateStr}`], // row 5
+      [],                       // row 6  — empty
+      labels,                   // row 7  — bold
+      ...dataRows,              // row 8+
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Bold row 1 (idx 0) and row 7 (idx 6)
+    for (const rowIdx of [0, 6]) {
+      const colCount = (aoa[rowIdx] ?? []).length || 1;
+      for (let c = 0; c < colCount; c++) {
+        const ref = XLSX.utils.encode_cell({ r: rowIdx, c });
+        if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+        ws[ref].s = { font: { bold: true } };
+      }
+    }
+
+    // Auto-fit column widths
+    const maxCols = Math.max(...aoa.map(row => row.length));
+    const colWidths: number[] = Array(maxCols).fill(10);
+    for (const row of aoa) {
+      for (let c = 0; c < row.length; c++) {
+        const len = String(row[c] ?? '').length;
+        if (len > colWidths[c]) colWidths[c] = len;
+      }
+    }
+    ws['!cols'] = colWidths.map(wch => ({ wch: Math.min(wch + 2, 60) }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, this.exportName.slice(0, 31));
+    XLSX.writeFile(wb, `${this.exportName}.xlsx`, { cellStyles: true });
   }
 
   private escHtml(str: string): string {

@@ -46,6 +46,7 @@ public class UlaznaFakturaDTO {
             String sifraArtikla,
             BigDecimal kolicina,
             BigDecimal vpc,
+            BigDecimal popust,
             BigDecimal pdvStopa,
             BigDecimal iznosPdv,
             BigDecimal ukupno
@@ -65,14 +66,14 @@ public class UlaznaFakturaDTO {
             @NotNull Long idArtikla,
             @NotNull @Positive BigDecimal kolicina,
             @NotNull @Positive BigDecimal vpc,
-            @NotNull BigDecimal pdvStopa
+            BigDecimal popust
     ) {}
 
     public record AddStavkaDTO(
             @NotNull Long idArtikla,
             @NotNull @Positive BigDecimal kolicina,
             @NotNull @Positive BigDecimal vpc,
-            @NotNull BigDecimal pdvStopa
+            BigDecimal popust
     ) {}
 
     public record UpdateDTO(
