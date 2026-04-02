@@ -57,6 +57,32 @@ public class UlaznaFakturaController {
         return ResponseEntity.ok(ApiResponse.ok(fakturaService.update(id, dto)));
     }
 
+    @PostMapping("/{id}/stavke")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<UlaznaFakturaDTO.DetailDTO>> addStavka(
+            @PathVariable Long id,
+            @Valid @RequestBody UlaznaFakturaDTO.AddStavkaDTO dto
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(fakturaService.addStavka(id, dto)));
+    }
+
+    @DeleteMapping("/{id}/stavke/{stavkaId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<Void>> removeStavka(
+            @PathVariable Long id,
+            @PathVariable Long stavkaId
+    ) {
+        fakturaService.removeStavka(id, stavkaId);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        fakturaService.delete(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
     @PostMapping("/{id}/potvrdi")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
     public ResponseEntity<ApiResponse<Void>> potvrdi(@PathVariable Long id) {

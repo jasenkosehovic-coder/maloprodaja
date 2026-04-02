@@ -1,115 +1,17 @@
 <div class="page-container">
-  <app-page-header title="Otpremnice" subtitle="Pregled i upravljanje otpremnicama" icon="local_shipping">
-    <button mat-raised-button color="primary" (click)="otvoriFormu()" aria-label="Nova otpremnica">
-      <mat-icon>add</mat-icon>
-      Nova otpremnica
-    </button>
-  </app-page-header>
+  <app-page-header title="Otpremnice" subtitle="Pregled otpremnica" icon="local_shipping" />
 
-  <div class="filter-bar">
-    <mat-form-field appearance="outline" class="filter-select">
-      <mat-label>Status</mat-label>
-      <mat-select
-        [value]="filterStatus()"
-        (selectionChange)="filterStatus.set($event.value)"
-        aria-label="Filter po statusu otpremnice"
-      >
-        @for (opt of statusOptions; track opt.value) {
-          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-  </div>
-
-  @if (isLoading()) {
-    <app-loading-spinner message="Učitavanje otpremnica..." />
-  } @else if (filtrirane().length === 0) {
-    <div class="empty-state" role="status">
-      <mat-icon class="empty-icon">local_shipping</mat-icon>
-      <h3>Nema otpremnica</h3>
-      <p>Kreirajte prvu otpremnicu klikom na "Nova otpremnica".</p>
-    </div>
-  } @else {
-    <div class="table-wrapper">
-      <table mat-table [dataSource]="filtrirane()" aria-label="Lista otpremnica">
-
-        <ng-container matColumnDef="broj">
-          <th mat-header-cell *matHeaderCellDef>Broj</th>
-          <td mat-cell *matCellDef="let row">{{ row.broj }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="datum">
-          <th mat-header-cell *matHeaderCellDef>Datum</th>
-          <td mat-cell *matCellDef="let row">{{ formatDatum(row.datum) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
-          <td mat-cell *matCellDef="let row">
-            <mat-chip-set aria-label="Status otpremnice">
-              <mat-chip [class]="getStatusClass(row.status)" disableRipple>
-                {{ getStatusLabel(row.status) }}
-              </mat-chip>
-            </mat-chip-set>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="posiljalac">
-          <th mat-header-cell *matHeaderCellDef>Pošiljalac</th>
-          <td mat-cell *matCellDef="let row">{{ row.nazivPoslovnicePosiljaoca }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="primalac">
-          <th mat-header-cell *matHeaderCellDef>Primalac</th>
-          <td mat-cell *matCellDef="let row">{{ row.nazivPoslovnicePrimaoca }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="brojStavki">
-          <th mat-header-cell *matHeaderCellDef class="col-number">Br. stavki</th>
-          <td mat-cell *matCellDef="let row" class="col-number">{{ row.brojStavki }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="akcije">
-          <th mat-header-cell *matHeaderCellDef class="col-akcije">Akcije</th>
-          <td mat-cell *matCellDef="let row" class="col-akcije">
-            @if (row.status === 'KREIRANA') {
-              <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Uredi" aria-label="Uredi otpremnicu">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button color="primary" (click)="posalji(row)" matTooltip="Pošalji" aria-label="Pošalji otpremnicu">
-                <mat-icon>send</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="storno(row)" matTooltip="Storniraj" aria-label="Storniraj otpremnicu">
-                <mat-icon>cancel</mat-icon>
-              </button>
-            } @else if (row.status === 'POSLANA') {
-              <button mat-icon-button color="accent" (click)="potvrdiPrijem(row)" matTooltip="Potvrdi prijem" aria-label="Potvrdi prijem otpremnice">
-                <mat-icon>check_circle</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="storno(row)" matTooltip="Storniraj" aria-label="Storniraj otpremnicu">
-                <mat-icon>cancel</mat-icon>
-              </button>
-              <button mat-icon-button (click)="downloadPdf(row)" matTooltip="Preuzmi PDF" aria-label="Preuzmi PDF otpremnice">
-                <mat-icon>picture_as_pdf</mat-icon>
-              </button>
-            } @else if (row.status === 'PRIMLJENA') {
-              <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Pregled" aria-label="Pregled otpremnice">
-                <mat-icon>visibility</mat-icon>
-              </button>
-              <button mat-icon-button (click)="downloadPdf(row)" matTooltip="Preuzmi PDF" aria-label="Preuzmi PDF otpremnice">
-                <mat-icon>picture_as_pdf</mat-icon>
-              </button>
-            } @else {
-              <button mat-icon-button (click)="otvoriDetalj(row.id)" matTooltip="Pregled" aria-label="Pregled otpremnice">
-                <mat-icon>visibility</mat-icon>
-              </button>
-            }
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-      </table>
-    </div>
-  }
+  <app-crud-table
+    [data]="otpremnice()"
+    [headers]="['broj', 'datum', 'status', 'nazivPoslovnicePosiljaoca', 'nazivPoslovnicePrimaoca', 'brojStavki']"
+    [fields]="fields"
+    [actions]="actions"
+    [filterableColumns]="filterableColumns"
+    [externalAdd]="true"
+    [externalEdit]="true"
+    [rowStyleClass]="rowStyleClass"
+    exportName="Otpremnice"
+    (addClick)="onAddClick()"
+    (editClick)="onEditClick($event)"
+  />
 </div>

@@ -1,8 +1,6 @@
 package ba.maloprodaja.dokumenti.faktura.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -36,6 +34,8 @@ public class UlaznaFakturaDTO {
             BigDecimal ukupnoPdv,
             BigDecimal ukupno,
             String napomena,
+            BigDecimal unesenoUkupnoBezPdv,
+            BigDecimal unesenoUkupno,
             List<StavkaDTO> stavke
     ) {}
 
@@ -46,6 +46,7 @@ public class UlaznaFakturaDTO {
             String sifraArtikla,
             BigDecimal kolicina,
             BigDecimal vpc,
+            BigDecimal popust,
             BigDecimal pdvStopa,
             BigDecimal iznosPdv,
             BigDecimal ukupno
@@ -57,14 +58,22 @@ public class UlaznaFakturaDTO {
             @NotNull LocalDate datum,
             LocalDate datumValute,
             String napomena,
-            @NotEmpty @Valid List<CreateStavkaDTO> stavke
+            BigDecimal ukupnoBezPdv,
+            BigDecimal ukupno
     ) {}
 
     public record CreateStavkaDTO(
             @NotNull Long idArtikla,
             @NotNull @Positive BigDecimal kolicina,
             @NotNull @Positive BigDecimal vpc,
-            @NotNull BigDecimal pdvStopa
+            BigDecimal popust
+    ) {}
+
+    public record AddStavkaDTO(
+            @NotNull Long idArtikla,
+            @NotNull @Positive BigDecimal kolicina,
+            @NotNull @Positive BigDecimal vpc,
+            BigDecimal popust
     ) {}
 
     public record UpdateDTO(
@@ -72,7 +81,6 @@ public class UlaznaFakturaDTO {
             String broj,
             LocalDate datum,
             LocalDate datumValute,
-            String napomena,
-            @Valid List<CreateStavkaDTO> stavke
+            String napomena
     ) {}
 }

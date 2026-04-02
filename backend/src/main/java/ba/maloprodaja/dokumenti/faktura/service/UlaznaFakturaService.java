@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class UlaznaFakturaService implements IUlaznaFakturaService {
 
+    private static final BigDecimal IZNOS_TOLERANCIJA = new BigDecimal("0.01");
+
     private final UlaznaFakturaRepository fakturaRepository;
     private final UlaznaFakturaStavkaRepository stavkaRepository;
     private final ArtikalPoslovnicaRepository artikalPoslovnicaRepository;
@@ -116,14 +118,13 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         faktura.setDatumValute(dto.datumValute());
         faktura.setNapomena(dto.napomena());
         faktura.setStatus(StatusFakture.NACRT);
+        faktura.setUkupnoBezPdv(BigDecimal.ZERO);
+        faktura.setUkupnoPdv(BigDecimal.ZERO);
+        faktura.setUkupno(BigDecimal.ZERO);
+        faktura.setUnesenoUkupnoBezPdv(dto.ukupnoBezPdv());
+        faktura.setUnesenoUkupno(dto.ukupno());
 
         UlaznaFaktura savedFaktura = fakturaRepository.save(faktura);
-
-        List<UlaznaFakturaStavka> stavke = kreirajStavke(dto.stavke(), savedFaktura);
-        stavkaRepository.saveAll(stavke);
-
-        azurirajZbrojeve(savedFaktura, stavke);
-        fakturaRepository.save(savedFaktura);
 
         log.info("Kreirana ulazna faktura: broj='{}', idKompanije={}, idPoslovnice={}", dto.broj(), idKompanije, idPoslovnice);
 
@@ -160,13 +161,6 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
             faktura.setNapomena(dto.napomena());
         }
 
-        if (dto.stavke() != null) {
-            stavkaRepository.deleteAll(stavkaRepository.findByFakturaId(id));
-            List<UlaznaFakturaStavka> noveStavke = kreirajStavke(dto.stavke(), faktura);
-            stavkaRepository.saveAll(noveStavke);
-            azurirajZbrojeve(faktura, noveStavke);
-        }
-
         fakturaRepository.save(faktura);
 
         log.info("Ažurirana ulazna faktura: id={}", id);
@@ -186,6 +180,10 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
 
         List<UlaznaFakturaStavka> stavke = stavkaRepository.findByFakturaId(id);
 
+        if (stavke.isEmpty()) {
+            throw new BusinessException("Faktura nema stavki i ne može biti potvrđena.");
+        }
+
         for (UlaznaFakturaStavka stavka : stavke) {
             ArtikalPoslovnica artikalPoslovnica = artikalPoslovnicaRepository
                     .findByIdArtiklaAndIdPoslovnice(stavka.getIdArtikla(), faktura.getIdPoslovnice())
@@ -201,6 +199,25 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         log.info("Potvrđena ulazna faktura: id={}", id);
 
         nivelacijaService.kreirajAutomatskuZaFakturu(id, faktura.getIdKompanije(), faktura.getIdPoslovnice());
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        UlaznaFaktura faktura = fakturaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", id));
+
+        if (faktura.getStatus() != StatusFakture.NACRT) {
+            throw new BusinessException("Samo faktura u statusu NACRT može biti obrisana.");
+        }
+
+        List<UlaznaFakturaStavka> stavke = stavkaRepository.findByFakturaId(id);
+        if (!stavke.isEmpty()) {
+            throw new BusinessException("Faktura ima " + stavke.size() + " stavku/stavki i ne može biti obrisana.");
+        }
+
+        fakturaRepository.delete(faktura);
+        log.info("Obrisana ulazna faktura: id={}", id);
     }
 
     @Override
@@ -237,12 +254,115 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         log.info("Stornirana ulazna faktura: id={}", id);
     }
 
+    @Override
+    @Transactional
+    public UlaznaFakturaDTO.DetailDTO addStavka(Long fakturaId, UlaznaFakturaDTO.AddStavkaDTO dto) {
+        UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
+
+        if (faktura.getStatus() != StatusFakture.NACRT) {
+            throw new BusinessException("Stavke je moguće dodavati samo na fakture u statusu NACRT.");
+        }
+
+        ArtikalKompanija artikalKomp = artikalKompRepository.findById(dto.idArtikla())
+                .orElseThrow(() -> new ResourceNotFoundException("ArtikalKompanija", dto.idArtikla()));
+        BigDecimal pdvStopa = artikalKomp.getPdv();
+
+        BigDecimal iznosPdv = izracunajIznosPdv(dto.vpc(), dto.kolicina(), pdvStopa);
+        BigDecimal ukupnoStavka = dto.vpc().multiply(dto.kolicina()).add(iznosPdv).setScale(4, RoundingMode.HALF_UP);
+
+        UlaznaFakturaStavka stavka = new UlaznaFakturaStavka();
+        stavka.setFaktura(faktura);
+        stavka.setIdArtikla(dto.idArtikla());
+        stavka.setKolicina(dto.kolicina());
+        stavka.setVpc(dto.vpc());
+        stavka.setPdvStopa(pdvStopa);
+        stavka.setPopust(dto.popust());
+        stavka.setIznosPdv(iznosPdv);
+        stavka.setUkupno(ukupnoStavka);
+        stavkaRepository.save(stavka);
+
+        List<UlaznaFakturaStavka> sveStavke = stavkaRepository.findByFakturaId(fakturaId);
+        azurirajZbrojeve(faktura, sveStavke);
+        fakturaRepository.save(faktura);
+
+        provjeriIAutoPotvri(fakturaId);
+
+        log.info("Dodana stavka na fakturu id={}, artikal id={}", fakturaId, dto.idArtikla());
+
+        return findById(fakturaId);
+    }
+
+    @Override
+    @Transactional
+    public void removeStavka(Long fakturaId, Long stavkaId) {
+        UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
+
+        if (faktura.getStatus() != StatusFakture.NACRT) {
+            throw new BusinessException("Stavke je moguće uklanjati samo sa faktura u statusu NACRT.");
+        }
+
+        UlaznaFakturaStavka stavka = stavkaRepository.findById(stavkaId)
+                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFakturaStavka", stavkaId));
+
+        if (!stavka.getFaktura().getId().equals(fakturaId)) {
+            throw new BusinessException("Stavka sa ID=" + stavkaId + " ne pripada fakturi sa ID=" + fakturaId + ".");
+        }
+
+        stavkaRepository.delete(stavka);
+
+        List<UlaznaFakturaStavka> preostaleStavke = stavkaRepository.findByFakturaId(fakturaId);
+        azurirajZbrojeve(faktura, preostaleStavke);
+        fakturaRepository.save(faktura);
+
+        log.info("Uklonjena stavka id={} sa fakture id={}", stavkaId, fakturaId);
+    }
+
+    private void provjeriIAutoPotvri(Long fakturaId) {
+        UlaznaFaktura faktura = fakturaRepository.findById(fakturaId).orElseThrow();
+
+        if (faktura.getUnesenoUkupnoBezPdv() == null || faktura.getUnesenoUkupno() == null) {
+            return;
+        }
+
+        boolean bezPdvSeSlaze = faktura.getUkupnoBezPdv()
+                .subtract(faktura.getUnesenoUkupnoBezPdv()).abs()
+                .compareTo(IZNOS_TOLERANCIJA) <= 0;
+
+        boolean ukupnoSeSlaze = faktura.getUkupno()
+                .subtract(faktura.getUnesenoUkupno()).abs()
+                .compareTo(IZNOS_TOLERANCIJA) <= 0;
+
+        if (bezPdvSeSlaze && ukupnoSeSlaze) {
+            log.info("Auto-potvrda fakture id={}: iznosi se slažu (uneseno={}/{}, izracunato={}/{}).",
+                    fakturaId,
+                    faktura.getUnesenoUkupnoBezPdv(), faktura.getUnesenoUkupno(),
+                    faktura.getUkupnoBezPdv(), faktura.getUkupno());
+            potvrdi(fakturaId);
+        }
+    }
+
     private List<UlaznaFakturaStavka> kreirajStavke(
             List<UlaznaFakturaDTO.CreateStavkaDTO> stavkeDtos,
             UlaznaFaktura faktura) {
+
+        List<Long> artikalIds = stavkeDtos.stream()
+                .map(UlaznaFakturaDTO.CreateStavkaDTO::idArtikla)
+                .distinct()
+                .toList();
+
+        Map<Long, BigDecimal> pdvStopeMap = artikalKompRepository.findAllById(artikalIds)
+                .stream()
+                .collect(Collectors.toMap(ArtikalKompanija::getId, ArtikalKompanija::getPdv));
+
         return stavkeDtos.stream()
                 .map(s -> {
-                    BigDecimal iznosPdv = izracunajIznosPdv(s.vpc(), s.kolicina(), s.pdvStopa());
+                    BigDecimal pdvStopa = pdvStopeMap.get(s.idArtikla());
+                    if (pdvStopa == null) {
+                        throw new ResourceNotFoundException("ArtikalKompanija", s.idArtikla());
+                    }
+                    BigDecimal iznosPdv = izracunajIznosPdv(s.vpc(), s.kolicina(), pdvStopa);
                     BigDecimal ukupno = s.vpc().multiply(s.kolicina()).add(iznosPdv).setScale(4, RoundingMode.HALF_UP);
 
                     UlaznaFakturaStavka stavka = new UlaznaFakturaStavka();
@@ -250,7 +370,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
                     stavka.setIdArtikla(s.idArtikla());
                     stavka.setKolicina(s.kolicina());
                     stavka.setVpc(s.vpc());
-                    stavka.setPdvStopa(s.pdvStopa());
+                    stavka.setPdvStopa(pdvStopa);
+                    stavka.setPopust(s.popust());
                     stavka.setIznosPdv(iznosPdv);
                     stavka.setUkupno(ukupno);
                     return stavka;
@@ -276,8 +397,11 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         faktura.setUkupno(ukupno);
     }
 
+    private static final BigDecimal STO = new BigDecimal("100");
+
     private BigDecimal izracunajIznosPdv(BigDecimal vpc, BigDecimal kolicina, BigDecimal pdvStopa) {
-        return vpc.multiply(kolicina).multiply(pdvStopa).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal pdvFaktor = pdvStopa.divide(STO, 10, RoundingMode.HALF_UP);
+        return vpc.multiply(kolicina).multiply(pdvFaktor).setScale(4, RoundingMode.HALF_UP);
     }
 
     private UlaznaFakturaDTO.DetailDTO toDetailDTO(
@@ -295,6 +419,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
                         artikalSifre.getOrDefault(s.getIdArtikla(), ""),
                         s.getKolicina(),
                         s.getVpc(),
+                        s.getPopust(),
                         s.getPdvStopa(),
                         s.getIznosPdv(),
                         s.getUkupno()
@@ -313,6 +438,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
                 faktura.getUkupnoPdv(),
                 faktura.getUkupno(),
                 faktura.getNapomena(),
+                faktura.getUnesenoUkupnoBezPdv(),
+                faktura.getUnesenoUkupno(),
                 stavkeDtos
         );
     }

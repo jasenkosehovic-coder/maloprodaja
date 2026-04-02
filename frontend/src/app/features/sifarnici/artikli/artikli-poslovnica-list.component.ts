@@ -160,7 +160,6 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
         key: 'marza',
         label: 'Marža (%)',
         type: 'number',
-        visible: false,
         min: 0,
         minMessage: 'Marža ne može biti negativna.',
       },

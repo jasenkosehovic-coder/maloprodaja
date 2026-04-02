@@ -56,8 +56,186 @@
   margin: 0;
 }
 
+.provjera-card {
+  margin-bottom: 16px;
+}
+
+.provjera-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.iznos-ok {
+  color: #2e7d32;
+}
+
+.iznos-nok {
+  color: #c62828;
+}
+
+.auto-potvrda-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
 .stavke-card {
   margin-bottom: 16px;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 12px;
+
+    mat-card-title {
+      flex: 1;
+    }
+
+    .dodaj-btn {
+      flex-shrink: 0;
+    }
+  }
+}
+
+.stavka-form-panel {
+  background: #f8f9fa;
+  border: 1px solid rgba(25, 118, 210, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.stavka-form-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976d2;
+  margin: 0 0 12px;
+}
+
+.stavka-form-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field-artikal {
+  width: 100%;
+}
+
+.field-number {
+  width: 100%;
+}
+
+.stavka-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.kalkulacija {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.kalkulacija-item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+
+  strong {
+    font-size: 14px;
+    color: #1976d2;
+  }
+}
+
+.kalkulacija-label {
+  color: #616161;
+}
+
+.kalkulacija-hint {
+  font-size: 12px;
+  color: #9e9e9e;
+  margin-left: 4px;
+}
+
+.select-search-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.artikal-pretraga {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 4px 8px;
+  font-size: 14px;
+  background: transparent;
+}
+
+.stavka-form-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.stavke-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: #9e9e9e;
+  font-size: 14px;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.col-akcije {
+  width: 60px;
+  text-align: center;
 }
 
 .table-wrapper {

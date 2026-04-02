@@ -147,7 +147,8 @@ public class NivelacijaService implements INivelacijaService {
             }
 
             BigDecimal mpcStara = ap.getMpc() != null ? ap.getMpc() : BigDecimal.ZERO;
-            BigDecimal mpcNova = izracunajMpcNovu(ap, fs.getVpc(), fs.getPdvStopa(), mpcStara);
+            BigDecimal pdvFrakcija = fs.getPdvStopa().divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP);
+            BigDecimal mpcNova = izracunajMpcNovu(ap, fs.getVpc(), pdvFrakcija, mpcStara);
 
             ap.setVpc(fs.getVpc());
             ap.setMpc(mpcNova);

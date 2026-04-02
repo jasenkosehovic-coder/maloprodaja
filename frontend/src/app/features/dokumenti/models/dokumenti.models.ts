@@ -14,6 +14,8 @@ export interface UlaznaFakturaListItem {
 export interface UlaznaFakturaDetail extends UlaznaFakturaListItem {
   idDobavljaca: number;
   napomena: string | null;
+  unesenoUkupnoBezPdv: number | null;
+  unesenoUkupno: number | null;
   stavke: FakturaStavka[];
 }
 
@@ -24,6 +26,7 @@ export interface FakturaStavka {
   sifraArtikla: string;
   kolicina: number;
   vpc: number;
+  popust: number | null;
   pdvStopa: number;
   iznosPdv: number;
   ukupno: number;
@@ -35,14 +38,15 @@ export interface CreateFakturaDTO {
   datum: string;
   datumValute: string | null;
   napomena: string | null;
-  stavke: CreateFakturaStavkaDTO[];
+  ukupnoBezPdv?: number | null;
+  ukupno?: number | null;
 }
 
-export interface CreateFakturaStavkaDTO {
+export interface AddFakturaStavkaDTO {
   idArtikla: number;
   kolicina: number;
   vpc: number;
-  pdvStopa: number;
+  popust?: number | null;
 }
 
 // ===== Nivelacija =====
