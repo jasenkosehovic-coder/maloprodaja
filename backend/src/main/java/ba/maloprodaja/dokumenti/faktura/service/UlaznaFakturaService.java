@@ -299,7 +299,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
 
     @Override
     @Transactional
-    public void removeStavka(Long fakturaId, Long stavkaId) {
+    public UlaznaFakturaDTO.DetailDTO removeStavka(Long fakturaId, Long stavkaId) {
         UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
                 .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
 
@@ -321,6 +321,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         fakturaRepository.save(faktura);
 
         log.info("Uklonjena stavka id={} sa fakture id={}", stavkaId, fakturaId);
+
+        return findById(fakturaId);
     }
 
     private void provjeriIAutoPotvri(Long fakturaId) {

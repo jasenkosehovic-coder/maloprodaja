@@ -70,12 +70,11 @@ public class UlaznaFakturaController {
 
     @DeleteMapping("/{id}/stavke/{stavkaId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
-    public ResponseEntity<ApiResponse<Void>> removeStavka(
+    public ResponseEntity<ApiResponse<UlaznaFakturaDTO.DetailDTO>> removeStavka(
             @PathVariable Long id,
             @PathVariable Long stavkaId
     ) {
-        fakturaService.removeStavka(id, stavkaId);
-        return ResponseEntity.ok(ApiResponse.ok(null));
+        return ResponseEntity.ok(ApiResponse.ok(fakturaService.removeStavka(id, stavkaId)));
     }
 
     @DeleteMapping("/{id}")
