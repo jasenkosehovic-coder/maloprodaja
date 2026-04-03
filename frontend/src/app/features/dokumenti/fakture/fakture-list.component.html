@@ -3,6 +3,19 @@
 
   <!-- Filter bar -->
   <div class="filter-bar">
+    <mat-form-field appearance="outline" class="filter-godina">
+      <mat-label>Godina</mat-label>
+      <mat-select
+        [value]="odabranaGodina()"
+        (selectionChange)="onGodinaChange($event.value)"
+        aria-label="Odaberi godinu"
+      >
+        @for (opcija of opcijePodine(); track opcija.value) {
+          <mat-option [value]="opcija.value">{{ opcija.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
     <mat-form-field appearance="outline" class="filter-date">
       <mat-label>Datum od</mat-label>
       <input

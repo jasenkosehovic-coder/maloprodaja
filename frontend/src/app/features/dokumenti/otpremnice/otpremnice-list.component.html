@@ -1,6 +1,21 @@
 <div class="page-container">
   <app-page-header title="Otpremnice" subtitle="Pregled otpremnica" icon="local_shipping" />
 
+  <div class="filter-bar">
+    <mat-form-field appearance="outline" class="filter-godina">
+      <mat-label>Godina</mat-label>
+      <mat-select
+        [value]="odabranaGodina()"
+        (selectionChange)="onGodinaChange($event.value)"
+        aria-label="Odaberi godinu"
+      >
+        @for (opcija of opcijePodine(); track opcija.value) {
+          <mat-option [value]="opcija.value">{{ opcija.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
   <app-crud-table
     [data]="otpremnice()"
     [headers]="['broj', 'datum', 'status', 'nazivPoslovnicePosiljaoca', 'nazivPoslovnicePrimaoca', 'brojStavki']"

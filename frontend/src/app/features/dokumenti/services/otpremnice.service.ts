@@ -15,9 +15,13 @@ export class OtpremnicaService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/dokumenti/otpremnice`;
 
-  list(): Observable<OtpremnicaListItem[]> {
+  list(godina?: number | null): Observable<OtpremnicaListItem[]> {
+    const params: Record<string, string> = {};
+    if (godina != null) {
+      params['godina'] = String(godina);
+    }
     return this.http
-      .get<ApiResponse<OtpremnicaListItem[]>>(this.baseUrl)
+      .get<ApiResponse<OtpremnicaListItem[]>>(this.baseUrl, { params })
       .pipe(map(r => r.data));
   }
 

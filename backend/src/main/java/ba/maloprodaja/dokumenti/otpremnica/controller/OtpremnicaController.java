@@ -25,10 +25,12 @@ public class OtpremnicaController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
-    public ResponseEntity<ApiResponse<List<OtpremnicaDTO.ListItemDTO>>> listAll(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<OtpremnicaDTO.ListItemDTO>>> listAll(
+            Authentication auth,
+            @RequestParam(required = false) Integer godina) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(
-                otpremnicaService.listAll(korisnik.getIdKompanije(), korisnik.getIdPoslovnice())));
+                otpremnicaService.listAll(korisnik.getIdKompanije(), korisnik.getIdPoslovnice(), godina)));
     }
 
     @GetMapping("/{id}")

@@ -15,6 +15,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { EMPTY } from 'rxjs';
@@ -38,6 +39,7 @@ import { FakturaFormComponent } from './faktura-form.component';
     MatFormFieldModule,
     MatInputModule,
     MatDatepickerModule,
+    MatSelectModule,
     MatIconModule,
     MatButtonModule,
     PageHeaderComponent,
@@ -71,6 +73,20 @@ export class FaktureListComponent implements OnInit {
 
   readonly fakture = signal<UlaznaFakturaListItem[]>([]);
   readonly isLoading = signal(false);
+
+  readonly odabranaGodina = signal<number | null>(new Date().getFullYear());
+
+  readonly opcijePodine = computed(() => {
+    const tekucaGodina = new Date().getFullYear();
+    return [
+      { value: null, label: 'Sve godine' },
+      { value: tekucaGodina - 2, label: String(tekucaGodina - 2) },
+      { value: tekucaGodina - 1, label: String(tekucaGodina - 1) },
+      { value: tekucaGodina, label: String(tekucaGodina) },
+      { value: tekucaGodina + 1, label: String(tekucaGodina + 1) },
+      { value: tekucaGodina + 2, label: String(tekucaGodina + 2) },
+    ];
+  });
 
   readonly filterOd = signal<Date | null>(null);
   readonly filterDo = signal<Date | null>(null);
@@ -124,9 +140,14 @@ export class FaktureListComponent implements OnInit {
     this.ucitajPodatke();
   }
 
+  onGodinaChange(godina: number | null): void {
+    this.odabranaGodina.set(godina);
+    this.ucitajPodatke();
+  }
+
   ucitajPodatke(): void {
     this.isLoading.set(true);
-    this.faktureService.list()
+    this.faktureService.list(this.odabranaGodina())
       .pipe(
         finalize(() => {
           this.isLoading.set(false);

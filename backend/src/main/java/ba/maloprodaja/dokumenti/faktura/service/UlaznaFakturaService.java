@@ -42,8 +42,10 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
     private final INivelacijaService nivelacijaService;
 
     @Override
-    public List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice) {
-        List<UlaznaFaktura> fakture = fakturaRepository.findByIdKompanijeAndIdPoslovnice(idKompanije, idPoslovnice);
+    public List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice, Integer godina) {
+        List<UlaznaFaktura> fakture = godina != null
+                ? fakturaRepository.findByIdKompanijeAndIdPoslovniceAndGodina(idKompanije, idPoslovnice, godina)
+                : fakturaRepository.findByIdKompanijeAndIdPoslovnice(idKompanije, idPoslovnice);
 
         List<Long> dobavljacIds = fakture.stream()
                 .map(UlaznaFaktura::getIdDobavljaca)
@@ -116,6 +118,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         faktura.setBroj(dto.broj());
         faktura.setDatum(dto.datum());
         faktura.setDatumValute(dto.datumValute());
+        faktura.setGodina(dto.datum().getYear());
         faktura.setNapomena(dto.napomena());
         faktura.setStatus(StatusFakture.NACRT);
         faktura.setUkupnoBezPdv(BigDecimal.ZERO);
@@ -153,6 +156,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         }
         if (dto.datum() != null) {
             faktura.setDatum(dto.datum());
+            faktura.setGodina(dto.datum().getYear());
         }
         if (dto.datumValute() != null) {
             faktura.setDatumValute(dto.datumValute());
@@ -295,7 +299,7 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
 
     @Override
     @Transactional
-    public void removeStavka(Long fakturaId, Long stavkaId) {
+    public UlaznaFakturaDTO.DetailDTO removeStavka(Long fakturaId, Long stavkaId) {
         UlaznaFaktura faktura = fakturaRepository.findById(fakturaId)
                 .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", fakturaId));
 
@@ -317,6 +321,8 @@ public class UlaznaFakturaService implements IUlaznaFakturaService {
         fakturaRepository.save(faktura);
 
         log.info("Uklonjena stavka id={} sa fakture id={}", stavkaId, fakturaId);
+
+        return findById(fakturaId);
     }
 
     private void provjeriIAutoPotvri(Long fakturaId) {

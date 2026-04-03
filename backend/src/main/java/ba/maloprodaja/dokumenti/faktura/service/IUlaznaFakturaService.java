@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IUlaznaFakturaService {
 
-    List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice);
+    List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice, Integer godina);
 
     UlaznaFakturaDTO.DetailDTO findById(Long id);
 
@@ -16,7 +16,7 @@ public interface IUlaznaFakturaService {
 
     UlaznaFakturaDTO.DetailDTO addStavka(Long fakturaId, UlaznaFakturaDTO.AddStavkaDTO dto);
 
-    void removeStavka(Long fakturaId, Long stavkaId);
+    UlaznaFakturaDTO.DetailDTO removeStavka(Long fakturaId, Long stavkaId);
 
     void potvrdi(Long id);
 

@@ -25,10 +25,12 @@ public class UlaznaFakturaController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
-    public ResponseEntity<ApiResponse<List<UlaznaFakturaDTO.ListItemDTO>>> listAll(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<UlaznaFakturaDTO.ListItemDTO>>> listAll(
+            Authentication auth,
+            @RequestParam(required = false) Integer godina) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(
-                fakturaService.listAll(korisnik.getIdKompanije(), korisnik.getIdPoslovnice())));
+                fakturaService.listAll(korisnik.getIdKompanije(), korisnik.getIdPoslovnice(), godina)));
     }
 
     @GetMapping("/{id}")
@@ -68,12 +70,11 @@ public class UlaznaFakturaController {
 
     @DeleteMapping("/{id}/stavke/{stavkaId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
-    public ResponseEntity<ApiResponse<Void>> removeStavka(
+    public ResponseEntity<ApiResponse<UlaznaFakturaDTO.DetailDTO>> removeStavka(
             @PathVariable Long id,
             @PathVariable Long stavkaId
     ) {
-        fakturaService.removeStavka(id, stavkaId);
-        return ResponseEntity.ok(ApiResponse.ok(null));
+        return ResponseEntity.ok(ApiResponse.ok(fakturaService.removeStavka(id, stavkaId)));
     }
 
     @DeleteMapping("/{id}")

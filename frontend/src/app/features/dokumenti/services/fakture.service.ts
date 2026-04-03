@@ -16,9 +16,13 @@ export class FaktureService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/dokumenti/fakture`;
 
-  list(): Observable<UlaznaFakturaListItem[]> {
+  list(godina?: number | null): Observable<UlaznaFakturaListItem[]> {
+    const params: Record<string, string> = {};
+    if (godina != null) {
+      params['godina'] = String(godina);
+    }
     return this.http
-      .get<ApiResponse<UlaznaFakturaListItem[]>>(this.baseUrl)
+      .get<ApiResponse<UlaznaFakturaListItem[]>>(this.baseUrl, { params })
       .pipe(map(r => r.data));
   }
 

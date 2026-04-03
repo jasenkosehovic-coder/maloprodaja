@@ -37,6 +37,9 @@ public class UlaznaFaktura extends PoslovnicaBaseEntity {
     @Column(name = "datum_valute")
     private LocalDate datumValute;
 
+    @Column(name = "godina", nullable = false)
+    private Integer godina;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private StatusFakture status = StatusFakture.NACRT;
