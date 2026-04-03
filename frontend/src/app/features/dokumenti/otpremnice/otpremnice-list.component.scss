@@ -2,6 +2,19 @@
   padding: 16px;
 }
 
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+
+  .filter-godina {
+    min-width: 140px;
+    flex: 0 0 140px;
+  }
+}
+
 .row-primljena {
   background-color: rgba(76, 175, 80, 0.08) !important;
 }

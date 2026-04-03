@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IOtpremnicaService {
 
-    List<OtpremnicaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice);
+    List<OtpremnicaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice, Integer godina);
 
     OtpremnicaDTO.DetailDTO findById(Long id);
 

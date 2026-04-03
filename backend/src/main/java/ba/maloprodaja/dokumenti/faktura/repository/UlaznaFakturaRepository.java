@@ -12,6 +12,8 @@ public interface UlaznaFakturaRepository extends JpaRepository<UlaznaFaktura, Lo
 
     List<UlaznaFaktura> findByIdKompanijeAndIdPoslovnice(Long idKompanije, Long idPoslovnice);
 
+    List<UlaznaFaktura> findByIdKompanijeAndIdPoslovniceAndGodina(Long idKompanije, Long idPoslovnice, Integer godina);
+
     List<UlaznaFaktura> findByIdKompanijeAndIdPoslovniceAndStatus(Long idKompanije, Long idPoslovnice, StatusFakture status);
 
     boolean existsByIdKompanijeAndIdPoslovniceAndBroj(Long idKompanije, Long idPoslovnice, String broj);

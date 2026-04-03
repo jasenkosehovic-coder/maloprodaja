@@ -44,12 +44,14 @@ public class OtpremnicaService implements IOtpremnicaService {
     private final INivelacijaService nivelacijaService;
 
     @Override
-    public List<OtpremnicaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice) {
-        List<Otpremnica> poslanjeOtpremnice = otpremnicaRepository
-                .findByIdKompanijeAndIdPoslovnicePosiljaoca(idKompanije, idPoslovnice);
+    public List<OtpremnicaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice, Integer godina) {
+        List<Otpremnica> poslanjeOtpremnice = godina != null
+                ? otpremnicaRepository.findByIdKompanijeAndIdPoslovnicePosiljaocaAndGodina(idKompanije, idPoslovnice, godina)
+                : otpremnicaRepository.findByIdKompanijeAndIdPoslovnicePosiljaoca(idKompanije, idPoslovnice);
 
-        List<Otpremnica> primljeneOtpremnice = otpremnicaRepository
-                .findByIdKompanijeAndIdPoslovnicePrimaoca(idKompanije, idPoslovnice);
+        List<Otpremnica> primljeneOtpremnice = godina != null
+                ? otpremnicaRepository.findByIdKompanijeAndIdPoslovnicePrimaoсaAndGodina(idKompanije, idPoslovnice, godina)
+                : otpremnicaRepository.findByIdKompanijeAndIdPoslovnicePrimaoca(idKompanije, idPoslovnice);
 
         List<Otpremnica> svjeOtpremnice = Stream.concat(poslanjeOtpremnice.stream(), primljeneOtpremnice.stream())
                 .collect(Collectors.toMap(Otpremnica::getId, o -> o, (a, b) -> a))
@@ -161,6 +163,7 @@ public class OtpremnicaService implements IOtpremnicaService {
         otpremnica.setIdPoslovnicePrimaoca(dto.idPoslovnicePrimaoca());
         otpremnica.setBroj(dto.broj());
         otpremnica.setDatum(dto.datum());
+        otpremnica.setGodina(dto.datum().getYear());
         otpremnica.setNapomena(dto.napomena());
         otpremnica.setStatus(StatusOtpremnice.KREIRANA);
 

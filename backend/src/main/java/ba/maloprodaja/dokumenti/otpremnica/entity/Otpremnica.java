@@ -36,6 +36,9 @@ public class Otpremnica extends KompanijaBaseEntity {
     @Column(name = "datum", nullable = false)
     private LocalDate datum;
 
+    @Column(name = "godina", nullable = false)
+    private Integer godina;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private StatusOtpremnice status = StatusOtpremnice.KREIRANA;

@@ -4,12 +4,16 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
@@ -25,6 +29,9 @@ import { OtpremnicaFormComponent } from './otpremnica-form.component';
   selector: 'app-otpremnice-list',
   standalone: true,
   imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatSelectModule,
     PageHeaderComponent,
     CrudTableComponent,
   ],
@@ -42,6 +49,20 @@ export class OtpremnicaListComponent implements OnInit {
 
   readonly otpremnice = signal<OtpremnicaListItem[]>([]);
   readonly isLoading = signal(false);
+
+  readonly odabranaGodina = signal<number | null>(new Date().getFullYear());
+
+  readonly opcijePodine = computed(() => {
+    const tekucaGodina = new Date().getFullYear();
+    return [
+      { value: null, label: 'Sve godine' },
+      { value: tekucaGodina - 2, label: String(tekucaGodina - 2) },
+      { value: tekucaGodina - 1, label: String(tekucaGodina - 1) },
+      { value: tekucaGodina, label: String(tekucaGodina) },
+      { value: tekucaGodina + 1, label: String(tekucaGodina + 1) },
+      { value: tekucaGodina + 2, label: String(tekucaGodina + 2) },
+    ];
+  });
 
   readonly fields: CrudFieldConfig[] = [
     { key: 'broj', label: 'Broj', type: 'text', readOnly: true },
@@ -74,9 +95,14 @@ export class OtpremnicaListComponent implements OnInit {
     this.ucitajPodatke();
   }
 
+  onGodinaChange(godina: number | null): void {
+    this.odabranaGodina.set(godina);
+    this.ucitajPodatke();
+  }
+
   ucitajPodatke(): void {
     this.isLoading.set(true);
-    this.otpremnicaService.list()
+    this.otpremnicaService.list(this.odabranaGodina())
       .pipe(
         finalize(() => {
           this.isLoading.set(false);

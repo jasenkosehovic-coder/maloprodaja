@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IUlaznaFakturaService {
 
-    List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice);
+    List<UlaznaFakturaDTO.ListItemDTO> listAll(Long idKompanije, Long idPoslovnice, Integer godina);
 
     UlaznaFakturaDTO.DetailDTO findById(Long id);
 
