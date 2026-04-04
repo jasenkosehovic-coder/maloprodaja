@@ -31,7 +31,6 @@ tipovi_velicina (1) ──── (N) velicine
                                redosljed
 
 artikli_kompanije ──── (FK, nullable) tipovi_velicina
-  + web_naziv, web_opis, web_aktivan, meta_title, meta_opis
       │
       │ 1:N
       ▼
@@ -74,6 +73,16 @@ slike_artikala              ← slike za prikaz i web shop
   id_artikla FK
   putanja VARCHAR(500)
   redosljed, je_naslovna, aktivan, id_kompanije
+
+web_artikli                 ← artikli objavljeni na web shopu (posebna tabela)
+  id_artikla FK → artikli_kompanije
+  web_naziv, web_opis       ← web opisi neovisni od centralnog opisa
+  aktivan                   ← da li je vidljiv na web shopu
+  mpc                       ← regularna cijena na webu
+  popust                    ← popust u procentima
+  nova_mpc                  ← cijena sa popustom
+  meta_title, meta_opis     ← SEO polja
+  UNIQUE(id_artikla, id_kompanije)
 ```
 
 ---
@@ -118,11 +127,22 @@ ba.maloprodaja.sifarnici
       └── controller/   AtributController.java
 ```
 
+### Novi modul — web shop
+
+```
+webshop/
+  ├── entity/       WebArtikal.java
+  ├── dto/          WebArtikalDTO.java
+  ├── repository/   WebArtikalRepository.java
+  ├── service/      IWebArtikalService.java, WebArtikalService.java
+  └── controller/   WebArtikalController.java
+```
+
 ### Izmjene postojećih modula
 
 ```
 sifarnici/artikalkomp/
-  entity/ArtikalKompanija.java    + idTipaVelicina, web polja
+  entity/ArtikalKompanija.java    + idTipaVelicina (web polja su u WebArtikal entitetu)
   entity/ArtikalAtribut.java      → premjestiti u atribut/ modul
   entity/Barkod.java              id_artikla → id_varijante, brisanje id_poslovnice
 
@@ -180,20 +200,126 @@ GET    /api/artikli/{id}/slike
 POST   /api/artikli/{id}/slike
 PUT    /api/slike/{id}
 DELETE /api/slike/{id}
+
+# Web shop — upravljanje objavljenim artiklima
+GET    /api/web-artikli                      — lista svih objavljenih artikala
+GET    /api/web-artikli/{id}                 — detalji web artikla
+POST   /api/web-artikli                      — objaviti artikal na webu
+PUT    /api/web-artikli/{id}                 — ažurirati web opis, cijenu, popust
+DELETE /api/web-artikli/{id}                 — ukloniti sa weba
 ```
 
 ---
 
-## Flyway migracije
+## UI struktura — Sifarnici → Artikli (izmjene postojećih i novi tabovi)
 
-| Skripta | Sadržaj | Kada |
-|---|---|---|
-| `V3__add_textile_schema.sql` | Kreiranje svih novih tablica, nullable FK na postojećim | Sprint 1 |
-| `V4__update_barkodovi.sql` | `id_artikla → id_varijante`, brisanje `id_poslovnice` | Sprint 2 |
-| `V5__deprecate_artikalposl_stock.sql` | Rename `kolicina → kolicina_legacy` na `artikli_poslovnice` | Sprint 3 |
-| `V6__drop_legacy_stock.sql` | Brisanje `_legacy` kolona nakon stabilizacije | Sprint 4 |
+Stranica **Šifarnici → Artikli** već postoji sa sljedećim tabovima:
 
-> Napomena: Nema migracije podataka jer je sistem u razvoju bez produkcijskih podataka.
+```
+[postojeći tabovi]  Artikli | Artikli u poslovnici | Barkodovi | Grupe artikala | Popusti
+```
+
+### Izmjene postojećih tabova
+
+#### Tab: Artikli (artikli_kompanije) — izmjene
+
+Dodati dvije vrste novih kolona u tabelu/formu artikla:
+
+1. **Kolona "Tip veličine"** — selectbox koji se popunjava iz šifarnika `tipovi_velicina`
+   - Opcije dolaze iz `GET /api/tipovi-velicina` za trenutnu kompaniju
+   - Ako nema tipova kreiranog → prazna lista (nije obavezno polje)
+   - Odabirom tipa određuje se koji set veličina (S/M/L/XL ili 38-42...) važi za artikal
+
+2. **Dinamičke kolone atributa** — za svaku aktivnu definiciju atributa kompanije (Boja, Sezona, Fit...)
+   kreira se jedna kolona sa selectboxom:
+   - Kolone se učitavaju dinamički iz `GET /api/atributi/definicije` pri otvaranju taba
+   - Svaki selectbox se popunjava iz `GET /api/atributi/definicije/{id}/vrijednosti`
+   - Ako kompanija nema definisanih atributa → nema dodatnih kolona
+   - Vrijednost se sprema u tabelu `artikal_atributi`
+
+#### Tab: Barkodovi — prilagodba novom modelu
+
+Trenutni tab prikazuje barkod vezan za artikal. Novi model: **barkod je vezan za varijantu**
+(artikal + veličina). Izmjene taba:
+
+- Grupisanje po artiklu: svaki artikal prikazuje listu svojih varijanti sa barkodovima
+- Za artikal **bez veličina** → jedna default varijanta, može imati više barkodova
+- Za artikal **sa veličinama** → po jedna varijanta po veličini, svaka može imati više barkodova
+- Dodavanje barkoda: odabir artikla → odabir varijante/veličine → unos barkoda
+- Barkod ostaje jedinstven u kompaniji (validacija pri unosu)
+
+### Novi tabovi
+
+```
+[novi tabovi]  ... | Artikli web | Slike artikala
+```
+
+#### Novi tab: Artikli web (web_artikli)
+
+Funkcionira analogno tabu **"Artikli u poslovnici"** — iz centralnog šifarnika se biraju artikli
+koji se žele objaviti na web shopu i popunjavaju web-specifični podaci:
+
+| Polje | Opis |
+|---|---|
+| Artikal | Selectbox — bira se artikal iz `artikli_kompanije` koji još nije dodan na web |
+| Web naziv | Naziv za prikaz na webu (može se razlikovati od centralnog naziva) |
+| Web opis | Duži opis za web stranicu artikla |
+| MPC | Cijena na web shopu |
+| Popust (%) | Popust u procentima |
+| Nova MPC | Auto-izračun: `mpc - (mpc * popust / 100)`, korisnik može i ručno upisati |
+| Aktivan | Da li je artikal vidljiv na web shopu |
+| Meta title | SEO naslov (max 160 znakova) |
+| Meta opis | SEO opis (max 320 znakova) |
+
+#### Novi tab: Slike artikala (slike_artikala)
+
+Dostupno **samo za artikle koji su u artikli_kompanije** (postoji zapis u `artikli_kompanije`):
+
+- Lista artikala koji su u centrali sa prikazom thumbnailova
+- Po artiklu: upload jedne ili više slika (drag-drop ili file picker)
+- Postavljanje naslovne/cover slike (prikazuje se prva u listingu)
+- Redosljed slika drag-drop sortiranjem
+- Brisanje pojedinačnih slika
+- Slike se čuvaju na disku, u bazi samo putanja (`slike_artikala.putanja`)
+
+### Sifarnici → Tipovi veličina (posebna stranica)
+
+Tipovi veličina su **master data** — postavljaju se jednom i referenciraju iz taba Artikli:
+
+```
+Sifarnici
+  └── Tipovi veličina
+        ├── [Lista tipova]         — "Konfekcija S-XXL", "Cipele 36-46", "One size"...
+        └── [Odabrani tip]
+              └── Inline tabela    — oznaka veličine (S/M/L...), redosljed, aktivan
+                                     dodavanje/brisanje veličina unutar tipa
+```
+
+### Sifarnici → Definicije atributa (posebna stranica)
+
+Definicije atributa su **master data** — kompanija ih kreira jednom, a pojavljuju se
+automatski kao kolone u tabu Artikli:
+
+```
+Sifarnici
+  └── Definicije atributa
+        ├── [Lista definicija]     — Boja, Sezona, Fit, Sastav... (redosljed, za_web, aktivan)
+        └── [Odabrana definicija]
+              └── Inline tabela    — vrijednosti (Crvena, Slim fit...), redosljed, aktivan
+```
+
+---
+
+## Šema baze
+
+Cijela šema se nalazi u jednoj DDL skripti koja se izvršava pri svakom pokretanju aplikacije u razvoju:
+
+```
+backend/src/main/resources/db/migration/V1__init_schema.sql
+```
+
+Skripta kreira sve tablice ispočetka u ispravnom redoslijedu zavisnosti:
+`kompanije → poslovnice → korisnici → tipovi_velicina → velicine → artikli_kompanije → varijante_artikla → artikli_poslovnice → barkodovi → varijante_artikla_poslovnica → definicije_atributa → vrijednosti_atributa → artikal_atributi → slike_artikala → web_artikli → dokumenti`
 
 ---
 
@@ -201,16 +327,9 @@ DELETE /api/slike/{id}
 
 ---
 
-### Sprint 1 — Nova šema + master data moduli
-**Cilj:** Additive-only promjene, ništa se ne ruši, sve novo radi paralelno sa starim.
+### Sprint 1 — Master data moduli (veličine + atributi + slike)
+**Cilj:** Novi master data moduli potpuno funkcionalni, šema već kreirana u V1.
 
-- [ ] **V3__add_textile_schema.sql** — kreiranje novih tablica
-  - `tipovi_velicina`, `velicine`
-  - `varijante_artikla`, `varijante_artikla_poslovnica`
-  - `definicije_atributa`, `vrijednosti_atributa`, `artikal_atributi`
-  - `slike_artikala`
-  - Nullable FK `id_tipa_velicina` na `artikli_kompanije`
-  - Web polja na `artikli_kompanije`
 - [ ] **Backend — TipVelicina modul** (entity, repository, service, controller)
   - CRUD `/api/tipovi-velicina`
   - CRUD `/api/tipovi-velicina/{id}/velicine`
@@ -219,8 +338,8 @@ DELETE /api/slike/{id}
   - CRUD `/api/artikli/{id}/atributi`
 - [ ] **Backend — Slike modul** (entity, repository, service, controller)
   - CRUD `/api/artikli/{id}/slike` (upload fajla + čuvanje putanje)
-- [ ] **Frontend — Tipovi veličina** (lista + forma)
-- [ ] **Frontend — Definicije atributa** (lista + forma + vrijednosti)
+- [ ] **Frontend — Sifarnici → Tipovi veličina** (nova posebna stranica: lista tipova + inline tabela veličina)
+- [ ] **Frontend — Sifarnici → Definicije atributa** (nova posebna stranica: lista definicija + inline tabela vrijednosti)
 
 ---
 
@@ -232,39 +351,33 @@ DELETE /api/slike/{id}
   - Service + repository + controller
   - `ArtikalKompService.create` → auto-kreira default varijantu
 - [ ] **Backend — ArtikalKompanija**
-  - Dodati `idTipaVelicina` + web polja na entity i DTO
-  - Update endpoint za web polja
+  - Dodati `idTipaVelicina` na entity i DTO
+  - Update endpoint za `idTipaVelicina`
 - [ ] **Backend — Stanje zalihe**
   - `/api/artikli/{id}/stanje` — pregled po poslovnicama + veličinama
   - `/api/varijante-poslovnica/{id}` — update zalihe direktno
-- [ ] **Frontend — Varijante** (pregled i unos veličina + barkodova za artikal)
-- [ ] **Frontend — Web polja na formi artikla**
+- [ ] **Frontend — Tab "Artikli": dodati kolonu Tip veličine** (selectbox → tipovi_velicina)
+- [ ] **Frontend — Tab "Artikli": dinamičke kolone atributa** (učitava se iz definicije_atributa, svaka je selectbox → vrijednosti_atributa)
+- [ ] **Frontend — Tab "Veličine i barkodovi"** — prilagodba novom modelu (varijante + barkodovi)
 
 ---
 
-### Sprint 3 — Migracija barkodova + uklanjanje zalihe sa artikli_poslovnice
-**Cilj:** Barkodovi korektno vezani za varijante, stanje zalihe više nije na `artikli_poslovnice`.
+### Sprint 3 — Refaktoring barkodova + uklanjanje zalihe sa artikli_poslovnice
+**Cilj:** Barkodovi vezani za varijante, stanje zalihe samo u `varijante_artikla_poslovnica`.
 
-- [ ] **V4__update_barkodovi.sql**
-  - Dodati `id_varijante` kolonu na `barkodovi`
-  - Ukloniti `id_poslovnice` kolonu
-  - Migracijski upit: vezati stare barkodove za default varijantu
 - [ ] **Backend — Barkod entity + service**
-  - Promijeniti vezu `id_artikla → id_varijante`
-  - `BarkodService` delegira na `VarijantaService`
-- [ ] **V5__deprecate_artikalposl_stock.sql**
-  - Rename: `kolicina → kolicina_legacy`
+  - Entity: `id_varijante` FK (šema već ispravna u V1)
+  - Ukloniti stari `BarkodService`, logika ide u `VarijantaService`
 - [ ] **Backend — ArtikalPoslovnicaService**
-  - Ukloniti pisanje u `kolicina` (sada legacy)
-  - Ukloniti `kolicina`, `minZaliha`, `optimalnaZaliha` iz DTO-a
-- [ ] **Frontend — Forma artikla u poslovnici** (ukloniti polje zalihe, zaliha se vidi kroz varijante)
+  - Ukloniti sve reference na `kolicina`, `minZaliha`, `optimalnaZaliha` (kolone ne postoje u V1 šemi)
+  - Ukloniti ta polja iz DTO-a
+- [ ] **Frontend — Tab "Barkodovi"**: prilagodba da prikazuje varijante (artikal + veličina → barkodovi)
 
 ---
 
-### Sprint 4 — Čišćenje + dokumenti svjesni veličina
-**Cilj:** Sve legacy kolone uklonjene, fakture/otpremnice biraju veličinu.
+### Sprint 4 — Dokumenti svjesni veličina + web shop modul
+**Cilj:** Fakture/otpremnice biraju veličinu; web shop modul aktivan.
 
-- [ ] **V6__drop_legacy_stock.sql** — brisanje `_legacy` kolona
 - [ ] **Backend — UlaznaFaktura stavka**
   - Dodati `id_varijante` na entity i DTO
   - Stock update na `varijante_artikla_poslovnica` umjesto `artikli_poslovnice`
@@ -273,6 +386,15 @@ DELETE /api/slike/{id}
   - Stock update na `varijante_artikla_poslovnica`
 - [ ] **Frontend — Ulazna faktura** — biranje veličine pri unosu stavke
 - [ ] **Frontend — Otpremnica** — biranje veličine pri unosu stavke
+- [ ] **Backend — Web shop modul**
+  - Entity `WebArtikal`, repository, service, controller
+  - CRUD `/api/web-artikli`
+  - Logika: pri objavi artikla popuniti `mpc` iz `artikli_poslovnice`, korisnik unosi `popust`, sistem računa `nova_mpc`
+- [ ] **Frontend — novi Tab "Artikli web"**: dodavanje artikala iz kompanije na web shop (analogno "Artikli u poslovnici")
+  - Selectbox za artikal, web_naziv, web_opis, mpc, popust, auto nova_mpc, meta polja, aktivan
+- [ ] **Frontend — novi Tab "Slike artikala"**: upload i upravljanje slikama za artikle koji su u web shopu
+  - Vidljivo samo za artikle koji postoje u `web_artikli`
+  - Upload, naslovna slika, redosljed, brisanje
 - [ ] **Testovi** — JUnit testovi za sve nove servise
 
 ---
