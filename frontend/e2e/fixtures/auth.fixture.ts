@@ -37,7 +37,7 @@ export const test = base.extend<AuthFixtures>({
     await use(page);
 
     await page.evaluate((keys) => {
-      keys.forEach((k) => localStorage.removeItem(k));
+      keys.forEach((k) => sessionStorage.removeItem(k));
     }, [ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, KORISNIK_KEY]);
   },
 });

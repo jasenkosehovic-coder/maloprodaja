@@ -25,8 +25,11 @@ public class NivelacijaStavka extends BaseEntity {
     @Column(name = "kolicina", nullable = false, precision = 15, scale = 4)
     private BigDecimal kolicina;
 
-    @Column(name = "vpc", nullable = false, precision = 15, scale = 4)
-    private BigDecimal vpc;
+    @Column(name = "vpc_stara", nullable = false, precision = 15, scale = 4)
+    private BigDecimal vpcStara;
+
+    @Column(name = "vpc_nova", nullable = false, precision = 15, scale = 4)
+    private BigDecimal vpcNova;
 
     @Column(name = "mpc_stara", nullable = false, precision = 15, scale = 4)
     private BigDecimal mpcStara;

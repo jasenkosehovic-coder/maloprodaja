@@ -41,7 +41,14 @@
       "Bash(jar tf:*)",
       "Bash(grep -E \"\\\\.\\(ts|html\\)$\")",
       "Bash(npx tsc:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(claude mcp:*)",
+      "Bash(curl:*)",
+      "Bash(java -version)",
+      "Bash(mvn -version)",
+      "Bash(mvn spring-boot:run -q)",
+      "Bash(echo \"Backend starting with PID $!\")",
+      "Bash(npx playwright@latest --version)"
     ]
   }
 }

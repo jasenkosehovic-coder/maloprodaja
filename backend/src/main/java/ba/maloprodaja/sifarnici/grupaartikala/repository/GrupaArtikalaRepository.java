@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface GrupaArtikalaRepository extends JpaRepository<GrupaArtikala, Long> {
 
-    List<GrupaArtikala> findByIdKompanije(Long idKompanije);
+    List<GrupaArtikala> findByIdKompanijeOrderByNazivAsc(Long idKompanije);
 }

@@ -280,6 +280,15 @@
   .crud-cell-text { max-width: 200px; }
 }
 
+// ─── Cell state classes ───────────────────────────────────────────────────────
+
+.cell-kolicina-nula {
+  .crud-cell-text {
+    color: #e65100;
+    font-weight: 500;
+  }
+}
+
 // ─── Row actions ──────────────────────────────────────────────────────────────
 
 .crud-row-actions {

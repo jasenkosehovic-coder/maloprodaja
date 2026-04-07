@@ -233,7 +233,7 @@
             <!-- Data cells -->
             @for (header of headers; track header) {
               <td
-                [class]="'crud-cell ' + getColClass(header)"
+                [class]="'crud-cell ' + getColClass(header) + (getField(header)?.cellClass ? ' ' + getField(header)!.cellClass!(row[header], row) : '')"
                 role="gridcell">
 
                 @if (getFieldType(header) === 'boolean') {

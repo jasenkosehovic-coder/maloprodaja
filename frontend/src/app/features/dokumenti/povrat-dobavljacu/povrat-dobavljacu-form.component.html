@@ -1,0 +1,75 @@
+<h2 mat-dialog-title>Novi povrat dobavljaču</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" autocomplete="off">
+
+    <!-- Dobavljač -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Dobavljač *</mat-label>
+      <mat-select formControlName="idDobavljaca" aria-label="Odaberite dobavljača" (closed)="dobavljacFilter.set('')">
+        <mat-option>
+          <div class="select-search-wrapper" (click)="$event.stopPropagation()">
+            <mat-icon class="select-search-icon">search</mat-icon>
+            <input
+              class="select-search-input"
+              type="text"
+              placeholder="Pretraži dobavljača..."
+              [value]="dobavljacFilter()"
+              (input)="dobavljacFilter.set($any($event.target).value)"
+              (keydown)="$event.stopPropagation()"
+              aria-label="Pretraga dobavljača"
+            />
+          </div>
+        </mat-option>
+        @for (d of filtriranIDobavljaci(); track d.id) {
+          <mat-option [value]="d.id">{{ d.naziv }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls['idDobavljaca'].invalid && form.controls['idDobavljaca'].touched) {
+        <mat-error role="alert" aria-live="polite">Dobavljač je obavezan.</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Datum -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Datum</mat-label>
+      <input matInput [matDatepicker]="datumPicker" formControlName="datum" id="pd-datum" aria-label="Datum povrata" />
+      <mat-datepicker-toggle matIconSuffix [for]="datumPicker" aria-label="Otvorite kalendar za datum"></mat-datepicker-toggle>
+      <mat-datepicker #datumPicker></mat-datepicker>
+      @if (form.controls['datum'].invalid && form.controls['datum'].touched) {
+        <mat-error role="alert" aria-live="polite">Datum je obavezan.</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Napomena -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Napomena</mat-label>
+      <textarea matInput formControlName="napomena" id="pd-napomena" rows="2" aria-label="Napomena"></textarea>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="odustani()" aria-label="Odustani od unosa">
+    Odustani
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="form.invalid || isSaving()"
+    (click)="onSubmit()"
+    aria-label="Kreiraj povrat dobavljaču"
+  >
+    @if (isSaving()) {
+      <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Kreiranje u toku"></mat-progress-spinner>
+      Kreiranje...
+    } @else {
+      <ng-container>
+        <mat-icon>add_circle</mat-icon>
+        Kreiraj nacrt
+      </ng-container>
+    }
+  </button>
+</mat-dialog-actions>

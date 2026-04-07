@@ -28,11 +28,11 @@ const ADMIN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'BLAGAJNIK'];
 const ADMIN_MEN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER', 'BLAGAJNIK'];
 
 const SIFARNICI_ITEMS: NavItem[] = [
-  { label: 'Artikli',      route: '/sifarnici/artikli',       roles: ADMIN_MEN },
-  { label: 'Kupci',        route: '/sifarnici/kupci',         roles: ALL },
-  { label: 'Dobavljači',   route: '/sifarnici/dobavljaci',    roles: ADMIN_MEN },
-  { label: 'Proizvođači',  route: '/sifarnici/proizvodjaci',  roles: ADMIN_MEN },
-  { label: 'Korisnici',    route: '/korisnici',               roles: ADMIN },
+  { label: 'Artikli',             route: '/sifarnici/artikli',             roles: ADMIN_MEN },
+  { label: 'Kupci',               route: '/sifarnici/kupci',               roles: ALL },
+  { label: 'Dobavljači',          route: '/sifarnici/dobavljaci',          roles: ADMIN_MEN },
+  { label: 'Proizvođači',         route: '/sifarnici/proizvodjaci',        roles: ADMIN_MEN },
+  { label: 'Korisnici',           route: '/korisnici',                     roles: ADMIN },
 ];
 
 const BLAGAJNA_ITEMS: NavItem[] = [
@@ -49,9 +49,11 @@ const FISKALNI_ITEMS: NavItem[] = [
 ];
 
 const DOKUMENTI_ITEMS: NavItem[] = [
-  { label: 'Ulazne fakture', route: '/dokumenti/fakture',    roles: ADMIN_MEN },
-  { label: 'Otpremnice',     route: '/dokumenti/otpremnice', roles: ADMIN_MEN },
-  { label: 'Nivelacije',     route: '/dokumenti/nivelacije', roles: ADMIN_MEN },
+  { label: 'Ulazne fakture',     route: '/dokumenti/fakture',            roles: ADMIN_MEN },
+  { label: 'Povrat dobavljaču',  route: '/dokumenti/povrat-dobavljacu',  roles: ADMIN_MEN },
+  { label: 'Izlazne fakture',    route: '/dokumenti/izlazne-fakture',    roles: ADMIN_MEN },
+  { label: 'Međuskladišnica',    route: '/dokumenti/medjuskladisnica',   roles: ADMIN_MEN },
+  { label: 'Nivelacije',         route: '/dokumenti/nivelacije',         roles: ADMIN_MEN },
 ];
 
 const IZVJESTAJI_ITEMS: NavItem[] = [

@@ -1,7 +1,7 @@
 <div class="page-container">
   <div class="page-header">
     <h2>Artikli u poslovnici</h2>
-    <p class="subtitle">Cijene, marže i stanje zaliha artikala u poslovnici</p>
+    <p class="subtitle">Cijene i marže artikala u poslovnici</p>
   </div>
 
   <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje artikala u poslovnici"></mat-progress-bar>
@@ -22,4 +22,8 @@
     (delete)="onDeactivate($event)"
     (deleteMany)="onDeactivateMany($event)">
   </app-crud-table>
+
+  <p class="info-text">
+    Stanje zalihe po veličinama dostupno je u tabu Barkodovi.
+  </p>
 </div>

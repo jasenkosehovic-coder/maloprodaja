@@ -92,7 +92,7 @@ class KorisnikServiceTest {
         when(korisnikRepository.findById(1L)).thenReturn(Optional.of(korisnik));
         when(korisnikRepository.save(any())).thenReturn(korisnik);
 
-        var dto = new KorisnikDTO.UpdateKorisnikDTO("NovoIme", null, null, null, null, null);
+        var dto = new KorisnikDTO.UpdateKorisnikDTO("NovoIme", null, null, null, null, null, null);
         KorisnikDTO.KorisnikListItemDTO result = korisnikService.update(1L, dto);
 
         verify(korisnikRepository).save(korisnik);
@@ -103,7 +103,7 @@ class KorisnikServiceTest {
     void update_nonExistingKorisnik_throwsResourceNotFoundException() {
         when(korisnikRepository.findById(99L)).thenReturn(Optional.empty());
 
-        var dto = new KorisnikDTO.UpdateKorisnikDTO(null, null, null, null, null, null);
+        var dto = new KorisnikDTO.UpdateKorisnikDTO(null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> korisnikService.update(99L, dto))
                 .isInstanceOf(ResourceNotFoundException.class);

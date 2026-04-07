@@ -369,8 +369,8 @@ export class CrudTableComponent implements OnChanges {
   }
 
   onEditClick(row: any): void {
+    this.editClick.emit(row);
     if (this.externalEdit) {
-      this.editClick.emit(row);
       return;
     }
     this.modalMode = 'edit';
@@ -749,6 +749,10 @@ export class CrudTableComponent implements OnChanges {
           return opt ? opt.label : String(v);
         })
         .join(', ');
+    }
+
+    if (field?.decimals !== undefined && field.decimals !== null && typeof val === 'number') {
+      return val.toFixed(field.decimals);
     }
 
     return String(val);

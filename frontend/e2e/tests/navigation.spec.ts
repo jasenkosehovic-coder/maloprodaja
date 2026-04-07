@@ -12,9 +12,9 @@ async function injectMockSession(
       email: 'test@maloprodaja.ba', uloga,
       poslovnicaId: 1, poslovnicaNaziv: 'Centralna poslovnica', aktivan: true,
     };
-    localStorage.setItem('mp_access_token', 'mock-token-za-navigaciju');
-    localStorage.setItem('mp_refresh_token', 'mock-refresh-token');
-    localStorage.setItem('mp_korisnik', JSON.stringify(korisnik));
+    sessionStorage.setItem('mp_access_token', 'mock-token-za-navigaciju');
+    sessionStorage.setItem('mp_refresh_token', 'mock-refresh-token');
+    sessionStorage.setItem('mp_korisnik', JSON.stringify(korisnik));
   }, { uloga });
 }
 
@@ -52,8 +52,8 @@ test.describe('User menu — odjava', () => {
     await appLayout.logout();
 
     await expect(page).toHaveURL(/\/login/);
-    expect(await page.evaluate(() => localStorage.getItem('mp_access_token'))).toBeNull();
-    expect(await page.evaluate(() => localStorage.getItem('mp_korisnik'))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem('mp_access_token'))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem('mp_korisnik'))).toBeNull();
   });
 });
 

@@ -6,9 +6,11 @@ import java.util.List;
 
 public interface IBarkodService {
 
-    List<BarkodDTO.ListItemDTO> listByKompanija(Long idKompanije);
+    List<BarkodDTO.ListItemDTO> listAll(Long idKompanije);
 
-    BarkodDTO.ListItemDTO create(BarkodDTO.CreateDTO dto, Long idKompanije, Long idPoslovnice);
+    List<BarkodDTO.ListItemDTO> listByVarijanta(Long idVarijante);
+
+    BarkodDTO.ListItemDTO create(BarkodDTO.CreateDTO dto, Long idKompanije);
 
     BarkodDTO.ListItemDTO update(Long id, BarkodDTO.UpdateDTO dto);
 

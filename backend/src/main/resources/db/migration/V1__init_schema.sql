@@ -160,6 +160,25 @@ CREATE TABLE IF NOT EXISTS kupci
 );
 
 -- -------------------------------------------------------
+-- boje
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS boje
+(
+    id                BIGSERIAL    PRIMARY KEY,
+    naziv             VARCHAR(100) NOT NULL,
+    hex_kod           VARCHAR(7),
+    aktivan           BOOLEAN      NOT NULL DEFAULT TRUE,
+    id_kompanije      BIGINT       NOT NULL,
+    sys_created_date  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    sys_created_by    BIGINT,
+    sys_modified_date TIMESTAMP,
+    sys_modified_by   BIGINT,
+    CONSTRAINT uq_boja_naziv_kompanija UNIQUE (naziv, id_kompanije)
+);
+
+CREATE INDEX IF NOT EXISTS idx_boje_kompanija ON boje(id_kompanije);
+
+-- -------------------------------------------------------
 -- tipovi_velicina
 -- -------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tipovi_velicina
@@ -229,6 +248,7 @@ CREATE TABLE IF NOT EXISTS varijante_artikla
     id                BIGSERIAL PRIMARY KEY,
     id_artikla        BIGINT    NOT NULL REFERENCES artikli_kompanije(id),
     id_velicine       BIGINT    REFERENCES velicine(id),
+    id_boje           BIGINT    REFERENCES boje(id),
     aktivan           BOOLEAN   NOT NULL DEFAULT TRUE,
     id_kompanije      BIGINT    NOT NULL,
     sys_created_date  TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -431,95 +451,88 @@ CREATE TABLE IF NOT EXISTS popusti
 );
 
 -- -------------------------------------------------------
--- ulazne_fakture
+-- tipovi_dokumenata
 -- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ulazne_fakture
+CREATE TABLE IF NOT EXISTS tipovi_dokumenata
 (
-    id                       BIGSERIAL      PRIMARY KEY,
-    id_kompanije             BIGINT         NOT NULL,
-    id_poslovnice            BIGINT         NOT NULL,
-    id_dobavljaca            BIGINT         NOT NULL,
-    broj                     VARCHAR(50)    NOT NULL,
-    datum                    DATE           NOT NULL,
-    godina                   INTEGER        NOT NULL,
-    datum_valute             DATE,
-    status                   VARCHAR(30)    NOT NULL DEFAULT 'NACRT',
-    ukupno_bez_pdv           NUMERIC(15, 4) NOT NULL DEFAULT 0,
-    ukupno_pdv               NUMERIC(15, 4) NOT NULL DEFAULT 0,
-    ukupno                   NUMERIC(15, 4) NOT NULL DEFAULT 0,
-    uneseno_ukupno_bez_pdv   NUMERIC(14, 4),
-    uneseno_ukupno           NUMERIC(14, 4),
-    napomena                 VARCHAR(500),
-    sys_created_date         TIMESTAMP      NOT NULL DEFAULT NOW(),
-    sys_created_by           BIGINT,
-    sys_modified_date        TIMESTAMP,
-    sys_modified_by          BIGINT,
-    CONSTRAINT uq_faktura_kompanija_poslovnica_broj UNIQUE (id_kompanije, id_poslovnice, broj)
+    id                BIGSERIAL    PRIMARY KEY,
+    kod               VARCHAR(20)  NOT NULL,
+    naziv             VARCHAR(100) NOT NULL,
+    smjer_kolicine    SMALLINT     NOT NULL,
+    id_kompanije      BIGINT       NOT NULL REFERENCES kompanije(id),
+    sys_created_date  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    sys_created_by    BIGINT,
+    sys_modified_date TIMESTAMP,
+    sys_modified_by   BIGINT,
+    CONSTRAINT uq_tip_dokumenta_kod_kompanija UNIQUE (kod, id_kompanije)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ulazne_fakture_godina ON ulazne_fakture(id_kompanije, id_poslovnice, godina);
+CREATE INDEX IF NOT EXISTS idx_tipovi_dokumenata_kompanija ON tipovi_dokumenata(id_kompanije);
 
 -- -------------------------------------------------------
--- ulazne_fakture_stavke
+-- dokumenti
 -- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ulazne_fakture_stavke
+CREATE TABLE IF NOT EXISTS dokumenti
+(
+    id                BIGSERIAL    PRIMARY KEY,
+    id_tipa           BIGINT       NOT NULL REFERENCES tipovi_dokumenata(id),
+    id_poslovnice     BIGINT       NOT NULL REFERENCES poslovnice(id),
+    id_dobavljaca     BIGINT       REFERENCES dobavljaci(id),
+    id_kupca          BIGINT       REFERENCES kupci(id),
+    status            VARCHAR(20)  NOT NULL DEFAULT 'NACRT',
+    broj_dokumenta    VARCHAR(30),
+    datum             DATE         NOT NULL,
+    napomena          TEXT,
+    id_kompanije      BIGINT       NOT NULL REFERENCES kompanije(id),
+    sys_created_date  TIMESTAMP    NOT NULL DEFAULT NOW(),
+    sys_created_by    BIGINT,
+    sys_modified_date TIMESTAMP,
+    sys_modified_by   BIGINT
+);
+
+CREATE INDEX IF NOT EXISTS idx_dokumenti_kompanija        ON dokumenti(id_kompanije);
+CREATE INDEX IF NOT EXISTS idx_dokumenti_tip              ON dokumenti(id_tipa);
+CREATE INDEX IF NOT EXISTS idx_dokumenti_poslovnica       ON dokumenti(id_poslovnice);
+CREATE INDEX IF NOT EXISTS idx_dokumenti_status           ON dokumenti(id_kompanije, status);
+CREATE INDEX IF NOT EXISTS idx_dokumenti_datum            ON dokumenti(id_kompanije, datum);
+
+-- -------------------------------------------------------
+-- stavke_dokumenata
+-- -------------------------------------------------------
+CREATE TABLE IF NOT EXISTS stavke_dokumenata
 (
     id                BIGSERIAL      PRIMARY KEY,
-    id_fakture        BIGINT         NOT NULL REFERENCES ulazne_fakture(id),
-    id_artikla        BIGINT         NOT NULL,
-    id_varijante      BIGINT         REFERENCES varijante_artikla(id),
-    kolicina          NUMERIC(15, 4) NOT NULL,
-    vpc               NUMERIC(15, 4) NOT NULL,
-    pdv_stopa         NUMERIC(10, 4) NOT NULL,
-    iznos_pdv         NUMERIC(15, 4) NOT NULL DEFAULT 0,
-    ukupno            NUMERIC(15, 4) NOT NULL DEFAULT 0,
-    popust            NUMERIC(10, 4),
+    id_dokumenta      BIGINT         NOT NULL REFERENCES dokumenti(id),
+    id_varijante      BIGINT         NOT NULL REFERENCES varijante_artikla(id),
+    kolicina          NUMERIC(12, 3) NOT NULL,
+    cijena            NUMERIC(12, 4) NOT NULL,
+    popust            NUMERIC(5, 2)  NOT NULL DEFAULT 0,
+    ukupno            NUMERIC(12, 4) NOT NULL,
+    id_kompanije      BIGINT         NOT NULL REFERENCES kompanije(id),
     sys_created_date  TIMESTAMP      NOT NULL DEFAULT NOW(),
     sys_created_by    BIGINT,
     sys_modified_date TIMESTAMP,
     sys_modified_by   BIGINT
 );
 
--- -------------------------------------------------------
--- otpremnice
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS otpremnice
-(
-    id                       BIGSERIAL   PRIMARY KEY,
-    id_kompanije             BIGINT      NOT NULL,
-    id_poslovnice_posiljaoca BIGINT      NOT NULL,
-    id_poslovnice_primaoca   BIGINT      NOT NULL,
-    broj                     VARCHAR(50) NOT NULL,
-    datum                    DATE        NOT NULL,
-    godina                   INTEGER     NOT NULL,
-    status                   VARCHAR(30) NOT NULL DEFAULT 'KREIRANA',
-    napomena                 VARCHAR(500),
-    sys_created_date         TIMESTAMP   NOT NULL DEFAULT NOW(),
-    sys_created_by           BIGINT,
-    sys_modified_date        TIMESTAMP,
-    sys_modified_by          BIGINT,
-    CONSTRAINT uq_otpremnica_kompanija_broj UNIQUE (id_kompanije, broj)
-);
-
-CREATE INDEX IF NOT EXISTS idx_otpremnice_godina ON otpremnice(id_kompanije, godina);
+CREATE INDEX IF NOT EXISTS idx_stavke_dokumenata_dokument   ON stavke_dokumenata(id_dokumenta);
+CREATE INDEX IF NOT EXISTS idx_stavke_dokumenata_varijanta  ON stavke_dokumenata(id_varijante);
+CREATE INDEX IF NOT EXISTS idx_stavke_dokumenata_kompanija  ON stavke_dokumenata(id_kompanije);
 
 -- -------------------------------------------------------
--- otpremnice_stavke
+-- brojaci_dokumenata
 -- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS otpremnice_stavke
+CREATE TABLE IF NOT EXISTS brojaci_dokumenata
 (
-    id                BIGSERIAL      PRIMARY KEY,
-    id_otpremnice     BIGINT         NOT NULL REFERENCES otpremnice(id),
-    id_artikla        BIGINT         NOT NULL,
-    id_varijante      BIGINT         REFERENCES varijante_artikla(id),
-    kolicina          NUMERIC(15, 4) NOT NULL,
-    vpc_posiljalac    NUMERIC(15, 4) NOT NULL,
-    mpc_posiljalac    NUMERIC(15, 4) NOT NULL,
-    sys_created_date  TIMESTAMP      NOT NULL DEFAULT NOW(),
-    sys_created_by    BIGINT,
-    sys_modified_date TIMESTAMP,
-    sys_modified_by   BIGINT
+    id                BIGSERIAL PRIMARY KEY,
+    id_tipa           BIGINT    NOT NULL REFERENCES tipovi_dokumenata(id),
+    id_kompanije      BIGINT    NOT NULL REFERENCES kompanije(id),
+    godina            SMALLINT  NOT NULL,
+    brojac            INT       NOT NULL DEFAULT 0,
+    CONSTRAINT uq_brojac_tip_kompanija_godina UNIQUE (id_tipa, id_kompanije, godina)
 );
+
+CREATE INDEX IF NOT EXISTS idx_brojaci_dokumenata_kompanija ON brojaci_dokumenata(id_kompanije);
 
 -- -------------------------------------------------------
 -- nivelacije
@@ -529,8 +542,8 @@ CREATE TABLE IF NOT EXISTS nivelacije
     id                BIGSERIAL   PRIMARY KEY,
     id_kompanije      BIGINT      NOT NULL,
     id_poslovnice     BIGINT      NOT NULL,
-    id_fakture        BIGINT      REFERENCES ulazne_fakture(id),
-    id_otpremnice     BIGINT      REFERENCES otpremnice(id),
+    id_fakture        BIGINT,
+    id_otpremnice     BIGINT,
     broj              VARCHAR(50) NOT NULL,
     datum             DATE        NOT NULL,
     vrsta             VARCHAR(30) NOT NULL,
@@ -552,7 +565,8 @@ CREATE TABLE IF NOT EXISTS nivelacije_stavke
     id_artikla        BIGINT         NOT NULL,
     id_varijante      BIGINT         REFERENCES varijante_artikla(id),
     kolicina          NUMERIC(15, 4) NOT NULL,
-    vpc               NUMERIC(15, 4) NOT NULL,
+    vpc_stara         NUMERIC(15, 4) NOT NULL,
+    vpc_nova          NUMERIC(15, 4) NOT NULL,
     mpc_stara         NUMERIC(15, 4) NOT NULL,
     mpc_nova          NUMERIC(15, 4) NOT NULL,
     iznos_nivelacije  NUMERIC(15, 4) NOT NULL,

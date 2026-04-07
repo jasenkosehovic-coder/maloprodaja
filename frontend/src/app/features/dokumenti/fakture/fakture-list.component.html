@@ -1,17 +1,17 @@
 <div class="page-container">
-  <app-page-header title="Ulazne fakture" subtitle="Pregled ulaznih faktura" icon="receipt_long" />
+  <app-page-header title="Ulazne fakture" subtitle="Pregled ulaznih faktura (UF)" icon="receipt_long" />
 
   <!-- Filter bar -->
   <div class="filter-bar">
-    <mat-form-field appearance="outline" class="filter-godina">
-      <mat-label>Godina</mat-label>
+    <mat-form-field appearance="outline" class="filter-status">
+      <mat-label>Status</mat-label>
       <mat-select
-        [value]="odabranaGodina()"
-        (selectionChange)="onGodinaChange($event.value)"
-        aria-label="Odaberi godinu"
+        [value]="filterStatus()"
+        (selectionChange)="onStatusChange($event.value)"
+        aria-label="Filtriraj po statusu"
       >
-        @for (opcija of opcijePodine(); track opcija.value) {
-          <mat-option [value]="opcija.value">{{ opcija.label }}</mat-option>
+        @for (s of statusOptions; track s.value) {
+          <mat-option [value]="s.value">{{ s.label }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
@@ -52,19 +52,17 @@
   </div>
 
   <app-crud-table
-    [data]="filtriraneFakture()"
-    [headers]="['id', 'broj', 'datum', 'datumValute', 'nazivDobavljaca', 'statusFakture', 'ukupnoBezPdv', 'ukupno']"
+    [data]="filtrirani()"
+    [headers]="['id', 'brojDokumenta', 'datum', 'dobavljacNaziv', 'poslovnicaNaziv', 'status', 'ukupno']"
     [fields]="fields"
     [actions]="actions"
     [filterableColumns]="filterableColumns"
     [externalAdd]="true"
     [externalEdit]="true"
-    [externalDelete]="true"
     [rowStyleClass]="rowStyleClass"
     exportName="Ulazne fakture"
     [pdfHeader]="pdfHeader()"
     (addClick)="onAddClick()"
     (editClick)="onEditClick($event)"
-    (delete)="onDelete($event)"
   />
 </div>

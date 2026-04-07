@@ -24,9 +24,17 @@ public class BarkodController {
 
     @GetMapping("/api/barkodovi")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
-    public ResponseEntity<ApiResponse<List<BarkodDTO.ListItemDTO>>> listByKompanija(Authentication auth) {
+    public ResponseEntity<ApiResponse<List<BarkodDTO.ListItemDTO>>> listAll(Authentication auth) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
-        return ResponseEntity.ok(ApiResponse.ok(barkodService.listByKompanija(korisnik.getIdKompanije())));
+        return ResponseEntity.ok(ApiResponse.ok(barkodService.listAll(korisnik.getIdKompanije())));
+    }
+
+    @GetMapping("/api/varijante/{idVarijante}/barkodovi")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<List<BarkodDTO.ListItemDTO>>> listByVarijanta(
+            @PathVariable Long idVarijante
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(barkodService.listByVarijanta(idVarijante)));
     }
 
     @PostMapping("/api/barkodovi")
@@ -36,7 +44,7 @@ public class BarkodController {
             Authentication auth
     ) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
-        BarkodDTO.ListItemDTO created = barkodService.create(dto, korisnik.getIdKompanije(), dto.idPoslovnice());
+        BarkodDTO.ListItemDTO created = barkodService.create(dto, korisnik.getIdKompanije());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(created));
     }
 

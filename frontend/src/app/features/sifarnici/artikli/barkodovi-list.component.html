@@ -1,25 +1,261 @@
 <div class="page-container">
   <div class="page-header">
     <h2>Barkodovi</h2>
-    <p class="subtitle">Upravljanje barkodovima artikala po poslovnicama</p>
+    <p class="subtitle">Upravljanje barkodovima po varijantama artikla</p>
   </div>
 
-  <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje barkodova"></mat-progress-bar>
+  <!-- Odabir artikla -->
+  <div class="artikal-select-row">
+    <mat-form-field appearance="outline" class="artikal-select-field">
+      <mat-label>Artikal</mat-label>
+      <mat-select
+        id="barkod-artikal-select"
+        [disabled]="isLoadingArtikli()"
+        [ngModel]="selectedArtikalId()"
+        (ngModelChange)="onArtikalChange($event)"
+        aria-label="Odaberi artikal za pregled barkodova">
+        <mat-option [value]="null">— Odaberi artikal —</mat-option>
+        @for (artikal of artikli(); track artikal.id) {
+          <mat-option [value]="artikal.id">
+            {{ artikal.sifra }} — {{ artikal.naziv }}
+          </mat-option>
+        }
+      </mat-select>
+      @if (isLoadingArtikli()) {
+        <mat-progress-spinner matSuffix diameter="20" mode="indeterminate" aria-label="Učitavanje artikala"></mat-progress-spinner>
+      }
+    </mat-form-field>
+  </div>
 
-  <app-crud-table
-    [headers]="tableHeaders"
-    [data]="items"
-    [fields]="fields"
-    [actions]="tableActions"
-    [externalSave]="true"
-    [externalDelete]="true"
-    [idField]="'id'"
-    [saving]="isSaving"
-    [pdfHeader]="pdfHeader()"
-    exportName="Barkodovi"
-    (add)="onCreate($event)"
-    (edit)="onUpdate($event)"
-    (delete)="onDeactivate($event)"
-    (deleteMany)="onDeactivateMany($event)">
-  </app-crud-table>
+  <!-- Loading varijanti -->
+  @if (isLoadingVarijante()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Učitavanje varijanti"></mat-progress-bar>
+  }
+
+  <!-- Error state -->
+  @if (loadError()) {
+    <div class="state-error" role="alert">
+      <p>{{ loadError() }}</p>
+      @if (selectedArtikalId()) {
+        <button mat-stroked-button type="button" (click)="onArtikalChange(selectedArtikalId())">
+          Pokušaj ponovo
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Empty state — nije odabran artikal -->
+  @if (!selectedArtikalId() && !isLoadingArtikli()) {
+    <div class="state-empty" role="status">
+      <p>Odaberi artikal da bi vidio barkodove po varijantama.</p>
+    </div>
+  }
+
+  <!-- Dodaj varijantu sekcija -->
+  @if (selectedArtikalId() && !isLoadingVarijante() && !loadError()) {
+    <div class="nova-varijanta-section">
+      @if (!isAddingVarijanta()) {
+        <button
+          mat-stroked-button
+          color="primary"
+          type="button"
+          (click)="onToggleAddVarijanta()"
+          aria-label="Dodaj novu varijantu artikla">
+          <mat-icon>add</mat-icon>
+          Dodaj varijantu
+        </button>
+      } @else {
+        <div class="nova-varijanta-form" [formGroup]="novaVarijantaForm">
+          <h4 class="nova-varijanta-form__title">Nova varijanta</h4>
+
+          <div class="nova-varijanta-form__fields">
+            <mat-form-field appearance="outline" class="varijanta-select-field">
+              <mat-label>Veličina (opciono)</mat-label>
+              <mat-select
+                formControlName="idVelicine"
+                id="nova-varijanta-velicina"
+                aria-label="Odaberi veličinu za novu varijantu">
+                <mat-option [value]="null">— Bez veličine —</mat-option>
+                @for (velicina of velicine(); track velicina.id) {
+                  <mat-option [value]="velicina.id">{{ velicina.oznaka }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="varijanta-select-field">
+              <mat-label>Boja (opciono)</mat-label>
+              <mat-select
+                formControlName="idBoje"
+                id="nova-varijanta-boja"
+                aria-label="Odaberi boju za novu varijantu">
+                <mat-option [value]="null">— Bez boje —</mat-option>
+                @for (boja of boje(); track boja.id) {
+                  <mat-option [value]="boja.id">
+                    <span class="boja-option">
+                      @if (boja.hexKod) {
+                        <span
+                          class="boja-option__swatch"
+                          [style.background-color]="boja.hexKod"
+                          aria-hidden="true">
+                        </span>
+                      }
+                      {{ boja.naziv }}
+                    </span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="nova-varijanta-form__actions">
+            <button
+              mat-raised-button
+              color="primary"
+              type="button"
+              [disabled]="isSavingVarijanta()"
+              (click)="onSpremiVarijantu()"
+              aria-label="Spremi novu varijantu">
+              @if (isSavingVarijanta()) {
+                <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+                Čuvanje...
+              } @else {
+                <ng-container>
+                  <mat-icon>save</mat-icon>
+                  Spremi varijantu
+                </ng-container>
+              }
+            </button>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isSavingVarijanta()"
+              (click)="onToggleAddVarijanta()"
+              aria-label="Otkaži dodavanje varijante">
+              Otkaži
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Empty state — odabran artikal ali nema varijanti -->
+  @if (selectedArtikalId() && !isLoadingVarijante() && !loadError() && !hasVarijante()) {
+    <div class="state-empty" role="status">
+      <p>Odabrani artikal nema varijanti.</p>
+    </div>
+  }
+
+  <!-- Varijante accordion -->
+  @if (hasVarijante()) {
+    <mat-accordion multi="true" class="varijante-accordion">
+      @for (item of varijante(); track item.varijanta.id) {
+        <mat-expansion-panel class="varijanta-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <span class="varijanta-title">
+                @if (item.varijanta.hexKodBoje) {
+                  <span
+                    class="color-swatch"
+                    [style.background-color]="item.varijanta.hexKodBoje"
+                    [attr.aria-label]="'Boja: ' + item.varijanta.nazivBoje"
+                    role="img">
+                  </span>
+                }
+                {{ buildVarijantaNaziv(item.varijanta) }}
+              </span>
+            </mat-panel-title>
+            <mat-panel-description>
+              {{ item.varijanta.barkodovi.length }} barkod(a)
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <!-- Lista aktivnih barkodova -->
+          <div class="barkodovi-lista">
+            @if (item.varijanta.barkodovi.length === 0) {
+              <p class="barkodovi-lista__empty" role="status">Nema barkodova za ovu varijantu.</p>
+            } @else {
+              <div class="barkodovi-chips" role="list" [attr.aria-label]="'Barkodovi za varijantu ' + buildVarijantaNaziv(item.varijanta)">
+                @for (barkod of item.varijanta.barkodovi; track barkod.id) {
+                  @if (barkod.aktivan) {
+                    <div class="barkod-chip" role="listitem">
+                      <span class="barkod-chip__text">{{ barkod.barkod }}</span>
+                      <button
+                        mat-icon-button
+                        type="button"
+                        class="barkod-chip__delete"
+                        [attr.aria-label]="'Obriši barkod ' + barkod.barkod"
+                        matTooltip="Obriši barkod"
+                        (click)="obrisiBarkod(item.varijanta.id, barkod.id)">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Dodaj barkod sekcija -->
+          @if (!item.isAddingBarkod) {
+            <div class="dodaj-barkod-trigger">
+              <button
+                mat-stroked-button
+                type="button"
+                [attr.aria-label]="'Dodaj barkod za varijantu ' + buildVarijantaNaziv(item.varijanta)"
+                (click)="toggleAddBarkod(item.varijanta.id)">
+                <mat-icon>add</mat-icon>
+                Dodaj barkod
+              </button>
+            </div>
+          } @else {
+            <div class="dodaj-barkod-form">
+              <mat-form-field appearance="outline" class="dodaj-barkod-form__field">
+                <mat-label>Novi barkod</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  [id]="'novi-barkod-' + item.varijanta.id"
+                  [ngModel]="item.noviBarkodinput"
+                  (ngModelChange)="updateBarkodinput(item.varijanta.id, $event)"
+                  (keydown.enter)="dodajBarkod(item.varijanta.id)"
+                  placeholder="EAN, QR, interni kod..."
+                  [attr.aria-describedby]="item.barkodError ? 'barkod-error-' + item.varijanta.id : null"
+                  aria-required="true" />
+                @if (item.barkodError) {
+                  <mat-error [id]="'barkod-error-' + item.varijanta.id" role="alert">
+                    {{ item.barkodError }}
+                  </mat-error>
+                }
+              </mat-form-field>
+              <div class="dodaj-barkod-form__actions">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="button"
+                  [disabled]="!item.noviBarkodinput.trim() || item.isSavingBarkod"
+                  [attr.aria-label]="'Spremi barkod za varijantu ' + buildVarijantaNaziv(item.varijanta)"
+                  (click)="dodajBarkod(item.varijanta.id)">
+                  @if (item.isSavingBarkod) {
+                    <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+                    Čuvanje...
+                  } @else {
+                    Spremi
+                  }
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  aria-label="Otkaži dodavanje barkoda"
+                  [disabled]="item.isSavingBarkod"
+                  (click)="toggleAddBarkod(item.varijanta.id)">
+                  Otkaži
+                </button>
+              </div>
+            </div>
+          }
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  }
 </div>

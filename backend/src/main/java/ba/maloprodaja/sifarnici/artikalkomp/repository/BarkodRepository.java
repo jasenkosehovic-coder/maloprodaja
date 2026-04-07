@@ -9,13 +9,13 @@ import java.util.List;
 @Repository
 public interface BarkodRepository extends JpaRepository<Barkod, Long> {
 
-    List<Barkod> findByIdArtikla(Long idArtikla);
+    List<Barkod> findByIdKompanije(Long idKompanije);
 
-    List<Barkod> findByIdArtiklaIn(List<Long> idArtikla);
+    List<Barkod> findByIdVarijanteAndAktivanTrue(Long idVarijante);
+
+    List<Barkod> findByIdVarijanteIn(List<Long> idVarijante);
 
     boolean existsByBarkodAndIdKompanije(String barkod, Long idKompanije);
-
-    List<Barkod> findByIdKompanije(Long idKompanije);
 
     boolean existsByBarkodAndIdKompanijeAndIdNot(String barkod, Long idKompanije, Long id);
 }

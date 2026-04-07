@@ -10,7 +10,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { EMPTY, forkJoin, of } from 'rxjs';
+import { EMPTY, forkJoin, of, switchMap } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { CrudTableComponent } from '../../../shared/components/crud-table/crud-table.component';
@@ -22,15 +22,23 @@ import { ArtikliService } from './artikli.service';
 import { GrupeService } from '../grupe/grupe.service';
 import { ProizvodjaciService } from '../proizvodjaci/proizvodjaci.service';
 import { DobavljaciService } from '../dobavljaci/dobavljaci.service';
-import { ArtikalKompanija, CreateArtikalKompanija, UpdateArtikalKompanija } from './artikli.models';
+import { TipoviVelicinaService } from '../tipovi-velicina/tipovi-velicina.service';
+import { DefinicijeAtributaService } from '../definicije-atributa/definicije-atributa.service';
+import { ArtikalKompanija, CreateArtikalKompanija, UpdateArtikalKompanija, SaveArtikalAtributItem } from './artikli.models';
 import { GrupaArtikala } from '../grupe/grupe.models';
 import { Proizvodjac } from '../proizvodjaci/proizvodjaci.models';
 import { Dobavljac } from '../dobavljaci/dobavljaci.models';
+import { TipVelicine } from '../tipovi-velicina/tipovi-velicina.models';
+import { DefinicijaAtributa, VrijednostAtributa } from '../definicije-atributa/definicije-atributa.models';
 
 @Component({
   selector: 'app-artikli-list',
   standalone: true,
-  imports: [CommonModule, MatProgressBarModule, CrudTableComponent],
+  imports: [
+    CommonModule,
+    MatProgressBarModule,
+    CrudTableComponent,
+  ],
   templateUrl: './artikli-list.component.html',
   styleUrl: './artikli-list.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -40,6 +48,8 @@ export class ArtikliListComponent implements OnInit {
   private readonly grupeService = inject(GrupeService);
   private readonly proizvodjaciService = inject(ProizvodjaciService);
   private readonly dobavljaciService = inject(DobavljaciService);
+  private readonly tipoviVelicinaService = inject(TipoviVelicinaService);
+  private readonly definicijeAtributaService = inject(DefinicijeAtributaService);
   private readonly optionsService = inject(OptionsService);
   private readonly notification = inject(NotificationService);
   private readonly authService = inject(AuthService);
@@ -59,15 +69,14 @@ export class ArtikliListComponent implements OnInit {
     };
   });
 
-  items: ArtikalKompanija[] = [];
+  items: any[] = [];
   isLoading = false;
   isSaving = false;
   fields: CrudFieldConfig[] = [];
+  tableHeaders: string[] = [];
 
-  readonly tableHeaders: string[] = [
-    'sifra', 'naziv', 'jedin', 'pdv',
-    'nazivGrupe', 'nazivProizvodjaca', 'nazivDobavljaca', 'aktivan',
-  ];
+  private definicijeAtributa: DefinicijaAtributa[] = [];
+  private vrijednostiByDefId: Map<number, VrijednostAtributa[]> = new Map();
 
   readonly tableActions: CrudActionsConfig = {
     add: true,
@@ -82,11 +91,49 @@ export class ArtikliListComponent implements OnInit {
       this.proizvodjaciService.getAll().pipe(catchError(() => of([] as Proizvodjac[]))),
       this.dobavljaciService.getAll().pipe(catchError(() => of([] as Dobavljac[]))),
       this.optionsService.getOptions(),
-    ]).pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(([grupe, proizvodjaci, dobavljaci, options]) => {
-        this.fields = this.buildFields(grupe, proizvodjaci, dobavljaci, options);
-        this.loadData();
-      });
+      this.tipoviVelicinaService.getAll().pipe(catchError(() => of([] as TipVelicine[]))),
+      this.definicijeAtributaService.getAll().pipe(catchError(() => of([] as DefinicijaAtributa[]))),
+    ]).pipe(
+      switchMap(([grupe, proizvodjaci, dobavljaci, options, tipoviVelicina, definicije]) => {
+        const activeDefs = definicije.filter(d => d.aktivan);
+        this.definicijeAtributa = activeDefs;
+
+        const vrijednostiRequests = activeDefs.length
+          ? activeDefs.map(def =>
+              this.definicijeAtributaService.getVrijednosti(def.id).pipe(
+                catchError(() => of([] as VrijednostAtributa[]))
+              )
+            )
+          : [of([] as VrijednostAtributa[])];
+
+        return forkJoin(vrijednostiRequests).pipe(
+          catchError(() => of([] as VrijednostAtributa[][])),
+          switchMap(sveVrijednosti => {
+            if (activeDefs.length) {
+              activeDefs.forEach((def, i) => {
+                this.vrijednostiByDefId.set(def.id, (sveVrijednosti as VrijednostAtributa[][])[i] ?? []);
+              });
+            }
+
+            this.fields = this.buildFields(grupe, proizvodjaci, dobavljaci, options, tipoviVelicina);
+            this.tableHeaders = this.buildTableHeaders();
+            return of(null);
+          })
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
+      this.loadData();
+    });
+  }
+
+  private buildTableHeaders(): string[] {
+    const staticHeaders = [
+      'sifra', 'naziv', 'jedin', 'pdv', 'popustProcenat',
+      'nazivGrupe', 'nazivProizvodjaca', 'nazivDobavljaca', 'nazivTipaVelicina', 'aktivan',
+    ];
+    const atributHeaders = this.definicijeAtributa.map(def => 'atribut_' + def.id);
+    return [...staticHeaders, ...atributHeaders];
   }
 
   private buildFields(
@@ -94,6 +141,7 @@ export class ArtikliListComponent implements OnInit {
     proizvodjaci: Proizvodjac[],
     dobavljaci: Dobavljac[],
     options: AppOptions,
+    tipoviVelicina: TipVelicine[],
   ): CrudFieldConfig[] {
     const grupeOptions: CrudFieldOption[] = grupe
       .filter(g => g.aktivan)
@@ -107,7 +155,11 @@ export class ArtikliListComponent implements OnInit {
       .filter(d => d.aktivan)
       .map(d => ({ label: d.naziv, value: d.id }));
 
-    return [
+    const tipoviVelicinaOptions: CrudFieldOption[] = tipoviVelicina
+      .filter(t => t.aktivan)
+      .map(t => ({ label: t.naziv, value: t.id }));
+
+    const staticFields: CrudFieldConfig[] = [
       {
         key: 'id',
         label: 'ID',
@@ -142,6 +194,17 @@ export class ArtikliListComponent implements OnInit {
         min: 0,
         minMessage: 'PDV ne može biti negativan.',
         defaultValue: 17,
+      },
+      {
+        key: 'popustProcenat',
+        label: 'Popust (%)',
+        type: 'number',
+        min: 0,
+        max: 100,
+        minMessage: 'Popust ne može biti negativan.',
+        maxMessage: 'Popust ne može biti veći od 100.',
+        decimals: 2,
+        defaultValue: 0,
       },
       {
         key: 'nazivGrupe',
@@ -180,6 +243,19 @@ export class ArtikliListComponent implements OnInit {
         options: dobavljaciOptions,
       },
       {
+        key: 'nazivTipaVelicina',
+        label: 'Tip veličine',
+        type: 'select',
+        options: tipoviVelicina.filter(t => t.aktivan).map(t => ({ label: t.naziv, value: t.naziv })),
+        visible: false,
+      },
+      {
+        key: 'idTipaVelicina',
+        label: 'Tip veličine',
+        type: 'select',
+        options: tipoviVelicinaOptions,
+      },
+      {
         key: 'opis',
         label: 'Opis',
         type: 'text',
@@ -191,6 +267,20 @@ export class ArtikliListComponent implements OnInit {
         defaultValue: true,
       },
     ];
+
+    const atributFields: CrudFieldConfig[] = this.definicijeAtributa.map(def => ({
+      key: 'atribut_' + def.id,
+      label: def.naziv,
+      type: 'select' as const,
+      options: (this.vrijednostiByDefId.get(def.id) ?? []).map(v => ({
+        label: v.vrijednost,
+        value: v.id,
+      })),
+      required: def.obavezno,
+      requiredMessage: 'Polje je obavezno.',
+    }));
+
+    return [...staticFields, ...atributFields];
   }
 
   loadData(): void {
@@ -209,9 +299,29 @@ export class ArtikliListComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(data => {
-        this.items = data;
+        this.items = this.flattenAtributi(data);
         this.cdr.markForCheck();
       });
+  }
+
+  private flattenAtributi(artikli: ArtikalKompanija[]): any[] {
+    return artikli.map(a => {
+      const row: any = { ...a };
+      const atributi = a.atributi ?? {};
+      for (const def of this.definicijeAtributa) {
+        row['atribut_' + def.id] = atributi[def.id] ?? null;
+      }
+      return row;
+    });
+  }
+
+  private extractAtributiFromRow(row: any): SaveArtikalAtributItem[] {
+    return this.definicijeAtributa
+      .filter(def => row['atribut_' + def.id] != null)
+      .map(def => ({
+        idDefinicije: def.id,
+        idVrijednosti: row['atribut_' + def.id] as number,
+      }));
   }
 
   onCreate(row: any): void {
@@ -225,11 +335,26 @@ export class ArtikliListComponent implements OnInit {
       idGrupe: row['idGrupe'] || undefined,
       idProizvodjaca: row['idProizvodjaca'] || undefined,
       idDobavljaca: row['idDobavljaca'] || undefined,
+      idTipaVelicina: row['idTipaVelicina'] ?? null,
     };
 
     this.isSaving = true;
     this.artikliService.create(dto)
       .pipe(
+        switchMap(created => {
+          const atributi = this.extractAtributiFromRow(row);
+          if (atributi.length === 0) {
+            return of(created);
+          }
+          return this.artikliService.saveAtributi(created.id, atributi).pipe(
+            catchError(err => {
+              this.notification.error('Artikal kreiran, ali greška pri čuvanju atributa.');
+              console.error(err);
+              return of(null);
+            }),
+            switchMap(() => of(created))
+          );
+        }),
         finalize(() => {
           this.isSaving = false;
           this.cdr.markForCheck();
@@ -260,11 +385,24 @@ export class ArtikliListComponent implements OnInit {
       idGrupe: row['idGrupe'] || undefined,
       idProizvodjaca: row['idProizvodjaca'] || undefined,
       idDobavljaca: row['idDobavljaca'] || undefined,
+      idTipaVelicina: row['idTipaVelicina'] ?? null,
+      popustProcenat: row['popustProcenat'] != null ? Number(row['popustProcenat']) : undefined,
     };
 
     this.isSaving = true;
     this.artikliService.update(id, dto)
       .pipe(
+        switchMap(updated => {
+          const atributi = this.extractAtributiFromRow(row);
+          return this.artikliService.saveAtributi(updated.id, atributi).pipe(
+            catchError(err => {
+              this.notification.error('Artikal ažuriran, ali greška pri čuvanju atributa.');
+              console.error(err);
+              return of(null);
+            }),
+            switchMap(() => of(updated))
+          );
+        }),
         finalize(() => {
           this.isSaving = false;
           this.cdr.markForCheck();

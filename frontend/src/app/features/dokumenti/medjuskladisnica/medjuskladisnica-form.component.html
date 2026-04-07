@@ -1,0 +1,184 @@
+<h2 mat-dialog-title>Nova međuskladišnica</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" autocomplete="off">
+
+    <div class="row-2col">
+      <!-- Izvorna poslovnica -->
+      <mat-form-field appearance="outline">
+        <mat-label>Izvorna poslovnica (pošiljalac) *</mat-label>
+        <mat-select formControlName="izvorPoslovnicaId" aria-label="Odaberite izvornu poslovnicu">
+          @for (p of poslovnice(); track p.id) {
+            <mat-option [value]="p.id">{{ p.naziv }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls['izvorPoslovnicaId'].invalid && form.controls['izvorPoslovnicaId'].touched) {
+          <mat-error role="alert" aria-live="polite">Izvorna poslovnica je obavezna.</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Odredišna poslovnica -->
+      <mat-form-field appearance="outline">
+        <mat-label>Odredišna poslovnica (primalac) *</mat-label>
+        <mat-select formControlName="odredistePoslovnicaId" aria-label="Odaberite odredišnu poslovnicu">
+          @for (p of poslovnice(); track p.id) {
+            <mat-option [value]="p.id">{{ p.naziv }}</mat-option>
+          }
+        </mat-select>
+        @if (form.controls['odredistePoslovnicaId'].invalid && form.controls['odredistePoslovnicaId'].touched) {
+          <mat-error role="alert" aria-live="polite">Odredišna poslovnica je obavezna.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="row-2col">
+      <!-- Datum -->
+      <mat-form-field appearance="outline">
+        <mat-label>Datum</mat-label>
+        <input matInput [matDatepicker]="datumPicker" formControlName="datum" id="msi-datum" aria-label="Datum međuskladišnice" />
+        <mat-datepicker-toggle matIconSuffix [for]="datumPicker" aria-label="Otvorite kalendar"></mat-datepicker-toggle>
+        <mat-datepicker #datumPicker></mat-datepicker>
+        @if (form.controls['datum'].invalid && form.controls['datum'].touched) {
+          <mat-error role="alert" aria-live="polite">Datum je obavezan.</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Napomena -->
+      <mat-form-field appearance="outline">
+        <mat-label>Napomena</mat-label>
+        <input matInput formControlName="napomena" id="msi-napomena" aria-label="Napomena" />
+      </mat-form-field>
+    </div>
+
+    <mat-divider class="stavke-divider"></mat-divider>
+
+    <div class="stavke-header">
+      <h3>Stavke međuskladišnice</h3>
+      <button
+        mat-stroked-button
+        color="primary"
+        type="button"
+        (click)="dodajStavku()"
+        aria-label="Dodaj stavku u međuskladišnicu"
+      >
+        <mat-icon>add</mat-icon>
+        Dodaj stavku
+      </button>
+    </div>
+
+    @if (stavkeArray.length > 0) {
+      <div class="stavke-table-wrapper" formArrayName="stavke">
+        <table mat-table [dataSource]="stavkeArray.controls" aria-label="Stavke međuskladišnice" class="stavke-table">
+
+          <ng-container matColumnDef="idVarijante">
+            <th mat-header-cell *matHeaderCellDef>ID Varijante</th>
+            <td mat-cell *matCellDef="let ctrl; let i = index" [formGroupName]="i">
+              <mat-form-field appearance="outline" class="stavka-field">
+                <mat-label>ID Varijante</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="idVarijante"
+                  [attr.aria-label]="'ID varijante stavke ' + (i + 1)"
+                  min="1"
+                  step="1"
+                />
+                @if (getStavkaControl(i, 'idVarijante').invalid && getStavkaControl(i, 'idVarijante').touched) {
+                  <mat-error role="alert" aria-live="polite">Obavezno.</mat-error>
+                }
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="kolicina">
+            <th mat-header-cell *matHeaderCellDef>Količina</th>
+            <td mat-cell *matCellDef="let ctrl; let i = index" [formGroupName]="i">
+              <mat-form-field appearance="outline" class="stavka-field">
+                <mat-label>Kol.</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="kolicina"
+                  [attr.aria-label]="'Količina stavke ' + (i + 1)"
+                  min="0.001"
+                  step="0.001"
+                />
+                @if (getStavkaControl(i, 'kolicina').invalid && getStavkaControl(i, 'kolicina').touched) {
+                  <mat-error role="alert" aria-live="polite">Obavezno.</mat-error>
+                }
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="cijena">
+            <th mat-header-cell *matHeaderCellDef>Cijena (KM)</th>
+            <td mat-cell *matCellDef="let ctrl; let i = index" [formGroupName]="i">
+              <mat-form-field appearance="outline" class="stavka-field">
+                <mat-label>Cijena</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="cijena"
+                  [attr.aria-label]="'Cijena stavke ' + (i + 1)"
+                  min="0"
+                  step="0.01"
+                />
+                @if (getStavkaControl(i, 'cijena').invalid && getStavkaControl(i, 'cijena').touched) {
+                  <mat-error role="alert" aria-live="polite">Obavezno.</mat-error>
+                }
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="akcije">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let ctrl; let i = index">
+              <button
+                mat-icon-button
+                color="warn"
+                type="button"
+                (click)="ukloniStavku(i)"
+                [attr.aria-label]="'Ukloni stavku ' + (i + 1)"
+                matTooltip="Ukloni stavku"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="stavkeColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: stavkeColumns;"></tr>
+        </table>
+      </div>
+    } @else {
+      <div class="stavke-empty" role="status">
+        <p>Nema stavki. Kliknite "Dodaj stavku" da dodate prvu stavku.</p>
+      </div>
+    }
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="odustani()" aria-label="Odustani od unosa">
+    Odustani
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="form.invalid || isSaving() || stavkeArray.length === 0"
+    (click)="onSubmit()"
+    aria-label="Kreiraj i potvrdi međuskladišnicu"
+  >
+    @if (isSaving()) {
+      <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Kreiranje u toku"></mat-progress-spinner>
+      Kreiranje...
+    } @else {
+      <ng-container>
+        <mat-icon>swap_horiz</mat-icon>
+        Kreiraj i potvrdi
+      </ng-container>
+    }
+  </button>
+</mat-dialog-actions>

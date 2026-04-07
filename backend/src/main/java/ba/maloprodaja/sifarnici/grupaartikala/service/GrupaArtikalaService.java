@@ -23,7 +23,7 @@ public class GrupaArtikalaService implements IGrupaArtikalaService {
 
     @Override
     public List<GrupaArtikalaDTO.ListItemDTO> listAll(Long idKompanije) {
-        List<GrupaArtikala> grupe = grupaArtikalaRepository.findByIdKompanije(idKompanije);
+        List<GrupaArtikala> grupe = grupaArtikalaRepository.findByIdKompanijeOrderByNazivAsc(idKompanije);
 
         Map<Long, String> naziviById = grupe.stream()
                 .collect(Collectors.toMap(GrupaArtikala::getId, GrupaArtikala::getNaziv));

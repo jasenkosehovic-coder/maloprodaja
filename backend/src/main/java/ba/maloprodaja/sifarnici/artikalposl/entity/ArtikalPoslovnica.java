@@ -37,14 +37,8 @@ public class ArtikalPoslovnica extends PoslovnicaBaseEntity {
     @Column(name = "mpc", precision = 15, scale = 4)
     private BigDecimal mpc;
 
-    @Column(name = "kolicina", nullable = false, precision = 15, scale = 4)
-    private BigDecimal kolicina = BigDecimal.ZERO;
-
-    @Column(name = "min_zaliha", precision = 15, scale = 4)
-    private BigDecimal minZaliha;
-
-    @Column(name = "optimalna_zaliha", precision = 15, scale = 4)
-    private BigDecimal optimalnaZaliha;
+    @Column(name = "popust_procenat", precision = 5, scale = 2)
+    private BigDecimal popustProcenat = BigDecimal.ZERO;
 
     @Column(name = "aktivan", nullable = false)
     private boolean aktivan = true;

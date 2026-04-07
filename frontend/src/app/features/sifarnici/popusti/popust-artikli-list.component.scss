@@ -1,0 +1,109 @@
+:host {
+  display: block;
+}
+
+.popust-artikli-section {
+  margin-top: 32px;
+}
+
+.section-header {
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 0.875rem;
+  }
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-field {
+  min-width: 180px;
+}
+
+.bulk-iznos-field {
+  min-width: 220px;
+}
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.bulk-bar-hint {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.empty-state {
+  padding: 32px 16px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.nova-mpc-lower {
+  color: #2e7d32;
+  font-weight: 500;
+}
+
+.popust-input {
+  width: 80px;
+  padding: 4px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: right;
+
+  &:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 1px #1976d2;
+  }
+}
+
+// Column widths
+.col-checkbox {
+  width: 48px;
+  padding-left: 8px;
+}
+
+.col-sifra {
+  width: 120px;
+}
+
+.col-mpc {
+  width: 100px;
+  text-align: right;
+}
+
+.col-popust {
+  width: 100px;
+}
+
+.col-nova-mpc {
+  width: 100px;
+  text-align: right;
+}

@@ -1,0 +1,210 @@
+<div class="popust-artikli-section">
+  <div class="section-header">
+    <h3>Artikli — primjena popusta</h3>
+    <p class="subtitle">Odaberite artikle i dodijelite popust u procentima (%). Na kasi se primjenjuje najveći od tri nivoa popusta.</p>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje artikala"></mat-progress-bar>
+
+  <!-- Filter row -->
+  <div class="filter-row" role="search" aria-label="Filteri artikala">
+    <mat-form-field class="filter-field" appearance="outline">
+      <mat-label>Dobavljač</mat-label>
+      <mat-select
+        [ngModel]="filterDobavljacId()"
+        (ngModelChange)="filterDobavljacId.set($event)"
+        aria-label="Filter po dobavljaču">
+        <mat-option [value]="null">Svi</mat-option>
+        @for (d of dobavljaci(); track d.id) {
+          <mat-option [value]="d.id">{{ d.naziv }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="filter-field" appearance="outline">
+      <mat-label>Proizvođač</mat-label>
+      <mat-select
+        [ngModel]="filterProizvodjacId()"
+        (ngModelChange)="filterProizvodjacId.set($event)"
+        aria-label="Filter po proizvođaču">
+        <mat-option [value]="null">Svi</mat-option>
+        @for (p of proizvodjaci(); track p.id) {
+          <mat-option [value]="p.id">{{ p.naziv }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="filter-field" appearance="outline">
+      <mat-label>Tip veličine</mat-label>
+      <mat-select
+        [ngModel]="filterTipVelicinaId()"
+        (ngModelChange)="filterTipVelicinaId.set($event)"
+        aria-label="Filter po tipu veličine">
+        <mat-option [value]="null">Svi</mat-option>
+        @for (t of tipoviVelicina(); track t.id) {
+          <mat-option [value]="t.id">{{ t.naziv }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @for (dv of definicijeVrijednosti(); track dv.definicija.id) {
+      <mat-form-field class="filter-field" appearance="outline">
+        <mat-label>{{ dv.definicija.naziv }}</mat-label>
+        <mat-select
+          [ngModel]="filterAtributi()[dv.definicija.id] ?? null"
+          (ngModelChange)="onAtributFilterChange(dv.definicija.id, $event)"
+          [attr.aria-label]="'Filter po ' + dv.definicija.naziv">
+          <mat-option [value]="null">Sve</mat-option>
+          @for (v of dv.vrijednosti; track v.id) {
+            <mat-option [value]="v.id">{{ v.vrijednost }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+  </div>
+
+  <!-- Bulk actions bar -->
+  @if (selectedCount() > 0) {
+    <div class="bulk-bar" role="region" aria-label="Grupne akcije">
+      <span>Broj odabranih: <strong>{{ selectedCount() }}</strong></span>
+
+      <mat-form-field appearance="outline" class="bulk-kampanja-field">
+        <mat-label>Odaberi kampanju</mat-label>
+        <mat-select
+          [ngModel]="selectedKampanjaId"
+          (ngModelChange)="onKampanjaChange($event)"
+          aria-label="Odaberi kampanju za popust">
+          <mat-option [value]="null">— bez kampanje —</mat-option>
+          @for (k of kampanje; track k.id) {
+            <mat-option [value]="k.id">{{ k.naziv }} ({{ k.procenat }}%)</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="bulk-procenat-field">
+        <mat-label>Ili unesi % ručno</mat-label>
+        <input
+          matInput
+          type="number"
+          min="0"
+          max="100"
+          [(ngModel)]="bulkPopustProcenat"
+          (ngModelChange)="onBulkProcenatChange()"
+          aria-label="Popust u procentima za odabrane artikle" />
+      </mat-form-field>
+
+      <button
+        mat-raised-button
+        color="accent"
+        (click)="applyBulkPopust()"
+        [disabled]="isSaving"
+        aria-label="Primijeni popust na odabrane artikle">
+        Primijeni na odabrane
+      </button>
+
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="spremiPromjene()"
+        [disabled]="isSaving"
+        aria-label="Spremi promjene popusta">
+        @if (isSaving) {
+          Čuvanje...
+        } @else {
+          Spremi promjene
+        }
+      </button>
+    </div>
+  } @else {
+    <div class="bulk-bar-hint">
+      <button
+        mat-raised-button
+        color="primary"
+        (click)="spremiPromjene()"
+        [disabled]="isSaving || isLoading"
+        aria-label="Spremi promjene popusta">
+        @if (isSaving) {
+          Čuvanje...
+        } @else {
+          Spremi promjene
+        }
+      </button>
+    </div>
+  }
+
+  <!-- Table -->
+  <div class="table-container" role="region" aria-label="Tabela artikala sa popustima">
+    @if (!isLoading && filteredRows().length === 0) {
+      <div class="empty-state" role="status">
+        <p>Nema artikala koji odgovaraju zadatim filterima.</p>
+      </div>
+    } @else {
+      <table
+        mat-table
+        [dataSource]="filteredRows()"
+        aria-label="Artikli sa popustima u procentima">
+
+        <!-- Checkbox column -->
+        <ng-container matColumnDef="select">
+          <th mat-header-cell *matHeaderCellDef class="col-checkbox">
+            <mat-checkbox
+              [checked]="allSelected()"
+              [indeterminate]="someSelected()"
+              (change)="onToggleAll($event.checked)"
+              aria-label="Odaberi sve artikle">
+            </mat-checkbox>
+          </th>
+          <td mat-cell *matCellDef="let row" class="col-checkbox">
+            <mat-checkbox
+              [checked]="row.selected"
+              (change)="onToggleRow(row)"
+              [attr.aria-label]="'Odaberi artikal ' + row.naziv">
+            </mat-checkbox>
+          </td>
+        </ng-container>
+
+        <!-- Naziv column -->
+        <ng-container matColumnDef="naziv">
+          <th mat-header-cell *matHeaderCellDef>Naziv</th>
+          <td mat-cell *matCellDef="let row">{{ row.naziv }}</td>
+        </ng-container>
+
+        <!-- Šifra column -->
+        <ng-container matColumnDef="sifra">
+          <th mat-header-cell *matHeaderCellDef>Šifra</th>
+          <td mat-cell *matCellDef="let row" class="col-sifra">{{ row.sifra }}</td>
+        </ng-container>
+
+        <!-- MPC column -->
+        <ng-container matColumnDef="mpc">
+          <th mat-header-cell *matHeaderCellDef>MPC</th>
+          <td mat-cell *matCellDef="let row" class="col-mpc">
+            @if (row.mpc != null) {
+              {{ row.mpc | number: '1.2-2' }}
+            } @else {
+              —
+            }
+          </td>
+        </ng-container>
+
+        <!-- Popust procenat column -->
+        <ng-container matColumnDef="popustProcenat">
+          <th mat-header-cell *matHeaderCellDef>Popust (%)</th>
+          <td mat-cell *matCellDef="let row" class="col-popust">
+            <input
+              class="popust-input"
+              type="number"
+              min="0"
+              max="100"
+              [(ngModel)]="row.popustProcenat"
+              (ngModelChange)="onPopustProcenatChange(row)"
+              [attr.aria-label]="'Popust (%) za artikal ' + row.naziv" />
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    }
+  </div>
+</div>

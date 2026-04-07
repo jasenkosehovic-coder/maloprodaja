@@ -216,7 +216,7 @@ DELETE /api/web-artikli/{id}                 — ukloniti sa weba
 Stranica **Šifarnici → Artikli** već postoji sa sljedećim tabovima:
 
 ```
-[postojeći tabovi]  Artikli | Artikli u poslovnici | Barkodovi | Grupe artikala | Popusti
+[postojeći tabovi]  Artikli | Artikli u poslovnici | Barkodovi | Grupe artikala | Popusti | Tipovi veličina | Definicije atributa
 ```
 
 ### Izmjene postojećih tabova
@@ -282,30 +282,28 @@ Dostupno **samo za artikle koji su u artikli_kompanije** (postoji zapis u `artik
 - Brisanje pojedinačnih slika
 - Slike se čuvaju na disku, u bazi samo putanja (`slike_artikala.putanja`)
 
-### Sifarnici → Tipovi veličina (posebna stranica)
+### Tab: Tipovi veličina (unutar Artikli stranice)
 
-Tipovi veličina su **master data** — postavljaju se jednom i referenciraju iz taba Artikli:
-
-```
-Sifarnici
-  └── Tipovi veličina
-        ├── [Lista tipova]         — "Konfekcija S-XXL", "Cipele 36-46", "One size"...
-        └── [Odabrani tip]
-              └── Inline tabela    — oznaka veličine (S/M/L...), redosljed, aktivan
-                                     dodavanje/brisanje veličina unutar tipa
-```
-
-### Sifarnici → Definicije atributa (posebna stranica)
-
-Definicije atributa su **master data** — kompanija ih kreira jednom, a pojavljuju se
-automatski kao kolone u tabu Artikli:
+Tipovi veličina su master data za veličine artikala — nalaze se kao tab direktno u
+Šifarnici → Artikli jer se konceptualno odnose na artikle:
 
 ```
-Sifarnici
-  └── Definicije atributa
-        ├── [Lista definicija]     — Boja, Sezona, Fit, Sastav... (redosljed, za_web, aktivan)
-        └── [Odabrana definicija]
-              └── Inline tabela    — vrijednosti (Crvena, Slim fit...), redosljed, aktivan
+Šifarnici → Artikli → Tab: Tipovi veličina
+  ├── [Lista tipova]         — "Konfekcija S-XXL", "Cipele 36-46", "One size"...
+  └── [Odabrani tip]
+        └── Inline tabela    — oznaka (S/M/L...), redosljed, aktivan
+```
+
+### Tab: Definicije atributa (unutar Artikli stranice)
+
+Definicije atributa su master data za SKU atribute — nalaze se kao tab u Artikli jer
+se vrijednosti atributa direktno primjenjuju na artikle:
+
+```
+Šifarnici → Artikli → Tab: Definicije atributa
+  ├── [Lista definicija]     — Boja, Sezona, Fit, Sastav... (redosljed, za_web, aktivan)
+  └── [Odabrana definicija]
+        └── Inline tabela    — vrijednosti (Crvena, Slim fit...), redosljed, aktivan
 ```
 
 ---
@@ -330,72 +328,182 @@ Skripta kreira sve tablice ispočetka u ispravnom redoslijedu zavisnosti:
 ### Sprint 1 — Master data moduli (veličine + atributi + slike)
 **Cilj:** Novi master data moduli potpuno funkcionalni, šema već kreirana u V1.
 
-- [ ] **Backend — TipVelicina modul** (entity, repository, service, controller)
+- [x] **Backend — TipVelicina modul** (entity, repository, service, controller)
   - CRUD `/api/tipovi-velicina`
   - CRUD `/api/tipovi-velicina/{id}/velicine`
-- [ ] **Backend — Atribut modul** (entity, repository, service, controller)
+- [x] **Backend — Atribut modul** (entity, repository, service, controller)
   - CRUD `/api/atributi/definicije` + `/vrijednosti`
   - CRUD `/api/artikli/{id}/atributi`
-- [ ] **Backend — Slike modul** (entity, repository, service, controller)
+- [x] **Backend — Slike modul** (entity, repository, service, controller)
   - CRUD `/api/artikli/{id}/slike` (upload fajla + čuvanje putanje)
-- [ ] **Frontend — Sifarnici → Tipovi veličina** (nova posebna stranica: lista tipova + inline tabela veličina)
-- [ ] **Frontend — Sifarnici → Definicije atributa** (nova posebna stranica: lista definicija + inline tabela vrijednosti)
+- [x] **Frontend — Sifarnici → Tipovi veličina** (nova posebna stranica: lista tipova + inline tabela veličina)
+- [x] **Frontend — Sifarnici → Definicije atributa** (nova posebna stranica: lista definicija + inline tabela vrijednosti)
 
 ---
 
 ### Sprint 2 — Varijante artikala + zaliha
 **Cilj:** Novi model zalihe aktivan, stari još uvijek radi.
 
-- [ ] **Backend — Varijanta modul**
+- [x] **Backend — Varijanta modul**
   - Entity `VarijantaArtikla`, `VarijantaArtiklaPoslovnica`
   - Service + repository + controller
   - `ArtikalKompService.create` → auto-kreira default varijantu
-- [ ] **Backend — ArtikalKompanija**
+- [x] **Backend — ArtikalKompanija**
   - Dodati `idTipaVelicina` na entity i DTO
   - Update endpoint za `idTipaVelicina`
-- [ ] **Backend — Stanje zalihe**
+- [x] **Backend — Stanje zalihe**
   - `/api/artikli/{id}/stanje` — pregled po poslovnicama + veličinama
   - `/api/varijante-poslovnica/{id}` — update zalihe direktno
-- [ ] **Frontend — Tab "Artikli": dodati kolonu Tip veličine** (selectbox → tipovi_velicina)
-- [ ] **Frontend — Tab "Artikli": dinamičke kolone atributa** (učitava se iz definicije_atributa, svaka je selectbox → vrijednosti_atributa)
-- [ ] **Frontend — Tab "Veličine i barkodovi"** — prilagodba novom modelu (varijante + barkodovi)
+- [x] **Frontend — Tab "Artikli": dodati kolonu Tip veličine** (selectbox → tipovi_velicina)
+- [x] **Frontend — Tab "Artikli": dinamičke kolone atributa** (učitava se iz definicije_atributa, svaka je selectbox → vrijednosti_atributa)
+- [x] **Frontend — Tab "Barkodovi"** — prilagodba novom modelu (accordion po varijantama + barkodovi)
 
 ---
 
-### Sprint 3 — Refaktoring barkodova + uklanjanje zalihe sa artikli_poslovnice
-**Cilj:** Barkodovi vezani za varijante, stanje zalihe samo u `varijante_artikla_poslovnica`.
+### Sprint 3 — Refaktoring barkodova + uklanjanje zalihe sa artikli_poslovnice + boja dimenzija
+**Cilj:** Barkodovi vezani za varijante, stanje zalihe samo u `varijante_artikla_poslovnica`, boja kao druga dimenzija varijante.
 
-- [ ] **Backend — Barkod entity + service**
+- [x] **Backend — Barkod entity + service**
   - Entity: `id_varijante` FK (šema već ispravna u V1)
-  - Ukloniti stari `BarkodService`, logika ide u `VarijantaService`
-- [ ] **Backend — ArtikalPoslovnicaService**
-  - Ukloniti sve reference na `kolicina`, `minZaliha`, `optimalnaZaliha` (kolone ne postoje u V1 šemi)
-  - Ukloniti ta polja iz DTO-a
-- [ ] **Frontend — Tab "Barkodovi"**: prilagodba da prikazuje varijante (artikal + veličina → barkodovi)
+  - `BarkodService` prilagođen novom modelu, stare metode zamijenjene
+- [x] **Backend — ArtikalPoslovnicaService**
+  - Uklonjene sve reference na `kolicina`, `minZaliha`, `optimalnaZaliha`
+  - Uklonjena ta polja iz entiteta i DTO-a
+  - `ukupnaKolicina` kolona dodana (JPQL aggregate, bez N+1)
+  - TODO komentari dodati u: `UlaznaFakturaService`, `OtpremnicaService`, `NivelacijaService`, `ImportPocetnogStanjaService` — riješava se u Sprintu 4
+- [x] **Frontend — Tab "Artikli u poslovnici"**: uklonjena polja zalihe, dodana `ukupnaKolicina` kolona (sum po varijantama, narandžasta kad = 0)
+- [x] **Backend — Boja modul** (`ba.maloprodaja.sifarnici.boja`)
+  - `Boja` entity + `boje` tabela (naziv, hexKod nullable, aktivan, idKompanije)
+  - `BojaService` sa guard-om: ne može se deaktivirati ako se koristi u aktivnim varijantama
+  - `BojaController` — `/api/boje`, `/api/boje/aktivne`, POST, PUT, DELETE
+- [x] **Backend — VarijantaArtikla proširena sa `id_boje`**
+  - `VarijantaArtikla.java`: `idBoje` polje + `@ManyToOne Boja`
+  - `VarijantaDTO`: `idBoje`, `nazivBoje`, `hexKodBoje`, `nazivVarijante`
+  - `VarijantaService`: `buildBojeMap`, duplikat check za obje dimenzije, naziv "S / Crvena" logika
+  - `VarijantaArtiklaRepository`: `existsByIdBojeAndAktivanTrue`, `existsByIdArtiklaAndIdVelicinaAndIdBoje`
+- [x] **Frontend — Tab "Boje"** (`sifarnici/boje/`)
+  - `BojeListComponent` sa tabelom, inline add/edit, hex preview swatch, native color picker
+  - Ruta `boje` dodan kao artikli child u `sifarnici.routes.ts`
+  - Tab link dodan u `artikli-shell.component.html`
+- [x] **Frontend — Barkodovi tab proširen za boju**
+  - Accordion paneli prikazuju color swatch + kombinirani naziv (S / Crvena)
+  - Forma za dodavanje varijante sa mat-select za boju (color swatchevi u opcijama)
 
 ---
 
-### Sprint 4 — Dokumenti svjesni veličina + web shop modul
-**Cilj:** Fakture/otpremnice biraju veličinu; web shop modul aktivan.
+### Sprint 4 — Unified "Promet" arhitektura
+**Cilj:** Zamijeniti sve odvojene dokument-tabele (ulazne_fakture, otpremnice, nivelacije, import_pocetnog_stanja)
+jednim generičkim sistemom prometa koji radi sa varijantama artikala.
 
-- [ ] **Backend — UlaznaFaktura stavka**
-  - Dodati `id_varijante` na entity i DTO
-  - Stock update na `varijante_artikla_poslovnica` umjesto `artikli_poslovnice`
-- [ ] **Backend — Otpremnica stavka**
-  - Dodati `id_varijante` na entity i DTO
-  - Stock update na `varijante_artikla_poslovnica`
-- [ ] **Frontend — Ulazna faktura** — biranje veličine pri unosu stavke
-- [ ] **Frontend — Otpremnica** — biranje veličine pri unosu stavke
-- [ ] **Backend — Web shop modul**
-  - Entity `WebArtikal`, repository, service, controller
-  - CRUD `/api/web-artikli`
-  - Logika: pri objavi artikla popuniti `mpc` iz `artikli_poslovnice`, korisnik unosi `popust`, sistem računa `nova_mpc`
-- [ ] **Frontend — novi Tab "Artikli web"**: dodavanje artikala iz kompanije na web shop (analogno "Artikli u poslovnici")
-  - Selectbox za artikal, web_naziv, web_opis, mpc, popust, auto nova_mpc, meta polja, aktivan
-- [ ] **Frontend — novi Tab "Slike artikala"**: upload i upravljanje slikama za artikle koji su u web shopu
-  - Vidljivo samo za artikle koji postoje u `web_artikli`
-  - Upload, naslovna slika, redosljed, brisanje
-- [ ] **Testovi** — JUnit testovi za sve nove servise
+---
+
+#### Arhitekturne odluke (sve potvrđene)
+
+| # | Odluka | Detalji |
+|---|---|---|
+| 1 | Storno = novi dokument | Ne mijenja status, kreira novi dokument sa minus količinama |
+| 2 | Međuskladišnica = 2 dokumenta | MEDJUSKLADISNICA_IZLAZ + MEDJUSKLADISNICA_ULAZ, sve-ili-ništa |
+| 3 | Snapshot zalihe | `varijante_artikla_poslovnica.kolicina` ostaje, ažurira se pri potvrdi/stornu |
+| 4 | Auto broj | Format `KOD-YYYY-NNNN`, resetuje se po godini+tipu, korisnik ne može editovati |
+| 5 | PDF po tipu | Svaki tip dokumenta ima vlastiti Jasper template |
+| 6 | Blagajna u dokumenti | `PRODAJA` tip sa smjer_kolicine = -1 |
+| 7 | Veleprodaja cijena | VPC + marža bez PDV |
+| 8 | Povrat samo dobavljaču | Nema povrata kupca u v1 |
+| 9 | Nivelacije ostaju odvojene | Nivelacije mijenjaju MPC/VPC, ne količinu — ne uklapaju se u promet |
+
+---
+
+#### Nova šema tablica
+
+```
+tipovi_dokumenata
+  id, kod VARCHAR(20) UNIQUE, naziv VARCHAR(100)
+  smjer_kolicine SMALLINT  -- +1 (ulaz) ili -1 (izlaz)
+  id_kompanije FK, sys_*
+
+dokumenti
+  id, id_tipa FK → tipovi_dokumenata
+  id_poslovnice FK
+  id_dobavljaca FK (nullable)   -- za ULAZNA_FAKTURA, POVRAT_DOBAVLJACU
+  id_kupca      FK (nullable)   -- za IZLAZNA_FAKTURA (veleprodaja)
+  status        VARCHAR(20)     -- NACRT | POTVRĐEN | STORNIRAN
+  broj_dokumenta VARCHAR(30)    -- auto: KOD-YYYY-NNNN, kreira se pri potvrdi
+  datum DATE, napomena TEXT
+  id_kompanije FK, sys_*
+
+stavke_dokumenata
+  id, id_dokumenta FK → dokumenti
+  id_varijante FK → varijante_artikla
+  kolicina NUMERIC(12,3)        -- uvijek pozitivna; smjer određuje tip dokumenta
+  cijena   NUMERIC(12,4)        -- VPC pri ulasku, MPC pri izlasku
+  popust   NUMERIC(5,2) DEFAULT 0
+  ukupno   NUMERIC(12,4)        -- (cijena - popust%) * kolicina
+  id_kompanije FK, sys_*
+
+brojaci_dokumenata
+  id, id_tipa FK, id_kompanije FK
+  godina SMALLINT, brojac INT DEFAULT 0
+  UNIQUE(id_tipa, id_kompanije, godina)
+```
+
+**Tipovi dokumenata (seed data):**
+
+| kod | naziv | smjer_kolicine |
+|---|---|---|
+| UF | Ulazna faktura | +1 |
+| PD | Povrat dobavljaču | -1 |
+| IF | Izlazna faktura (veleprodaja) | -1 |
+| MSI | Međuskladišnica izlaz | -1 |
+| MSU | Međuskladišnica ulaz | +1 |
+| PROD | Prodaja (blagajna) | -1 |
+
+**Tablice koje se uklanjaju iz V1:**
+- `ulazne_fakture`, `ulazne_fakture_stavke`
+- `otpremnice`, `otpremnice_stavke`
+- `import_pocetno_stanje`, `import_pocetno_stanje_stavke`
+- Nivelacije **ostaju** (`nivelacije`, `nivelacije_stavke`) — mijenjaju cijene, ne zalihu
+
+**Kalkulacija zalihe (single JPQL):**
+```sql
+SELECT SUM(s.kolicina * t.smjerKolicine)
+FROM StavkaDokumenta s
+JOIN s.dokument d
+JOIN d.tipDokumenta t
+WHERE s.idVarijante = :idVarijante
+  AND d.idPoslovnice = :idPoslovnice
+  AND d.status = 'POTVRĐEN'
+  AND d.idKompanije = :idKompanije
+```
+
+---
+
+#### Backend — task lista
+
+- [x] **DDL** — ažurirati `V1__init_schema.sql`: ukloniti stare tablice, dodati 4 nove
+- [x] **TipDokumenta entity + repository** (`ba.maloprodaja.promet.tipdokumenta`)
+- [x] **Dokument entity + repository** (`ba.maloprodaja.promet.dokument`)
+  - Status enum: `NACRT`, `POTVRĐEN`, `STORNIRAN`
+- [x] **StavkaDokumenta entity + repository**
+  - Napomena: `kolicina` je **potpisana** (+/−) — servis primjenjuje `smjerKolicine` pri unosu stavke
+- [x] **BrojacDokumenta entity + service** — auto-number `KOD-YYYY-NNNN`
+- [x] **PrometService** — kreiranje, potvrda, storno
+  - `potvrdi(id)`: validacija + update snapshot zalihe + generisanje broja
+  - `storniraj(id)`: kreira novi dokument sa stavkama `.negate()`, odmah potvrđuje
+  - `kreirajMedjuskladisnicu`: atomično kreira MSI + MSU
+- [x] **PrometController** — CRUD + akcije potvrdi/storniraj + stavke
+- [x] **PDF po tipu** — jedan shared `buildPrometDokumentReport()` template za UF, IF, PD, MSI/MSU; logo iz `kompanija.logo`; endpoint `GET /api/dokumenti/{id}/pdf`
+- [x] **Testovi** — 10 JUnit testova za DokumentService (kreiranje, potvrda, storno, međuskladišnica, nivelacija trigger, nivelacija failure isolation)
+
+---
+
+#### Frontend — task lista
+
+- [x] **Adaptiraj "Ulazne fakture"** — sada gada `/api/dokumenti?tipKod=UF`
+- [x] **Adaptiraj "Otpremnice" → "Povrat dobavljaču"** (`tipKod=PD`)
+- [x] **Novi screen "Izlazne fakture"** (veleprodaja, `tipKod=IF`)
+- [x] **Novi screen "Međuskladišnica"** (`tipKod=MSI`+`MSU` atomično)
+- [x] **Ažurirati topbar/navigaciju** — nove rute, stare uklonjene
+- [ ] **Shared komponenta za stavke** `PrometStavkeComponent` *(svaki screen ima vlastitu formu; refaktoring u Sprint 5 ako bude potrebe)*
 
 ---
 

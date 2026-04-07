@@ -4,6 +4,7 @@ import ba.maloprodaja.common.entity.KompanijaBaseEntity;
 import ba.maloprodaja.sifarnici.dobavljac.entity.Dobavljac;
 import ba.maloprodaja.sifarnici.grupaartikala.entity.GrupaArtikala;
 import ba.maloprodaja.sifarnici.proizvodjac.entity.Proizvodjac;
+import ba.maloprodaja.sifarnici.velicina.entity.TipVelicina;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +44,12 @@ public class ArtikalKompanija extends KompanijaBaseEntity {
     @Column(name = "id_dobavljaca")
     private Long idDobavljaca;
 
+    @Column(name = "id_tipa_velicina")
+    private Long idTipaVelicina;
+
+    @Column(name = "popust_procenat", precision = 5, scale = 2)
+    private BigDecimal popustProcenat = BigDecimal.ZERO;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_grupe", insertable = false, updatable = false)
     private GrupaArtikala grupaArtikala;
@@ -54,4 +61,8 @@ public class ArtikalKompanija extends KompanijaBaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_dobavljaca", insertable = false, updatable = false)
     private Dobavljac dobavljac;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipa_velicina", insertable = false, updatable = false)
+    private TipVelicina tipVelicina;
 }

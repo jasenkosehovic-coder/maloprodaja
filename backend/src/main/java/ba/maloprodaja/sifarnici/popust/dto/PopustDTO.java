@@ -31,9 +31,7 @@ public class PopustDTO {
             BigDecimal procenat,
 
             LocalDate datumOd,
-            LocalDate datumDo,
-
-            Long idPoslovnice
+            LocalDate datumDo
     ) {}
 
     public record UpdateDTO(
@@ -48,8 +46,6 @@ public class PopustDTO {
             LocalDate datumOd,
             LocalDate datumDo,
 
-            Boolean aktivan,
-
-            Long idPoslovnice
+            Boolean aktivan
     ) {}
 }

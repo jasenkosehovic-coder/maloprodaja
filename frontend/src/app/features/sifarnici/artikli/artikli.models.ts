@@ -15,6 +15,10 @@ export interface ArtikalKompanija {
   nazivProizvodjaca?: string;
   idDobavljaca?: number;
   nazivDobavljaca?: string;
+  idTipaVelicina?: number;
+  nazivTipaVelicina?: string;
+  atributi?: Record<number, number>;
+  popustProcenat?: number;
 }
 
 export interface CreateArtikalKompanija {
@@ -27,6 +31,7 @@ export interface CreateArtikalKompanija {
   idGrupe?: number;
   idProizvodjaca?: number;
   idDobavljaca?: number;
+  idTipaVelicina?: number | null;
 }
 
 export interface UpdateArtikalKompanija {
@@ -39,6 +44,53 @@ export interface UpdateArtikalKompanija {
   idGrupe?: number;
   idProizvodjaca?: number;
   idDobavljaca?: number;
+  idTipaVelicina?: number | null;
+  popustProcenat?: number;
+}
+
+export interface ArtikalAtributVrijednost {
+  idDefinicije: number;
+  nazivDefinicije: string;
+  idVrijednosti?: number;
+  vrijednost?: string;
+}
+
+export interface SaveArtikalAtributiRequest {
+  atributi: SaveArtikalAtributItem[];
+}
+
+export interface SaveArtikalAtributItem {
+  idDefinicije: number;
+  idVrijednosti: number;
+}
+
+export interface VarijantaBarkod {
+  id: number;
+  barkod: string;
+  aktivan: boolean;
+}
+
+export interface ArtikalVarijanta {
+  id: number;
+  idArtikla: number;
+  idVelicine: number | null;
+  oznakaVelicine: string | null;
+  idBoje: number | null;
+  nazivBoje: string | null;
+  hexKodBoje: string | null;
+  nazivVarijante: string;
+  barkodovi: VarijantaBarkod[];
+  aktivan: boolean;
+}
+
+export interface CreateVarijanta {
+  idVelicine: number | null;
+  idBoje: number | null;
+}
+
+export interface CreateVarijantaBarkod {
+  barkod: string;
+  idVarijante: number;
 }
 
 export interface ArtikalPoslovnica {
@@ -51,10 +103,9 @@ export interface ArtikalPoslovnica {
   marza?: number;
   tipMarze: TipMarze;
   mpc?: number;
-  kolicina: number;
-  minZaliha?: number;
-  optimalnaZaliha?: number;
+  ukupnaKolicina: number;
   aktivan: boolean;
+  popustProcenat?: number;
 }
 
 export interface CreateArtikalPoslovnica {
@@ -63,9 +114,6 @@ export interface CreateArtikalPoslovnica {
   vpc?: number;
   marza?: number;
   tipMarze?: TipMarze;
-  kolicina?: number;
-  minZaliha?: number;
-  optimalnaZaliha?: number;
 }
 
 export interface UpdateArtikalPoslovnica {
@@ -73,10 +121,8 @@ export interface UpdateArtikalPoslovnica {
   marza?: number;
   tipMarze?: TipMarze;
   mpc?: number;
-  kolicina?: number;
-  minZaliha?: number;
-  optimalnaZaliha?: number;
   aktivan?: boolean;
+  popustProcenat?: number;
 }
 
 export interface Barkod {
@@ -100,4 +146,13 @@ export interface UpdateBarkod {
   barkod: string;
   idPoslovnice?: number | null;
   aktivan?: boolean;
+}
+
+export interface UpdateBarkodAktivan {
+  aktivan: boolean;
+}
+
+export interface BatchPopustUpdate {
+  id: number;
+  popustProcenat: number;
 }
