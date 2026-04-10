@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BarkodRepository extends JpaRepository<Barkod, Long> {
@@ -18,4 +19,6 @@ public interface BarkodRepository extends JpaRepository<Barkod, Long> {
     boolean existsByBarkodAndIdKompanije(String barkod, Long idKompanije);
 
     boolean existsByBarkodAndIdKompanijeAndIdNot(String barkod, Long idKompanije, Long id);
+
+    Optional<Barkod> findByBarkodAndIdKompanijeAndAktivanTrue(String barkod, Long idKompanije);
 }

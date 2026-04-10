@@ -49,7 +49,11 @@ public class ArtikalKompDTO {
             Long idGrupe,
             Long idProizvodjaca,
             Long idDobavljaca,
-            Long idTipaVelicina
+            Long idTipaVelicina,
+
+            @DecimalMin(value = "0.00", message = "Popust ne može biti negativan")
+            @DecimalMax(value = "100.00", message = "Popust ne može biti veći od 100%")
+            BigDecimal popustProcenat
     ) {}
 
     public record UpdateDTO(

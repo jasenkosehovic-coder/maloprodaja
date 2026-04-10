@@ -211,6 +211,7 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
       idPoslovnice: idPosl,
       marza: row['marza'] != null ? Number(row['marza']) : undefined,
       tipMarze: row['tipMarze'] || 'SLOBODNA',
+      popustProcenat: row['popustProcenat'] != null ? Number(row['popustProcenat']) : 0,
     };
 
     this.isSaving = true;

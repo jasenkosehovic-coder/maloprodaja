@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Repository
 public interface ArtikalPoslovnicaRepository extends JpaRepository<ArtikalPoslovnica, Long> {
 
-    List<ArtikalPoslovnica> findByIdPoslovnice(Long idPoslovnice);
+    List<ArtikalPoslovnica> findByIdPoslovniceOrderByArtikalKompanijaNazivAsc(Long idPoslovnice);
 
     List<ArtikalPoslovnica> findByIdArtikla(Long idArtikla);
 

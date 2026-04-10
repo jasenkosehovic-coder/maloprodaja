@@ -113,6 +113,17 @@ public class BarkodService implements IBarkodService {
         log.info("Deaktiviran barkod: id={}", id);
     }
 
+    @Override
+    public BarkodDTO.PretragaDTO findArtikalByBarkod(String barkod, Long idKompanije) {
+        Barkod b = barkodRepository.findByBarkodAndIdKompanijeAndAktivanTrue(barkod, idKompanije)
+                .orElseThrow(() -> new ResourceNotFoundException("Barkod '" + barkod + "' ne postoji."));
+
+        VarijantaArtikla varijanta = varijantaRepository.findById(b.getIdVarijante())
+                .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtikla", b.getIdVarijante()));
+
+        return new BarkodDTO.PretragaDTO(varijanta.getIdArtikla());
+    }
+
     // ---- Private helpers ----
 
     private BarkodDTO.ListItemDTO toDTO(Barkod b, VarijantaArtikla varijanta) {

@@ -68,28 +68,14 @@
     <div class="bulk-bar" role="region" aria-label="Grupne akcije">
       <span>Broj odabranih: <strong>{{ selectedCount() }}</strong></span>
 
-      <mat-form-field appearance="outline" class="bulk-kampanja-field">
-        <mat-label>Odaberi kampanju</mat-label>
-        <mat-select
-          [ngModel]="selectedKampanjaId"
-          (ngModelChange)="onKampanjaChange($event)"
-          aria-label="Odaberi kampanju za popust">
-          <mat-option [value]="null">— bez kampanje —</mat-option>
-          @for (k of kampanje; track k.id) {
-            <mat-option [value]="k.id">{{ k.naziv }} ({{ k.procenat }}%)</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
       <mat-form-field appearance="outline" class="bulk-procenat-field">
-        <mat-label>Ili unesi % ručno</mat-label>
+        <mat-label>Popust (%)</mat-label>
         <input
           matInput
           type="number"
           min="0"
           max="100"
           [(ngModel)]="bulkPopustProcenat"
-          (ngModelChange)="onBulkProcenatChange()"
           aria-label="Popust u procentima za odabrane artikle" />
       </mat-form-field>
 
@@ -199,6 +185,18 @@
               [(ngModel)]="row.popustProcenat"
               (ngModelChange)="onPopustProcenatChange(row)"
               [attr.aria-label]="'Popust (%) za artikal ' + row.naziv" />
+          </td>
+        </ng-container>
+
+        <!-- Nova MPC column -->
+        <ng-container matColumnDef="novaMpc">
+          <th mat-header-cell *matHeaderCellDef>Nova MPC</th>
+          <td mat-cell *matCellDef="let row" class="col-mpc col-nova-mpc">
+            @if (row.mpc != null) {
+              {{ row.mpc * (1 - row.popustProcenat / 100) | number: '1.2-2' }}
+            } @else {
+              —
+            }
           </td>
         </ng-container>
 

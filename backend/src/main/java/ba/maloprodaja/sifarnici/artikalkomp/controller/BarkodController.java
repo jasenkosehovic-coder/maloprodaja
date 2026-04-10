@@ -29,6 +29,16 @@ public class BarkodController {
         return ResponseEntity.ok(ApiResponse.ok(barkodService.listAll(korisnik.getIdKompanije())));
     }
 
+    @GetMapping("/api/barkodovi/pretraga")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<BarkodDTO.PretragaDTO>> findByBarkod(
+            @RequestParam String barkod,
+            Authentication auth
+    ) {
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(barkodService.findArtikalByBarkod(barkod, korisnik.getIdKompanije())));
+    }
+
     @GetMapping("/api/varijante/{idVarijante}/barkodovi")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
     public ResponseEntity<ApiResponse<List<BarkodDTO.ListItemDTO>>> listByVarijanta(

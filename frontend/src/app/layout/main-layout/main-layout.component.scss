@@ -10,6 +10,6 @@
 .main-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   background: vars.$surface-100;
-  padding: vars.$spacing-lg;
 }

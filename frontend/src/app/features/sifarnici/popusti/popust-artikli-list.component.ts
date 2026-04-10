@@ -34,8 +34,6 @@ import { TipoviVelicinaService } from '../tipovi-velicina/tipovi-velicina.servic
 import { TipVelicine } from '../tipovi-velicina/tipovi-velicina.models';
 import { DefinicijeAtributaService } from '../definicije-atributa/definicije-atributa.service';
 import { DefinicijaAtributa, VrijednostAtributa } from '../definicije-atributa/definicije-atributa.models';
-import { PopustiService } from './popusti.service';
-import { Popust } from './popusti.models';
 
 export interface PopustArtikalRow {
   id: number;
@@ -82,13 +80,12 @@ export class PopustArtikliListComponent implements OnInit {
   private readonly proizvodjaciService = inject(ProizvodjaciService);
   private readonly tipoviVelicinaService = inject(TipoviVelicinaService);
   private readonly definicijeAtributaService = inject(DefinicijeAtributaService);
-  private readonly popustiService = inject(PopustiService);
   private readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  readonly displayedColumns = ['select', 'naziv', 'sifra', 'mpc', 'popustProcenat'];
+  readonly displayedColumns = ['select', 'naziv', 'sifra', 'mpc', 'popustProcenat', 'novaMpc'];
 
   isLoading = false;
   isSaving = false;
@@ -105,8 +102,6 @@ export class PopustArtikliListComponent implements OnInit {
   filterAtributi = signal<Record<number, number | null>>({});
 
   bulkPopustProcenat = 0;
-  selectedKampanjaId: number | null = null;
-  kampanje: Popust[] = [];
 
   readonly filteredRows = computed(() => {
     const all = this.rows();
@@ -165,7 +160,6 @@ export class PopustArtikliListComponent implements OnInit {
       proizvodjaci: this.proizvodjaciService.getAll(),
       tipoviVelicina: this.tipoviVelicinaService.getAll(),
       definicije: this.definicijeAtributaService.getAll(),
-      kampanje: this.popustiService.getAll(),
     }).pipe(
       switchMap(data => {
         const defRequests = data.definicije.map(def =>
@@ -180,7 +174,7 @@ export class PopustArtikliListComponent implements OnInit {
 
         return forkJoin(defRequests).pipe(
           catchError(() => of(data.definicije.map(() => [] as VrijednostAtributa[]))),
-          switchMap(vrijednostiPerDef => of({ ...data, vrijednostiPerDef }))
+          switchMap((vrijednostiPerDef: VrijednostAtributa[][]) => of({ ...data, vrijednostiPerDef }))
         );
       }),
       finalize(() => {
@@ -234,7 +228,6 @@ export class PopustArtikliListComponent implements OnInit {
       this.proizvodjaci.set(data.proizvodjaci);
       this.tipoviVelicina.set(data.tipoviVelicina);
       this.definicijeVrijednosti.set(definicijeVrijednosti);
-      this.kampanje = data.kampanje.filter(k => k.aktivan);
 
       const initialAtributiFilter: Record<number, number | null> = {};
       definicijeVrijednosti.forEach(dv => {
@@ -268,25 +261,8 @@ export class PopustArtikliListComponent implements OnInit {
     this.filterAtributi.update(current => ({ ...current, [defId]: vrijednostId }));
   }
 
-  onKampanjaChange(kampanjaId: number | null): void {
-    this.selectedKampanjaId = kampanjaId;
-    if (kampanjaId !== null) {
-      const kampanja = this.kampanje.find(k => k.id === kampanjaId);
-      if (kampanja) {
-        this.bulkPopustProcenat = kampanja.procenat;
-      }
-    }
-  }
-
-  onBulkProcenatChange(): void {
-    this.selectedKampanjaId = null;
-  }
-
   applyBulkPopust(): void {
-    let procenat = this.selectedKampanjaId
-      ? (this.kampanje.find(k => k.id === this.selectedKampanjaId)?.procenat ?? this.bulkPopustProcenat)
-      : this.bulkPopustProcenat;
-    procenat = Math.min(100, Math.max(0, procenat || 0));
+    const procenat = Math.min(100, Math.max(0, this.bulkPopustProcenat || 0));
 
     const selectedIds = new Set(
       this.filteredRows().filter(r => r.selected).map(r => r.id)

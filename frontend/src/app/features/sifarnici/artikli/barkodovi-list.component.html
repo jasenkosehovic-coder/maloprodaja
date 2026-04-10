@@ -13,9 +13,22 @@
         [disabled]="isLoadingArtikli()"
         [ngModel]="selectedArtikalId()"
         (ngModelChange)="onArtikalChange($event)"
+        (openedChange)="artikalSearch.set('')"
         aria-label="Odaberi artikal za pregled barkodova">
+        <mat-option>
+          <div class="select-search-wrapper" (click)="$event.stopPropagation()">
+            <input
+              class="select-search-input"
+              type="text"
+              placeholder="Pretraži po nazivu ili šifri..."
+              [ngModel]="artikalSearch()"
+              (ngModelChange)="artikalSearch.set($event)"
+              (keydown)="$event.stopPropagation()"
+              aria-label="Pretraži artikle" />
+          </div>
+        </mat-option>
         <mat-option [value]="null">— Odaberi artikal —</mat-option>
-        @for (artikal of artikli(); track artikal.id) {
+        @for (artikal of filteredArtikli(); track artikal.id) {
           <mat-option [value]="artikal.id">
             {{ artikal.sifra }} — {{ artikal.naziv }}
           </mat-option>
@@ -25,6 +38,30 @@
         <mat-progress-spinner matSuffix diameter="20" mode="indeterminate" aria-label="Učitavanje artikala"></mat-progress-spinner>
       }
     </mat-form-field>
+
+    <div class="barkod-pretraga-wrapper">
+      <mat-form-field appearance="outline" class="barkod-pretraga-field">
+        <mat-label>Pretraži po barkodu</mat-label>
+        <input
+          matInput
+          type="text"
+          id="barkod-pretraga-input"
+          [ngModel]="barkodPretraga()"
+          (ngModelChange)="barkodPretraga.set($event); barkodPretragaError.set(null)"
+          (keydown.enter)="onBarkodPretragaEnter()"
+          [disabled]="isBarkodPretragaLoading()"
+          placeholder="Skeniraj ili upiši barkod..."
+          aria-label="Pretraži artikal prema barkodu" />
+        @if (isBarkodPretragaLoading()) {
+          <mat-progress-spinner matSuffix diameter="20" mode="indeterminate" aria-hidden="true"></mat-progress-spinner>
+        } @else {
+          <mat-icon matSuffix>qr_code_scanner</mat-icon>
+        }
+        @if (barkodPretragaError()) {
+          <mat-error role="alert">{{ barkodPretragaError() }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
   </div>
 
   <!-- Loading varijanti -->

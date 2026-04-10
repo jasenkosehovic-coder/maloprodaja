@@ -81,6 +81,10 @@ export class BarkodoviListComponent implements OnInit {
 
   readonly artikli = signal<ArtikalKompanija[]>([]);
   readonly selectedArtikalId = signal<number | null>(null);
+  readonly artikalSearch = signal('');
+  readonly barkodPretraga = signal('');
+  readonly isBarkodPretragaLoading = signal(false);
+  readonly barkodPretragaError = signal<string | null>(null);
   readonly varijante = signal<VarijantaUiState[]>([]);
   readonly boje = signal<Boja[]>([]);
   readonly velicine = signal<Velicina[]>([]);
@@ -94,6 +98,14 @@ export class BarkodoviListComponent implements OnInit {
   readonly selectedArtikal = computed(() => {
     const id = this.selectedArtikalId();
     return id ? this.artikli().find(a => a.id === id) ?? null : null;
+  });
+
+  readonly filteredArtikli = computed(() => {
+    const term = this.artikalSearch().toLowerCase().trim();
+    if (!term) return this.artikli();
+    return this.artikli().filter(a =>
+      a.naziv.toLowerCase().includes(term) || a.sifra.toLowerCase().includes(term)
+    );
   });
 
   readonly hasVarijante = computed(() => this.varijante().length > 0);
@@ -219,6 +231,34 @@ export class BarkodoviListComponent implements OnInit {
     return dijelovi.length > 0 ? dijelovi.join(' / ') : 'Default';
   }
 
+  onBarkodPretragaEnter(): void {
+    const barkod = this.barkodPretraga().trim();
+    if (!barkod) return;
+
+    this.isBarkodPretragaLoading.set(true);
+    this.barkodPretragaError.set(null);
+
+    this.artikliService.findArtikalByBarkod(barkod)
+      .pipe(
+        finalize(() => {
+          this.isBarkodPretragaLoading.set(false);
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          const message = err?.error?.message ?? 'Barkod ne postoji.';
+          this.barkodPretragaError.set(message);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(result => {
+        this.barkodPretraga.set('');
+        this.barkodPretragaError.set(null);
+        this.onArtikalChange(result.idArtikla);
+        this.cdr.markForCheck();
+      });
+  }
+
   onToggleAddVarijanta(): void {
     this.isAddingVarijanta.update(v => !v);
     if (!this.isAddingVarijanta()) {
@@ -243,7 +283,8 @@ export class BarkodoviListComponent implements OnInit {
           this.cdr.markForCheck();
         }),
         catchError(err => {
-          this.notification.error('Greška pri kreiranju varijante.');
+          const message = err?.error?.message ?? 'Greška pri kreiranju varijante.';
+          this.notification.error(message);
           console.error(err);
           return EMPTY;
         }),
@@ -287,6 +328,7 @@ export class BarkodoviListComponent implements OnInit {
         catchError(err => {
           const message = err?.error?.message ?? 'Greška pri dodavanju barkoda. Provjeri jedinstvenost.';
           this.updateVarijanataState(varijantaId, { barkodError: message });
+          this.notification.error(message);
           console.error(err);
           return EMPTY;
         }),

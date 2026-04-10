@@ -37,7 +37,11 @@ public class ArtikalPoslovnicaDTO {
             @DecimalMin(value = "0.00", message = "Marža ne može biti negativna")
             BigDecimal marza,
 
-            TipMarze tipMarze
+            TipMarze tipMarze,
+
+            @DecimalMin(value = "0.00", message = "Popust ne može biti negativan")
+            @DecimalMax(value = "100.00", message = "Popust ne može biti veći od 100%")
+            BigDecimal popustProcenat
     ) {}
 
     public record UpdateDTO(

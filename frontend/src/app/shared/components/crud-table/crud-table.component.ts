@@ -99,6 +99,7 @@ export class CrudTableComponent implements OnChanges {
   @Input() saving = false;
   @Input() idField: string = 'id';
   @Input() pdfHeader: CrudPdfHeader | null = null;
+  @Input() showCheckbox: boolean = true;
 
   @Output() selectionChange = new EventEmitter<any[]>();
   @Output() add = new EventEmitter<any>();
@@ -107,6 +108,7 @@ export class CrudTableComponent implements OnChanges {
   @Output() edit = new EventEmitter<any>();
   @Output() delete = new EventEmitter<any>();
   @Output() deleteMany = new EventEmitter<any[]>();
+  @Output() rowClick = new EventEmitter<any>();
 
   @ViewChild('editForm') editForm?: NgForm;
   @ViewChild('firstField') firstField?: ElementRef;
@@ -293,6 +295,16 @@ export class CrudTableComponent implements OnChanges {
     this.currentPage = 1;
   }
 
+  // ─── Table min-width ─────────────────────────────────────────────────────────
+
+  get minTableWidth(): string {
+    // checkbox(48) + actions(96) + each visible column(110px min)
+    const colCount = this.headers.length;
+    const hasActions = this.actions.edit || this.actions.delete;
+    const fixedWidth = 48 + (hasActions ? 96 : 0);
+    return `${fixedWidth + colCount * 110}px`;
+  }
+
   // ─── Selection ───────────────────────────────────────────────────────────────
 
   get allSelected(): boolean {
@@ -337,7 +349,7 @@ export class CrudTableComponent implements OnChanges {
     ) {
       return;
     }
-    this.toggleRow(row);
+    this.rowClick.emit(row);
   }
 
   private emitSelection(): void {

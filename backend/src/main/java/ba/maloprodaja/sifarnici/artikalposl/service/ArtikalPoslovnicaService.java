@@ -30,7 +30,7 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
     @Override
     public List<ArtikalPoslovnicaDTO.ListItemDTO> listByPoslovnica(Long idPoslovnice) {
         Map<Long, BigDecimal> kolicineMap = artikalPoslovnicaRepository.ukupnaKolicinaMapByPoslovnica(idPoslovnice);
-        return artikalPoslovnicaRepository.findByIdPoslovnice(idPoslovnice)
+        return artikalPoslovnicaRepository.findByIdPoslovniceOrderByArtikalKompanijaNazivAsc(idPoslovnice)
                 .stream()
                 .map(ap -> toDTO(ap, kolicineMap.getOrDefault(ap.getId(), BigDecimal.ZERO)))
                 .toList();
@@ -66,6 +66,9 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
         ap.setTipMarze(tipMarze);
         ap.setMpc(kalkulisajMpc(dto.vpc(), dto.marza(), artikalKompanija.getPdv()));
         ap.setAktivan(true);
+        if (dto.popustProcenat() != null) {
+            ap.setPopustProcenat(dto.popustProcenat());
+        }
 
         ArtikalPoslovnica saved = artikalPoslovnicaRepository.save(ap);
         log.info("Kreiran ArtikalPoslovnica: idArtikla={}, idPoslovnice={}", dto.idArtikla(), dto.idPoslovnice());

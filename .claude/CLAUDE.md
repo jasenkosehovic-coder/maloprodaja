@@ -66,6 +66,34 @@
 
 ---
 
+# Business Rules
+
+## Pravilo popusta (Discount Resolution)
+
+Postoje tri izvora popusta. Kada se primjenjuje popust za artikal na kasi ili pri kalkulaciji cijene, vrijede sljedeća pravila:
+
+### Izvori popusta
+
+| Izvor | Entitet / polje | Scope |
+|---|---|---|
+| Popust centrale | `ArtikalKompanija.popustProcenat` | Važi za sve poslovnice kompanije |
+| Popust poslovnice | `ArtikalPoslovnica.popustProcenat` | Važi samo za tu poslovnicu |
+| Vremenski (kampanja) | `Popust` entitet sa `datumOd`/`datumDo` | Ako ima `idPoslovnice` → samo ta poslovnica; ako nema → cijela kompanija |
+
+### Logika odabira
+
+1. Prikupi sve popuste koji važe za dati artikal u datoj poslovnici u datom trenutku
+2. Popusti se **ne sabiraju** — uzima se **najveći** od svih važećih popusta
+3. Formula za cijenu nakon popusta: `cijena * (1 - maxPopust / 100)`
+
+### Implementacija
+
+- Ovu logiku implementirati u servisnom sloju (ne u kontroleru, ne u bazi)
+- Metoda treba primiti: `idArtikla`, `idPoslovnice`, `datumPrimjene` → vratiti `BigDecimal popustProcenat`
+- Koristiti pri: kreiranju stavki dokumenta (faktura, otpremnica), prikazu cijene na kasi
+
+---
+
 # Skills
 
 ## Create API Endpoint

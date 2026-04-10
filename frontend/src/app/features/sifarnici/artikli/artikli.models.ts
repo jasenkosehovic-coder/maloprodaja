@@ -32,6 +32,7 @@ export interface CreateArtikalKompanija {
   idProizvodjaca?: number;
   idDobavljaca?: number;
   idTipaVelicina?: number | null;
+  popustProcenat?: number;
 }
 
 export interface UpdateArtikalKompanija {
@@ -114,6 +115,7 @@ export interface CreateArtikalPoslovnica {
   vpc?: number;
   marza?: number;
   tipMarze?: TipMarze;
+  popustProcenat?: number;
 }
 
 export interface UpdateArtikalPoslovnica {

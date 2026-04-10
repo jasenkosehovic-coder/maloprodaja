@@ -180,6 +180,11 @@ export class DefinicijeAtributaListComponent implements OnInit {
       });
   }
 
+  onRowClick(row: DefinicijaAtributa): void {
+    this.selectedDefinicija.set(row);
+    this.loadVrijednosti(row.id);
+  }
+
   onSelectionChange(rows: any[]): void {
     const definicija = rows.length > 0 ? (rows[0] as DefinicijaAtributa) : null;
     this.selectedDefinicija.set(definicija);

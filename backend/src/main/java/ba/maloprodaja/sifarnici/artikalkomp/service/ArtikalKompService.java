@@ -97,6 +97,9 @@ public class ArtikalKompService implements IArtikalKompService {
         applyFields(dto.naziv(), dto.sifra(), dto.opis(), dto.jedin(), dto.pdv(),
                 dto.idGrupe(), dto.idProizvodjaca(), dto.idDobavljaca(), dto.idTipaVelicina(), a);
         a.setAktivan(true);
+        if (dto.popustProcenat() != null) {
+            a.setPopustProcenat(dto.popustProcenat());
+        }
         a.setIdKompanije(idKompanije);
 
         ArtikalKompanija saved = artikalKompanijeRepository.save(a);

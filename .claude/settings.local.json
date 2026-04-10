@@ -50,5 +50,8 @@
       "Bash(echo \"Backend starting with PID $!\")",
       "Bash(npx playwright@latest --version)"
     ]
+  },
+  "env": {
+	  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000"
   }
 }

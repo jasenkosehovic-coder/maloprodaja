@@ -163,6 +163,11 @@ export class TipoviVelicinaListComponent implements OnInit {
       });
   }
 
+  onRowClick(row: TipVelicine): void {
+    this.selectedTip.set(row);
+    this.loadVelicine(row.id);
+  }
+
   onSelectionChange(rows: any[]): void {
     const tip = rows.length > 0 ? (rows[0] as TipVelicine) : null;
     this.selectedTip.set(tip);

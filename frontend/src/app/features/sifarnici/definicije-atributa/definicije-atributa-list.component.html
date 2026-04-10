@@ -15,6 +15,7 @@
     [data]="items"
     [fields]="fields"
     [actions]="tableActions"
+    [showCheckbox]="false"
     [externalSave]="true"
     [externalDelete]="true"
     [idField]="'id'"
@@ -25,7 +26,7 @@
     (edit)="onUpdate($event)"
     (delete)="onDeactivate($event)"
     (deleteMany)="onDeactivateMany($event)"
-    (selectionChange)="onSelectionChange($event)">
+    (rowClick)="onRowClick($event)">
   </app-crud-table>
 
   @if (selectedDefinicija(); as definicija) {

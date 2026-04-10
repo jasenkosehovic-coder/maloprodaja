@@ -336,6 +336,7 @@ export class ArtikliListComponent implements OnInit {
       idProizvodjaca: row['idProizvodjaca'] || undefined,
       idDobavljaca: row['idDobavljaca'] || undefined,
       idTipaVelicina: row['idTipaVelicina'] ?? null,
+      popustProcenat: row['popustProcenat'] != null ? Number(row['popustProcenat']) : 0,
     };
 
     this.isSaving = true;

@@ -13,19 +13,25 @@
 
   <!-- Table scroll wrapper -->
   <div class="crud-table-scroll">
-    <table class="crud-table" role="grid" aria-label="Data table">
+    <table class="crud-table" role="grid" aria-label="Data table" [style.min-width]="minTableWidth">
       <thead>
 
         <!-- Header row: column titles + master checkbox -->
         <tr class="crud-header-row">
-          <th class="col-checkbox" scope="col">
-            <mat-checkbox
-              [checked]="allSelected"
-              [indeterminate]="someSelected"
-              (change)="toggleAll($event.checked)"
-              aria-label="Select all rows on this page">
-            </mat-checkbox>
+          <th class="col-actions" scope="col">
+            <span class="sr-only">Actions</span>
           </th>
+
+          @if (showCheckbox) {
+            <th class="col-checkbox" scope="col">
+              <mat-checkbox
+                [checked]="allSelected"
+                [indeterminate]="someSelected"
+                (change)="toggleAll($event.checked)"
+                aria-label="Select all rows on this page">
+              </mat-checkbox>
+            </th>
+          }
 
           @for (header of headers; track header) {
             <th
@@ -48,15 +54,27 @@
               </span>
             </th>
           }
-
-          <th class="col-actions" scope="col">
-            <span class="sr-only">Actions</span>
-          </th>
         </tr>
 
         <!-- Filter row -->
         <tr class="crud-filter-row">
-          <td class="col-checkbox"></td>
+          <!-- Add button in filter row -->
+          <td class="col-actions crud-add-cell">
+            @if (actions.add) {
+              <button
+                mat-mini-fab
+                color="primary"
+                (click)="onAddClick()"
+                aria-label="Dodaj novi red"
+                matTooltip="Dodaj novi red">
+                <mat-icon>add</mat-icon>
+              </button>
+            }
+          </td>
+
+          @if (showCheckbox) {
+            <td class="col-checkbox"></td>
+          }
 
           @for (header of headers; track header) {
             <td [class]="'crud-filter-cell ' + getColClass(header)">
@@ -183,19 +201,6 @@
             </td>
           }
 
-          <!-- Add button in filter row -->
-          <td class="col-actions crud-add-cell">
-            @if (actions.add) {
-              <button
-                mat-mini-fab
-                color="primary"
-                (click)="onAddClick()"
-                aria-label="Dodaj novi red"
-                matTooltip="Dodaj novi red">
-                <mat-icon>add</mat-icon>
-              </button>
-            }
-          </td>
         </tr>
 
       </thead>
@@ -203,7 +208,7 @@
       <tbody>
         @if (pagedData.length === 0) {
           <tr>
-            <td [attr.colspan]="headers.length + 2" class="crud-empty-cell" role="cell">
+            <td [attr.colspan]="headers.length + 1 + (showCheckbox ? 1 : 0)" class="crud-empty-cell" role="cell">
               <div class="crud-empty-state" role="status">
                 <mat-icon aria-hidden="true">inbox</mat-icon>
                 <span>Nema podataka</span>
@@ -220,39 +225,6 @@
             (click)="onRowClick($event, row)"
             role="row"
             [attr.aria-selected]="isSelected(row)">
-
-            <!-- Checkbox cell -->
-            <td class="col-checkbox" role="gridcell">
-              <mat-checkbox
-                [checked]="isSelected(row)"
-                (change)="toggleRow(row)"
-                [attr.aria-label]="'Select row'">
-              </mat-checkbox>
-            </td>
-
-            <!-- Data cells -->
-            @for (header of headers; track header) {
-              <td
-                [class]="'crud-cell ' + getColClass(header) + (getField(header)?.cellClass ? ' ' + getField(header)!.cellClass!(row[header], row) : '')"
-                role="gridcell">
-
-                @if (getFieldType(header) === 'boolean') {
-                  <mat-checkbox
-                    [checked]="row[header]"
-                    [disabled]="true"
-                    [attr.aria-label]="(getField(header)?.label ?? header) + ': ' + (row[header] ? 'Yes' : 'No')">
-                  </mat-checkbox>
-                } @else {
-                  <span
-                    class="crud-cell-text"
-                    [matTooltip]="getCellTooltip(row, header)"
-                    matTooltipShowDelay="500">
-                    {{ formatCellValue(row, header) }}
-                  </span>
-                }
-
-              </td>
-            }
 
             <!-- Action buttons -->
             <td class="col-actions crud-row-actions" role="gridcell">
@@ -277,6 +249,41 @@
                 </button>
               }
             </td>
+
+            <!-- Checkbox cell -->
+            @if (showCheckbox) {
+              <td class="col-checkbox" role="gridcell">
+                <mat-checkbox
+                  [checked]="isSelected(row)"
+                  (change)="toggleRow(row)"
+                  [attr.aria-label]="'Select row'">
+                </mat-checkbox>
+              </td>
+            }
+
+            <!-- Data cells -->
+            @for (header of headers; track header) {
+              <td
+                [class]="'crud-cell ' + getColClass(header) + (getField(header)?.cellClass ? ' ' + getField(header)!.cellClass!(row[header], row) : '')"
+                role="gridcell">
+
+                @if (getFieldType(header) === 'boolean') {
+                  <mat-checkbox
+                    [checked]="row[header]"
+                    [disabled]="true"
+                    [attr.aria-label]="(getField(header)?.label ?? header) + ': ' + (row[header] ? 'Yes' : 'No')">
+                  </mat-checkbox>
+                } @else {
+                  <span
+                    class="crud-cell-text"
+                    [matTooltip]="getCellTooltip(row, header)"
+                    matTooltipShowDelay="500">
+                    {{ formatCellValue(row, header) }}
+                  </span>
+                }
+
+              </td>
+            }
 
           </tr>
         }

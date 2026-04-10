@@ -136,6 +136,14 @@ export class ArtikliService {
       .pipe(map(() => void 0));
   }
 
+  findArtikalByBarkod(barkod: string): Observable<{ idArtikla: number }> {
+    return this.http
+      .get<ApiResponse<{ idArtikla: number }>>(`${environment.apiUrl}/barkodovi/pretraga`, {
+        params: { barkod },
+      })
+      .pipe(map(r => r.data));
+  }
+
   // ---- Artikli poslovnice — kompanija level ----
 
   getAllByKompanija(): Observable<ArtikalPoslovnica[]> {

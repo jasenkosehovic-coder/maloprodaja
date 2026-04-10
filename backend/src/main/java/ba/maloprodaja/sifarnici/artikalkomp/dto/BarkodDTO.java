@@ -30,4 +30,8 @@ public class BarkodDTO {
 
             Boolean aktivan
     ) {}
+
+    public record PretragaDTO(
+            Long idArtikla
+    ) {}
 }

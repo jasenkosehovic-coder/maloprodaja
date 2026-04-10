@@ -15,4 +15,6 @@ public interface IBarkodService {
     BarkodDTO.ListItemDTO update(Long id, BarkodDTO.UpdateDTO dto);
 
     void deactivate(Long id);
+
+    BarkodDTO.PretragaDTO findArtikalByBarkod(String barkod, Long idKompanije);
 }
