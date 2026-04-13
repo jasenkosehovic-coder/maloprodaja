@@ -11,6 +11,8 @@ import {
   ArtikalAtributVrijednost, SaveArtikalAtributItem,
   ArtikalVarijanta, CreateVarijanta, CreateVarijantaBarkod,
   BatchPopustUpdate,
+  StanjeVarijante, StanjePoslovnice, UpdateZalihe,
+  ZalihaListItem,
 } from './artikli.models';
 
 @Injectable({ providedIn: 'root' })
@@ -156,5 +158,27 @@ export class ArtikliService {
     return this.http
       .patch<ApiResponse<void>>(`${this.baseUrl}-poslovnice/batch-popust`, updates)
       .pipe(map(() => void 0));
+  }
+
+  // ---- Stanje zaliha ----
+
+  getStanjeByArtikl(idArtikla: number): Observable<StanjeVarijante[]> {
+    return this.http
+      .get<ApiResponse<StanjeVarijante[]>>(`${this.baseUrl}/${idArtikla}/stanje`)
+      .pipe(map(r => r.data));
+  }
+
+  updateZalihe(id: number, dto: UpdateZalihe): Observable<StanjePoslovnice> {
+    return this.http
+      .put<ApiResponse<StanjePoslovnice>>(`${environment.apiUrl}/varijante-poslovnica/${id}/zalihe`, dto)
+      .pipe(map(r => r.data));
+  }
+
+  getZaliheByPoslovnica(idPoslovnice: number): Observable<ZalihaListItem[]> {
+    return this.http
+      .get<ApiResponse<ZalihaListItem[]>>(`${environment.apiUrl}/varijante-poslovnica`, {
+        params: { idPoslovnice: idPoslovnice.toString() },
+      })
+      .pipe(map(r => r.data));
   }
 }

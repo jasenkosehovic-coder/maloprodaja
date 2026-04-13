@@ -19,5 +19,9 @@ public interface IVarijantaService {
 
     VarijantaDTO.StanjePoslovniceDTO updateStanje(Long id, VarijantaDTO.UpdateStanjeDTO dto, Long idKompanije);
 
+    VarijantaDTO.StanjePoslovniceDTO updateZalihe(Long id, VarijantaDTO.UpdateZaliheDTO dto, Long idKompanije);
+
     VarijantaArtikla kreirajDefaultVarijantu(Long idArtikla, Long idKompanije);
+
+    List<VarijantaDTO.ZalihaListItemDTO> listZaliheByPoslovnica(Long idPoslovnice, Long idKompanije);
 }

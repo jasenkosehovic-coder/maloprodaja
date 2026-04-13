@@ -14,4 +14,6 @@ public interface ISlikaArtiklaService {
     SlikaArtiklaDTO.ListItemDTO update(Long id, SlikaArtiklaDTO.UpdateDTO dto);
 
     void deactivate(Long id);
+
+    void reorderSlike(List<SlikaArtiklaDTO.ReorderItemDTO> items);
 }

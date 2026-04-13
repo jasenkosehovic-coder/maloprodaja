@@ -39,6 +39,7 @@ public class VarijantaDTO {
     ) {}
 
     public record StanjePoslovniceDTO(
+            Long id,
             Long idPoslovnice,
             String nazivPoslovnice,
             BigDecimal kolicina,
@@ -46,8 +47,25 @@ public class VarijantaDTO {
             BigDecimal optimalnaZaliha
     ) {}
 
+    public record UpdateZaliheDTO(
+            BigDecimal minZaliha,
+            BigDecimal optimalnaZaliha
+    ) {}
+
     public record UpdateStanjeDTO(
             @NotNull(message = "Količina je obavezna")
+            BigDecimal kolicina,
+            BigDecimal minZaliha,
+            BigDecimal optimalnaZaliha
+    ) {}
+
+    public record ZalihaListItemDTO(
+            Long id,
+            Long idArtikla,
+            String artikalNaziv,
+            String artikalSifra,
+            Long varijantaId,
+            String varijantaNaziv,
             BigDecimal kolicina,
             BigDecimal minZaliha,
             BigDecimal optimalnaZaliha

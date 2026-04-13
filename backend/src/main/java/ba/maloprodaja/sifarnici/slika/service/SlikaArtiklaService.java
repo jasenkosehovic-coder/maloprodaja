@@ -105,6 +105,18 @@ public class SlikaArtiklaService implements ISlikaArtiklaService {
         log.info("Deaktivirana slika: id={}", id);
     }
 
+    @Override
+    @Transactional
+    public void reorderSlike(List<SlikaArtiklaDTO.ReorderItemDTO> items) {
+        for (SlikaArtiklaDTO.ReorderItemDTO item : items) {
+            SlikaArtikla slika = slikaArtiklaRepository.findById(item.id())
+                    .orElseThrow(() -> new ResourceNotFoundException("SlikaArtikla", item.id()));
+            slika.setRedosljed(item.redosljed());
+            slikaArtiklaRepository.save(slika);
+        }
+        log.info("Reorderovane slike: count={}", items.size());
+    }
+
     // ---- Private helpers ----
 
     private void validateFile(MultipartFile file) {

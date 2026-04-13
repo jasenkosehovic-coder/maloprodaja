@@ -189,6 +189,72 @@ public class VarijantaService implements IVarijantaService {
         return toStanjePoslovniceDTO(saved, poslovniceNazivi);
     }
 
+    @Override
+    @Transactional
+    public VarijantaDTO.StanjePoslovniceDTO updateZalihe(Long id, VarijantaDTO.UpdateZaliheDTO dto, Long idKompanije) {
+        VarijantaArtiklaPoslovnica vp = varijantaPoslovnicaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtiklaPoslovnica", id));
+
+        vp.setMinZaliha(dto.minZaliha());
+        vp.setOptimalnaZaliha(dto.optimalnaZaliha());
+
+        VarijantaArtiklaPoslovnica saved = varijantaPoslovnicaRepository.save(vp);
+        log.info("Ažurirane zalihe: id={}, minZaliha={}, optimalnaZaliha={}", id, dto.minZaliha(), dto.optimalnaZaliha());
+
+        Map<Long, String> poslovniceNazivi = poslovnicaRepository.findByIdKompanije(idKompanije).stream()
+                .collect(Collectors.toMap(Poslovnica::getId, Poslovnica::getNaziv));
+
+        return toStanjePoslovniceDTO(saved, poslovniceNazivi);
+    }
+
+    @Override
+    public List<VarijantaDTO.ZalihaListItemDTO> listZaliheByPoslovnica(Long idPoslovnice, Long idKompanije) {
+        List<VarijantaArtiklaPoslovnica> zapisi =
+                varijantaPoslovnicaRepository.findByIdPoslovniceAndIdKompanije(idPoslovnice, idKompanije);
+
+        // Bulk load varijante
+        List<Long> varijantaIds = zapisi.stream().map(VarijantaArtiklaPoslovnica::getIdVarijante).distinct().toList();
+        Map<Long, VarijantaArtikla> varijantaMap = varijantaArtiklaRepository.findAllById(varijantaIds)
+                .stream().collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
+
+        // Bulk load artikli
+        List<Long> artikalIds = varijantaMap.values().stream().map(VarijantaArtikla::getIdArtikla).distinct().toList();
+        Map<Long, ArtikalKompanija> artikalMap = artikalKompanijeRepository.findAllById(artikalIds)
+                .stream().collect(Collectors.toMap(ArtikalKompanija::getId, a -> a));
+
+        Map<Long, Velicina> velicineMap = buildVelicineMap(new java.util.ArrayList<>(varijantaMap.values()));
+        Map<Long, Boja> bojeMap = buildBojeMap(new java.util.ArrayList<>(varijantaMap.values()));
+
+        return zapisi.stream().map(vp -> {
+            VarijantaArtikla v = varijantaMap.get(vp.getIdVarijante());
+            if (v == null) return null;
+            ArtikalKompanija a = artikalMap.get(v.getIdArtikla());
+            if (a == null) return null;
+
+            String oznakaVelicine = v.getIdVelicine() != null
+                    ? velicineMap.getOrDefault(v.getIdVelicine(), null) != null
+                        ? velicineMap.get(v.getIdVelicine()).getOznaka() : "N/A"
+                    : null;
+            String nazivBoje = v.getIdBoje() != null
+                    ? bojeMap.getOrDefault(v.getIdBoje(), null) != null
+                        ? bojeMap.get(v.getIdBoje()).getNaziv() : "N/A"
+                    : null;
+            String varijantaNaziv = buildNazivVarijante(oznakaVelicine, nazivBoje);
+
+            return new VarijantaDTO.ZalihaListItemDTO(
+                    vp.getId(),
+                    a.getId(),
+                    a.getNaziv(),
+                    a.getSifra(),
+                    v.getId(),
+                    varijantaNaziv,
+                    vp.getKolicina(),
+                    vp.getMinZaliha(),
+                    vp.getOptimalnaZaliha()
+            );
+        }).filter(dto -> dto != null).toList();
+    }
+
     // ---- Package-accessible helpers used by ArtikalKompService ----
 
     @Transactional
@@ -280,6 +346,7 @@ public class VarijantaService implements IVarijantaService {
     private VarijantaDTO.StanjePoslovniceDTO toStanjePoslovniceDTO(VarijantaArtiklaPoslovnica vp,
                                                                      Map<Long, String> poslovniceNazivi) {
         return new VarijantaDTO.StanjePoslovniceDTO(
+                vp.getId(),
                 vp.getIdPoslovnice(),
                 poslovniceNazivi.getOrDefault(vp.getIdPoslovnice(), ""),
                 vp.getKolicina(),

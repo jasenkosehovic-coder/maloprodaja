@@ -29,6 +29,7 @@ const ADMIN_MEN_BLAG: Uloga[] = ['SUPER_ADMIN', 'ADMIN', 'MENADZER', 'BLAGAJNIK'
 
 const SIFARNICI_ITEMS: NavItem[] = [
   { label: 'Artikli',             route: '/sifarnici/artikli',             roles: ADMIN_MEN },
+  { label: 'Web shop',             route: '/sifarnici/artikli-web',         roles: ADMIN_MEN },
   { label: 'Kupci',               route: '/sifarnici/kupci',               roles: ALL },
   { label: 'Dobavljači',          route: '/sifarnici/dobavljaci',          roles: ADMIN_MEN },
   { label: 'Proizvođači',         route: '/sifarnici/proizvodjaci',        roles: ADMIN_MEN },

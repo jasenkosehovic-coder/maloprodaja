@@ -1,0 +1,205 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Web shop</h2>
+    <p class="subtitle">Upravljanje artiklima na web shopu i slikama</p>
+  </div>
+
+  <mat-progress-bar *ngIf="isLoading" mode="indeterminate" aria-label="Učitavanje artikala"></mat-progress-bar>
+
+  <div class="split-container">
+    <!-- ===== LIJEVA KOLONA: lista artikala iz centrale ===== -->
+    <div class="left-panel">
+      <app-crud-table
+        [headers]="tableHeaders"
+        [data]="artikli"
+        [fields]="fields"
+        [actions]="tableActions"
+        [showCheckbox]="false"
+        [idField]="'id'"
+        exportName="WebArtikli"
+        (rowClick)="onRowClick($event)">
+      </app-crud-table>
+    </div>
+
+    <!-- ===== DESNA KOLONA: web polja + slike ===== -->
+    <div class="right-panel">
+      @if (!selectedArtikal()) {
+        <div class="empty-state-panel" role="status">
+          <mat-icon class="empty-icon">touch_app</mat-icon>
+          <p>Odaberite artikal s lijeve strane</p>
+        </div>
+      } @else {
+        <!-- Web polja forma -->
+        <div class="form-section mat-elevation-z1">
+          <h3 class="section-title">
+            <mat-icon>language</mat-icon>
+            Web polja —
+            <strong>{{ selectedArtikal()!.sifra }} · {{ selectedArtikal()!.naziv }}</strong>
+          </h3>
+
+          <form [formGroup]="webForm" (ngSubmit)="onSubmitWebForm()" novalidate>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Web naziv</mat-label>
+                <input matInput id="web-naziv" formControlName="webNaziv"
+                       placeholder="Naziv za prikaz na web shopu" />
+                <mat-hint align="end">{{ webForm.controls.webNaziv.value.length }}/255</mat-hint>
+                @if (webForm.controls.webNaziv.hasError('maxlength')) {
+                  <mat-error role="alert">Maksimalno 255 znakova.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Web opis</mat-label>
+                <textarea matInput id="web-opis" formControlName="webOpis" rows="3"
+                          placeholder="Duži opis za web stranicu artikla"></textarea>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row three-col">
+              <mat-form-field appearance="outline">
+                <mat-label>MPC</mat-label>
+                <input matInput id="mpc" type="number" formControlName="mpc"
+                       placeholder="0.00" min="0" step="0.01" aria-label="MPC cijena" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Popust (%)</mat-label>
+                <input matInput id="popust" type="number" formControlName="popust"
+                       placeholder="0" min="0" max="100" step="0.01" aria-label="Popust procenat" />
+                @if (webForm.controls.popust.hasError('min')) {
+                  <mat-error role="alert">Popust ne može biti negativan.</mat-error>
+                }
+                @if (webForm.controls.popust.hasError('max')) {
+                  <mat-error role="alert">Popust ne može biti veći od 100.</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Nova MPC</mat-label>
+                <input matInput id="nova-mpc" type="number" formControlName="novaMpc"
+                       placeholder="0.00" min="0" step="0.01" aria-label="Nova MPC cijena" />
+                <mat-hint>Auto-izračun iz popusta</mat-hint>
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Meta title (SEO)</mat-label>
+                <input matInput id="meta-title" formControlName="metaTitle"
+                       placeholder="SEO naslov (max 160 znakova)" maxlength="160" />
+                <mat-hint align="end">{{ webForm.controls.metaTitle.value.length }}/160</mat-hint>
+                @if (webForm.controls.metaTitle.hasError('maxlength')) {
+                  <mat-error role="alert">Maksimalno 160 znakova.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Meta opis (SEO)</mat-label>
+                <textarea matInput id="meta-opis" formControlName="metaOpis" rows="2"
+                          placeholder="SEO opis (max 320 znakova)" maxlength="320"></textarea>
+                <mat-hint align="end">{{ webForm.controls.metaOpis.value.length }}/320</mat-hint>
+                @if (webForm.controls.metaOpis.hasError('maxlength')) {
+                  <mat-error role="alert">Maksimalno 320 znakova.</mat-error>
+                }
+              </mat-form-field>
+            </div>
+
+            <div class="form-footer">
+              <mat-slide-toggle formControlName="aktivan" id="aktivan" aria-label="Vidljiv na web shopu">
+                Vidljiv na web shopu
+              </mat-slide-toggle>
+
+              <button mat-raised-button color="primary" type="submit"
+                      [disabled]="webForm.invalid || isSaving()"
+                      aria-label="Sačuvaj web polja">
+                @if (isSaving()) {
+                  <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+                  Snimanje...
+                } @else {
+                  <ng-container>
+                    <mat-icon>save</mat-icon>
+                    {{ editId() ? 'Ažuriraj' : 'Objavi na webu' }}
+                  </ng-container>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Slike artikala -->
+        <div class="slike-section mat-elevation-z1">
+          <div class="slike-header">
+            <h3 class="section-title">
+              <mat-icon>photo_library</mat-icon>
+              Slike artikla
+            </h3>
+            <button mat-stroked-button color="primary"
+                    [disabled]="isUploadingSlika()"
+                    (click)="onTriggerUpload()"
+                    aria-label="Dodaj sliku">
+              @if (isUploadingSlika()) {
+                <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+                Upload...
+              } @else {
+                <ng-container>
+                  <mat-icon>add_photo_alternate</mat-icon>
+                  Dodaj sliku
+                </ng-container>
+              }
+            </button>
+            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp"
+                   style="display:none" (change)="onFileSelected($event)" aria-hidden="true" />
+          </div>
+
+          <mat-progress-bar *ngIf="isLoadingSlike()" mode="indeterminate"
+                            aria-label="Učitavanje slika"></mat-progress-bar>
+
+          @if (!isLoadingSlike() && slike().length === 0) {
+            <div class="empty-state-slike" role="status">
+              <mat-icon class="empty-icon">image_not_supported</mat-icon>
+              <p>Nema slika za ovaj artikal. Dodajte prvu sliku.</p>
+            </div>
+          }
+
+          @if (slike().length > 0) {
+            <div class="slike-grid"
+                 cdkDropList
+                 cdkDropListOrientation="horizontal"
+                 (cdkDropListDropped)="onDropSlika($event)">
+              @for (slika of slike(); track slika.id) {
+                <div class="slika-item" cdkDrag [class.slika-naslovna]="slika.jeNaslovna"
+                     [matTooltip]="slika.jeNaslovna ? 'Naslovna slika' : 'Povuci za promjenu redosljeda'">
+                  <img [src]="getSlikaUrl(slika)"
+                       [alt]="'Slika artikla ' + selectedArtikal()!.naziv"
+                       class="slika-thumbnail"
+                       loading="lazy" />
+                  <div class="slika-overlay">
+                    <button mat-icon-button
+                            [color]="slika.jeNaslovna ? 'accent' : ''"
+                            (click)="onSetNaslovna(slika)"
+                            [matTooltip]="slika.jeNaslovna ? 'Naslovna slika' : 'Postavi kao naslovnu'"
+                            [attr.aria-label]="'Postavi kao naslovnu sliku'">
+                      <mat-icon>{{ slika.jeNaslovna ? 'star' : 'star_border' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn"
+                            (click)="onDeleteSlika(slika)"
+                            matTooltip="Obriši sliku"
+                            aria-label="Obriši sliku">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                  <div *cdkDragPlaceholder class="drag-placeholder"></div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

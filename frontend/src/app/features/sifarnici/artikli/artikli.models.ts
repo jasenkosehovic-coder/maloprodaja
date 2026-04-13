@@ -158,3 +158,86 @@ export interface BatchPopustUpdate {
   id: number;
   popustProcenat: number;
 }
+
+// ---- Web artikli ----
+
+export interface WebArtikal {
+  id: number;
+  idArtikla: number;
+  artikalNaziv: string;
+  artikalSifra: string;
+  webNaziv?: string;
+  webOpis?: string;
+  aktivan: boolean;
+  mpc?: number;
+  popust?: number;
+  novaMpc?: number;
+  metaTitle?: string;
+  metaOpis?: string;
+}
+
+export interface CreateWebArtikal {
+  idArtikla: number;
+  webNaziv?: string;
+  webOpis?: string;
+  aktivan: boolean;
+  mpc?: number;
+  popust?: number;
+  novaMpc?: number;
+  metaTitle?: string;
+  metaOpis?: string;
+}
+
+export interface UpdateWebArtikal {
+  webNaziv?: string;
+  webOpis?: string;
+  aktivan?: boolean;
+  mpc?: number;
+  popust?: number;
+  novaMpc?: number;
+  metaTitle?: string;
+  metaOpis?: string;
+}
+
+export interface SlikaArtikla {
+  id: number;
+  idArtikla: number;
+  putanja: string;
+  redosljed: number;
+  jeNaslovna: boolean;
+  aktivan: boolean;
+}
+
+// ---- Stanje zaliha po varijantama ----
+
+export interface StanjePoslovnice {
+  id: number;
+  idPoslovnice: number;
+  nazivPoslovnice: string;
+  kolicina: number;
+  minZaliha: number | null;
+  optimalnaZaliha: number | null;
+}
+
+export interface StanjeVarijante {
+  varijantaId: number;
+  oznakaVelicine: string;
+  poslovnice: StanjePoslovnice[];
+}
+
+export interface UpdateZalihe {
+  minZaliha: number | null;
+  optimalnaZaliha: number | null;
+}
+
+export interface ZalihaListItem {
+  id: number;
+  idArtikla: number;
+  artikalNaziv: string;
+  artikalSifra: string;
+  varijantaId: number;
+  varijantaNaziv: string;
+  kolicina: number;
+  minZaliha: number | null;
+  optimalnaZaliha: number | null;
+}

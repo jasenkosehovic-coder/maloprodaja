@@ -57,4 +57,13 @@ public class SlikaArtiklaController {
         slikaArtiklaService.deactivate(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
+
+    @PutMapping("/api/slike/reorder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
+    public ResponseEntity<ApiResponse<Void>> reorder(
+            @Valid @RequestBody List<SlikaArtiklaDTO.ReorderItemDTO> items
+    ) {
+        slikaArtiklaService.reorderSlike(items);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
 }

@@ -24,4 +24,13 @@ public class SlikaArtiklaDTO {
 
             Boolean aktivan
     ) {}
+
+    public record ReorderItemDTO(
+            @NotNull(message = "ID slike je obavezan")
+            Long id,
+
+            @NotNull(message = "Redosljed je obavezan")
+            @Min(value = 0, message = "Redosljed ne može biti negativan")
+            Integer redosljed
+    ) {}
 }

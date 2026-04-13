@@ -90,4 +90,27 @@ public class VarijantaController {
         return ResponseEntity.ok(ApiResponse.ok(
                 varijantaService.updateStanje(id, dto, korisnik.getIdKompanije())));
     }
+
+    @PutMapping("/api/varijante-poslovnica/{id}/zalihe")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<VarijantaDTO.StanjePoslovniceDTO>> updateZalihe(
+            @PathVariable Long id,
+            @RequestBody VarijantaDTO.UpdateZaliheDTO dto,
+            Authentication auth
+    ) {
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(
+                varijantaService.updateZalihe(id, dto, korisnik.getIdKompanije())));
+    }
+
+    @GetMapping("/api/varijante-poslovnica")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<List<VarijantaDTO.ZalihaListItemDTO>>> listZaliheByPoslovnica(
+            @RequestParam Long idPoslovnice,
+            Authentication auth
+    ) {
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(
+                varijantaService.listZaliheByPoslovnica(idPoslovnice, korisnik.getIdKompanije())));
+    }
 }

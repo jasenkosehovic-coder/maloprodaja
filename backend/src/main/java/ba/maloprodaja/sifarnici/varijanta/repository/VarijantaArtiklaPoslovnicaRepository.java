@@ -13,4 +13,6 @@ public interface VarijantaArtiklaPoslovnicaRepository extends JpaRepository<Vari
     List<VarijantaArtiklaPoslovnica> findByIdVarijante(Long idVarijante);
 
     Optional<VarijantaArtiklaPoslovnica> findByIdVarijanteAndIdPoslovnice(Long idVarijante, Long idPoslovnice);
+
+    List<VarijantaArtiklaPoslovnica> findByIdPoslovniceAndIdKompanije(Long idPoslovnice, Long idKompanije);
 }
