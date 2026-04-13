@@ -5,17 +5,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BarkodRepository extends JpaRepository<Barkod, Long> {
 
-    List<Barkod> findByIdArtikla(Long idArtikla);
+    List<Barkod> findByIdKompanije(Long idKompanije);
 
-    List<Barkod> findByIdArtiklaIn(List<Long> idArtikla);
+    List<Barkod> findByIdVarijanteAndAktivanTrue(Long idVarijante);
+
+    List<Barkod> findByIdVarijanteIn(List<Long> idVarijante);
 
     boolean existsByBarkodAndIdKompanije(String barkod, Long idKompanije);
 
-    List<Barkod> findByIdKompanije(Long idKompanije);
-
     boolean existsByBarkodAndIdKompanijeAndIdNot(String barkod, Long idKompanije, Long id);
+
+    Optional<Barkod> findByBarkodAndIdKompanijeAndAktivanTrue(String barkod, Long idKompanije);
 }

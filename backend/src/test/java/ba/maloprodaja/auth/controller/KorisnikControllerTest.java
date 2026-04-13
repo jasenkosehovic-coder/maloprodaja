@@ -19,6 +19,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -51,7 +52,7 @@ class KorisnikControllerTest {
     @Test
     void listAll_asAdmin_returns200() throws Exception {
         var item = new KorisnikDTO.KorisnikListItemDTO(1L, "testuser", "Test", "User",
-                "test@test.ba", KorisnikUloga.BLAGAJNIK, null, true);
+                "test@test.ba", KorisnikUloga.BLAGAJNIK, null, true, null);
         when(korisnikService.listAll(any())).thenReturn(List.of(item));
 
         mockMvc.perform(get("/api/korisnici")
@@ -70,7 +71,7 @@ class KorisnikControllerTest {
     @Test
     void create_validData_returns201() throws Exception {
         var created = new KorisnikDTO.KorisnikListItemDTO(2L, "novuser", "Novi", "User",
-                "novi@test.ba", KorisnikUloga.BLAGAJNIK, null, true);
+                "novi@test.ba", KorisnikUloga.BLAGAJNIK, null, true, null);
         when(korisnikService.create(any(), any())).thenReturn(created);
 
         var dto = new KorisnikDTO.CreateKorisnikDTO("novuser", "pass123", "Novi", "User",
@@ -100,11 +101,7 @@ class KorisnikControllerTest {
 
     @Test
     void deactivate_nonExistingId_returns404() throws Exception {
-        when(korisnikService.deactivate(99L))
-                .thenThrow(new ResourceNotFoundException("Korisnik", 99L));
-
-        // deactivate is void, need doThrow
-        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Korisnik", 99L))
+        doThrow(new ResourceNotFoundException("Korisnik", 99L))
                 .when(korisnikService).deactivate(99L);
 
         mockMvc.perform(delete("/api/korisnici/99")

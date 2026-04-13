@@ -27,8 +27,8 @@ import { CrudFieldConfig, CrudActionsConfig } from '../../../shared/components/c
 import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { CrudPdfHeader } from '../../../shared/components/crud-table/crud-field-config';
-import { FaktureService } from '../services/fakture.service';
-import { UlaznaFakturaListItem } from '../models/dokumenti.models';
+import { PrometService } from '../services/promet.service';
+import { DokumentListItem, DokumentStatus } from '../models/promet.models';
 import { FakturaFormComponent } from './faktura-form.component';
 
 @Component({
@@ -50,7 +50,7 @@ import { FakturaFormComponent } from './faktura-form.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FaktureListComponent implements OnInit {
-  private readonly faktureService = inject(FaktureService);
+  private readonly prometService = inject(PrometService);
   private readonly notification = inject(NotificationService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -71,28 +71,22 @@ export class FaktureListComponent implements OnInit {
     };
   });
 
-  readonly fakture = signal<UlaznaFakturaListItem[]>([]);
+  readonly dokumenti = signal<DokumentListItem[]>([]);
   readonly isLoading = signal(false);
 
-  readonly odabranaGodina = signal<number | null>(new Date().getFullYear());
-
-  readonly opcijePodine = computed(() => {
-    const tekucaGodina = new Date().getFullYear();
-    return [
-      { value: null, label: 'Sve godine' },
-      { value: tekucaGodina - 2, label: String(tekucaGodina - 2) },
-      { value: tekucaGodina - 1, label: String(tekucaGodina - 1) },
-      { value: tekucaGodina, label: String(tekucaGodina) },
-      { value: tekucaGodina + 1, label: String(tekucaGodina + 1) },
-      { value: tekucaGodina + 2, label: String(tekucaGodina + 2) },
-    ];
-  });
-
+  readonly filterStatus = signal<DokumentStatus | null>(null);
   readonly filterOd = signal<Date | null>(null);
   readonly filterDo = signal<Date | null>(null);
 
-  readonly filtriraneFakture = computed(() => {
-    let result = this.fakture();
+  readonly statusOptions: { value: DokumentStatus | null; label: string }[] = [
+    { value: null, label: 'Svi statusi' },
+    { value: 'NACRT', label: 'Nacrt' },
+    { value: 'POTVRĐEN', label: 'Potvrđen' },
+    { value: 'STORNIRAN', label: 'Storniran' },
+  ];
+
+  readonly filtrirani = computed(() => {
+    let result = this.dokumenti();
 
     const od = this.filterOd();
     const do_ = this.filterDo();
@@ -100,9 +94,9 @@ export class FaktureListComponent implements OnInit {
     if (od) {
       const odMs = this.dayStart(od);
       const doMs = do_ ? this.dayEnd(do_) : this.dayEnd(od);
-      result = result.filter(f => {
-        const d = this.parseDate(f.datum);
-        return d !== null && d >= odMs && d <= doMs;
+      result = result.filter(d => {
+        const dt = this.parseDate(d.datum);
+        return dt !== null && dt >= odMs && dt <= doMs;
       });
     }
 
@@ -111,43 +105,37 @@ export class FaktureListComponent implements OnInit {
 
   readonly fields: CrudFieldConfig[] = [
     { key: 'id', label: 'R.br.', type: 'number', visible: false },
-    { key: 'broj', label: 'Broj fakture', type: 'text', readOnly: true },
+    { key: 'brojDokumenta', label: 'Broj', type: 'text', readOnly: true },
     { key: 'datum', label: 'Datum', type: 'date', readOnly: true },
-    { key: 'datumValute', label: 'Datum valute', type: 'date', readOnly: true },
-    { key: 'nazivDobavljaca', label: 'Dobavljač', type: 'text', readOnly: true },
+    { key: 'dobavljacNaziv', label: 'Dobavljač', type: 'text', readOnly: true },
+    { key: 'poslovnicaNaziv', label: 'Poslovnica', type: 'text', readOnly: true },
     {
-      key: 'statusFakture', label: 'Status', type: 'select', readOnly: true,
+      key: 'status', label: 'Status', type: 'select', readOnly: true,
       options: [
         { value: 'NACRT', label: 'Nacrt' },
-        { value: 'POTVRDJENO', label: 'Potvrđeno' },
-        { value: 'STORNIRANO', label: 'Stornirano' },
+        { value: 'POTVRĐEN', label: 'Potvrđen' },
+        { value: 'STORNIRAN', label: 'Storniran' },
       ],
     },
-    { key: 'ukupnoBezPdv', label: 'Bez PDV (KM)', type: 'number', readOnly: true },
     { key: 'ukupno', label: 'Ukupno (KM)', type: 'number', readOnly: true },
   ];
 
-  readonly actions: CrudActionsConfig = { add: true, edit: true, delete: true, export: true };
+  readonly actions: CrudActionsConfig = { add: true, edit: true, delete: false, export: true };
 
-  readonly filterableColumns = ['statusFakture', 'nazivDobavljaca', 'datumValute', 'datum', 'broj'];
+  readonly filterableColumns = ['status', 'dobavljacNaziv', 'datum', 'brojDokumenta', 'poslovnicaNaziv'];
 
-  readonly rowStyleClass = (row: UlaznaFakturaListItem) => ({
-    'row-potvrdjeno': row.statusFakture === 'POTVRDJENO',
-    'row-stornirano': row.statusFakture === 'STORNIRANO',
+  readonly rowStyleClass = (row: DokumentListItem) => ({
+    'row-potvrdjeno': row.status === 'POTVRĐEN',
+    'row-stornirano': row.status === 'STORNIRAN',
   });
 
   ngOnInit(): void {
     this.ucitajPodatke();
   }
 
-  onGodinaChange(godina: number | null): void {
-    this.odabranaGodina.set(godina);
-    this.ucitajPodatke();
-  }
-
   ucitajPodatke(): void {
     this.isLoading.set(true);
-    this.faktureService.list(this.odabranaGodina())
+    this.prometService.list({ tipKod: 'UF' })
       .pipe(
         finalize(() => {
           this.isLoading.set(false);
@@ -161,9 +149,13 @@ export class FaktureListComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(data => {
-        this.fakture.set([...data].sort((a, b) => b.id - a.id));
+        this.dokumenti.set([...data].sort((a, b) => b.id - a.id));
         this.cdr.markForCheck();
       });
+  }
+
+  onStatusChange(status: DokumentStatus | null): void {
+    this.filterStatus.set(status);
   }
 
   onOdChange(date: Date | null): void {
@@ -174,6 +166,7 @@ export class FaktureListComponent implements OnInit {
   }
 
   resetFilters(): void {
+    this.filterStatus.set(null);
     this.filterOd.set(null);
     this.filterDo.set(null);
   }
@@ -183,7 +176,7 @@ export class FaktureListComponent implements OnInit {
       width: '900px',
       maxWidth: '95vw',
       disableClose: true,
-      data: { fakturaId: null },
+      data: { dokumentId: null },
     });
 
     dialogRef.afterClosed()
@@ -195,41 +188,8 @@ export class FaktureListComponent implements OnInit {
       });
   }
 
-  onEditClick(row: UlaznaFakturaListItem): void {
+  onEditClick(row: DokumentListItem): void {
     void this.router.navigate(['/dokumenti/fakture', row.id]);
-  }
-
-  onDelete(row: UlaznaFakturaListItem): void {
-    this.faktureService.findById(row.id)
-      .pipe(
-        catchError(err => {
-          this.notification.error('Greška pri provjeri fakture.');
-          console.error(err);
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe(detail => {
-        if (detail.stavke && detail.stavke.length > 0) {
-          this.notification.error(
-            `Faktura "${row.broj}" ima ${detail.stavke.length} stavku/stavki i ne može se brisati.`
-          );
-          return;
-        }
-        this.faktureService.delete(row.id)
-          .pipe(
-            catchError(err => {
-              this.notification.error('Greška pri brisanju fakture.');
-              console.error(err);
-              return EMPTY;
-            }),
-            takeUntilDestroyed(this.destroyRef)
-          )
-          .subscribe(() => {
-            this.notification.success(`Faktura "${row.broj}" je uspješno obrisana.`);
-            this.ucitajPodatke();
-          });
-      });
   }
 
   private dayStart(d: Date): number {

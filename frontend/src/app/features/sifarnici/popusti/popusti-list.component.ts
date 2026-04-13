@@ -19,11 +19,12 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PopustiService } from './popusti.service';
 import { Popust, CreatePopust, UpdatePopust } from './popusti.models';
+import { PopustArtikliListComponent } from './popust-artikli-list.component';
 
 @Component({
   selector: 'app-popusti-list',
   standalone: true,
-  imports: [CommonModule, MatProgressBarModule, CrudTableComponent],
+  imports: [CommonModule, MatProgressBarModule, CrudTableComponent, PopustArtikliListComponent],
   templateUrl: './popusti-list.component.html',
   styleUrl: './popusti-list.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
@@ -52,7 +53,7 @@ export class PopustiListComponent implements OnInit {
   isLoading = false;
   isSaving = false;
 
-  readonly tableHeaders: string[] = ['naziv', 'procenat', 'datumOd', 'datumDo', 'aktivan'];
+  readonly tableHeaders: string[] = ['naziv', 'procenat', 'datumOd', 'datumDo', 'poslovnicaNaziv', 'aktivan'];
 
   readonly tableActions: CrudActionsConfig = {
     add: true,
@@ -89,14 +90,24 @@ export class PopustiListComponent implements OnInit {
     {
       key: 'datumOd',
       label: 'Datum od',
+      required: true,
+      requiredMessage: 'Datum je obavezan.',
       type: 'date',
       dateFilterMode: 'gte',
     },
     {
       key: 'datumDo',
       label: 'Datum do',
+      required: true,
+      requiredMessage: 'Datum je obavezan.',
       type: 'date',
       dateFilterMode: 'lte',
+    },
+    {
+      key: 'poslovnicaNaziv',
+      label: 'Poslovnica',
+      type: 'text',
+      visible: false,
     },
     {
       key: 'aktivan',
@@ -132,14 +143,12 @@ export class PopustiListComponent implements OnInit {
   }
 
   onCreate(row: any): void {
-    const poslovnicaId = this.authService.korisnik()?.poslovnicaId ?? undefined;
     const dto: CreatePopust = {
       naziv: row['naziv'],
       procenat: Number(row['procenat']),
       datumOd: row['datumOd'] || undefined,
       datumDo: row['datumDo'] || undefined,
       aktivan: row['aktivan'] !== undefined ? row['aktivan'] : true,
-      idPoslovnice: poslovnicaId,
     };
 
     this.isSaving = true;
@@ -164,14 +173,12 @@ export class PopustiListComponent implements OnInit {
 
   onUpdate(row: any): void {
     const id: number = row['id'];
-    const poslovnicaId = this.authService.korisnik()?.poslovnicaId ?? null;
     const dto: UpdatePopust = {
       naziv: row['naziv'],
       procenat: Number(row['procenat']),
       datumOd: row['datumOd'] || undefined,
       datumDo: row['datumDo'] || undefined,
       aktivan: row['aktivan'] !== undefined ? row['aktivan'] : false,
-      idPoslovnice: poslovnicaId,
     };
 
     this.isSaving = true;

@@ -7,6 +7,7 @@ import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.design.JRDesignBand;
 import net.sf.jasperreports.engine.design.JRDesignExpression;
 import net.sf.jasperreports.engine.design.JRDesignField;
+import net.sf.jasperreports.engine.design.JRDesignImage;
 import net.sf.jasperreports.engine.design.JRDesignLine;
 import net.sf.jasperreports.engine.design.JRDesignParameter;
 import net.sf.jasperreports.engine.design.JRDesignSection;
@@ -17,8 +18,10 @@ import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.type.HorizontalTextAlignEnum;
 import net.sf.jasperreports.engine.type.ModeEnum;
 import net.sf.jasperreports.engine.type.OrientationEnum;
+import net.sf.jasperreports.engine.type.ScaleImageEnum;
 
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.math.BigDecimal;
 
 /**
@@ -215,6 +218,165 @@ final class PdfReportBuilder {
         } catch (JRException e) {
             throw new BusinessException("Greška pri inicijalizaciji otpremnica PDF predloška");
         }
+    }
+
+    // ---------------------------------------------------------- promet dokument
+
+    /**
+     * Shared A4 Portrait template for all promet document types (UF, IF, PD, MSI, MSU).
+     * All rows share the same structure: rb, artikal, varijanta, kolicina, cijena, popust, ukupno.
+     *
+     * Parameters:
+     *   KOMPANIJA_NAZIV, KOMPANIJA_ADRESA, KOMPANIJA_GRAD,
+     *   POSLOVNICA_NAZIV, POSLOVNICA_ADRESA,
+     *   TIP_NAZIV, BROJ_DOKUMENTA, DATUM, PARTNER, NAPOMENA,
+     *   UKUPNO (BigDecimal), LOGO_IMAGE (BufferedImage — nullable)
+     */
+    static JasperReport buildPrometDokumentReport() {
+        try {
+            JasperDesign design = portraitDesign("promet-dokument");
+
+            addParameter(design, "KOMPANIJA_NAZIV",   String.class);
+            addParameter(design, "KOMPANIJA_ADRESA",  String.class);
+            addParameter(design, "KOMPANIJA_GRAD",    String.class);
+            addParameter(design, "POSLOVNICA_NAZIV",  String.class);
+            addParameter(design, "TIP_NAZIV",         String.class);
+            addParameter(design, "BROJ_DOKUMENTA",    String.class);
+            addParameter(design, "DATUM",             String.class);
+            addParameter(design, "PARTNER",           String.class);
+            addParameter(design, "NAPOMENA",          String.class);
+            addParameter(design, "UKUPNO",            BigDecimal.class);
+            addParameter(design, "LOGO_IMAGE",        BufferedImage.class);
+
+            addField(design, "rb",       Integer.class);
+            addField(design, "artikal",  String.class);
+            addField(design, "varijanta",String.class);
+            addField(design, "kolicina", BigDecimal.class);
+            addField(design, "cijena",   BigDecimal.class);
+            addField(design, "popust",   BigDecimal.class);
+            addField(design, "ukupno",   BigDecimal.class);
+
+            design.setTitle(buildPrometTitleBand());
+            design.setColumnHeader(buildPrometColumnHeader());
+
+            JRDesignBand detail = new JRDesignBand();
+            detail.setHeight(DETAIL_HEIGHT);
+            // Column widths: rb=25, artikal=155, varijanta=115, kolicina=50, cijena=65, popust=45, ukupno=80 => 535 total = PORTRAIT_CONTENT_WIDTH - MARGIN
+            int[]     wP  = {25, 155, 115, 50, 65, 45, 80};
+            String[]  fP  = {"rb", "artikal", "varijanta", "kolicina", "cijena", "popust", "ukupno"};
+            String[]  pP  = {null, null, null, "#,##0.###", "#,##0.00", "#,##0.##", "#,##0.00"};
+            boolean[] rP  = {true, false, false, true, true, true, true};
+            buildDetailBandFull(detail, wP, fP, pP, rP);
+            // Thin separator line at bottom of each row
+            addHorizontalLine(detail, MARGIN, DETAIL_HEIGHT - 1, PORTRAIT_CONTENT_WIDTH - MARGIN, new Color(230, 230, 230));
+            ((JRDesignSection) design.getDetailSection()).addBand(detail);
+
+            design.setSummary(buildPrometSummary(PORTRAIT_CONTENT_WIDTH));
+
+            return JasperCompileManager.compileReport(design);
+
+        } catch (JRException e) {
+            throw new BusinessException("Greška pri inicijalizaciji promet dokument PDF predloška");
+        }
+    }
+
+    private static JRDesignBand buildPrometTitleBand() {
+        // Logo area: x=MARGIN, y=4, 60x52
+        // Company info starts at x=MARGIN+66 (to the right of logo)
+        // Total title band height = 140 (logo block + doc info block + separator)
+        final int LOGO_W    = 60;
+        final int LOGO_H    = 52;
+        final int INFO_X    = MARGIN + LOGO_W + 6;
+        // Available width for text to the right of logo
+        final int INFO_W    = PORTRAIT_CONTENT_WIDTH - MARGIN - LOGO_W - 6;
+
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(140);
+
+        // --- Logo image (nullable — blank when null via null expression guard) ---
+        JRDesignImage logoImg = new JRDesignImage(null);
+        logoImg.setX(MARGIN);
+        logoImg.setY(4);
+        logoImg.setWidth(LOGO_W);
+        logoImg.setHeight(LOGO_H);
+        logoImg.setScaleImage(ScaleImageEnum.RETAIN_SHAPE);
+        logoImg.setMode(ModeEnum.TRANSPARENT);
+        JRDesignExpression logoExpr = new JRDesignExpression();
+        logoExpr.setText("$P{LOGO_IMAGE}");
+        logoImg.setExpression(logoExpr);
+        band.addElement(logoImg);
+
+        // --- Company name (bold, 13pt) ---
+        addParamTextAligned(band, "KOMPANIJA_NAZIV",  INFO_X, 4,  INFO_W, 18, 13, true,  HorizontalTextAlignEnum.LEFT);
+        // --- Company address ---
+        addParamTextAligned(band, "KOMPANIJA_ADRESA", INFO_X, 23, INFO_W, 14, 9,  false, HorizontalTextAlignEnum.LEFT);
+        // --- Company city ---
+        addParamTextAligned(band, "KOMPANIJA_GRAD",   INFO_X, 37, INFO_W, 14, 9,  false, HorizontalTextAlignEnum.LEFT);
+        // --- Branch name (label + value) ---
+        addLabeledParamText(band, "Poslovnica: ", "POSLOVNICA_NAZIV",  INFO_X, 51, INFO_W, 13, 9, false);
+
+        // --- Horizontal separator ---
+        addHorizontalLine(band, MARGIN, 62, PORTRAIT_CONTENT_WIDTH - MARGIN, Color.BLACK);
+
+        // --- Document type (bold) + number on same line ---
+        final int DOC_W = PORTRAIT_CONTENT_WIDTH - MARGIN;
+        addParamTextAligned(band, "TIP_NAZIV",      MARGIN,             68, DOC_W / 2, 16, 12, true,  HorizontalTextAlignEnum.LEFT);
+        addLabeledParamText(band, "br. ", "BROJ_DOKUMENTA", MARGIN + DOC_W / 2, 68, DOC_W / 2, 16, 10, false);
+
+        // --- Date + partner on same line ---
+        addLabeledParamText(band, "Datum: ",   "DATUM",   MARGIN,              86, 160, 13, 9, false);
+        addLabeledParamText(band, "Partner: ", "PARTNER", MARGIN + 165,        86, DOC_W - 165, 13, 9, false);
+
+        // --- Optional note ---
+        addLabeledParamText(band, "Napomena: ", "NAPOMENA", MARGIN, 101, DOC_W, 13, 9, false);
+
+        // --- Table header separator ---
+        addHorizontalLine(band, MARGIN, 118, PORTRAIT_CONTENT_WIDTH - MARGIN, Color.BLACK);
+
+        return band;
+    }
+
+    private static JRDesignBand buildPrometColumnHeader() {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(COL_HEADER_HEIGHT);
+        int[]     wP    = {25, 155, 115, 50, 65, 45, 80};
+        String[]  hdrs  = {"Rb", "Artikal", "Varijanta", "Kol.", "Cijena", "Pop.%", "Ukupno"};
+        boolean[] right = {true, false, false, true, true, true, true};
+        buildColumnHeaderAligned(band, wP, hdrs, right);
+        return band;
+    }
+
+    private static JRDesignBand buildPrometSummary(int contentWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(44);
+        addHorizontalLine(band, MARGIN, 2, contentWidth - MARGIN, Color.BLACK);
+        addSummaryRow(band, "UKUPNO:", "$P{UKUPNO}", 8, contentWidth);
+
+        // Page footer: generated date (left) + page/total (right)
+        JRDesignTextField pageInfo = new JRDesignTextField();
+        pageInfo.setX(contentWidth - 110);
+        pageInfo.setY(28);
+        pageInfo.setWidth(110);
+        pageInfo.setHeight(14);
+        pageInfo.setFontSize(8f);
+        pageInfo.setHorizontalTextAlign(HorizontalTextAlignEnum.RIGHT);
+        JRDesignExpression pageExpr = new JRDesignExpression();
+        pageExpr.setText("\"Stranica \" + $V{PAGE_NUMBER} + \"/\" + $V{PAGE_NUMBER}");
+        pageInfo.setExpression(pageExpr);
+        band.addElement(pageInfo);
+
+        JRDesignTextField genDate = new JRDesignTextField();
+        genDate.setX(MARGIN);
+        genDate.setY(28);
+        genDate.setWidth(200);
+        genDate.setHeight(14);
+        genDate.setFontSize(8f);
+        JRDesignExpression genExpr = new JRDesignExpression();
+        genExpr.setText("\"Generirano: \" + new java.text.SimpleDateFormat(\"dd.MM.yyyy\").format(new java.util.Date())");
+        genDate.setExpression(genExpr);
+        band.addElement(genDate);
+
+        return band;
     }
 
     // ------------------------------------------------------------------ helpers

@@ -1,0 +1,154 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Tipovi veličina</h2>
+    <p class="subtitle">Upravljanje tipovima veličina i veličinama</p>
+  </div>
+
+  <mat-progress-bar
+    *ngIf="isLoading"
+    mode="indeterminate"
+    aria-label="Učitavanje tipova veličina">
+  </mat-progress-bar>
+
+  <app-crud-table
+    [headers]="tableHeaders"
+    [data]="items"
+    [fields]="fields"
+    [actions]="tableActions"
+    [showCheckbox]="false"
+    [externalSave]="true"
+    [externalDelete]="true"
+    [idField]="'id'"
+    [saving]="isSaving"
+    [pdfHeader]="pdfHeader()"
+    exportName="TipoviVelicina"
+    (add)="onCreate($event)"
+    (edit)="onUpdate($event)"
+    (delete)="onDeactivate($event)"
+    (deleteMany)="onDeactivateMany($event)"
+    (rowClick)="onRowClick($event)">
+  </app-crud-table>
+
+  @if (selectedTip(); as tip) {
+    <div class="velicine-section">
+      <div class="velicine-header">
+        <h3>
+          Veličine za tip:
+          <strong>{{ tip.naziv }}</strong>
+        </h3>
+      </div>
+
+      <mat-progress-bar
+        *ngIf="isLoadingVelicine()"
+        mode="indeterminate"
+        aria-label="Učitavanje veličina">
+      </mat-progress-bar>
+
+      <div class="inline-add-form" [formGroup]="velicinaForm">
+        <mat-form-field appearance="outline" class="oznaka-field">
+          <mat-label>Oznaka veličine</mat-label>
+          <input
+            matInput
+            id="oznaka-velicine"
+            formControlName="oznaka"
+            placeholder="npr. S, M, L, XL"
+            aria-label="Oznaka veličine"
+            (keydown.enter)="onDodajVelicinu()" />
+          @if (velicinaForm.controls.oznaka.hasError('required') && velicinaForm.controls.oznaka.touched) {
+            <mat-error role="alert">Oznaka je obavezna.</mat-error>
+          }
+          @if (velicinaForm.controls.oznaka.hasError('maxlength')) {
+            <mat-error role="alert">Maksimalno 20 znakova.</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="velicinaForm.invalid || isSavingVelicina()"
+          (click)="onDodajVelicinu()"
+          aria-label="Dodaj veličinu">
+          @if (isSavingVelicina()) {
+            <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+            Dodavanje...
+          } @else {
+            <ng-container>
+              <mat-icon>add</mat-icon>
+              Dodaj
+            </ng-container>
+          }
+        </button>
+      </div>
+
+      @if (!isLoadingVelicine() && velicine().length === 0) {
+        <div class="empty-state" role="status">
+          <mat-icon class="empty-icon">straighten</mat-icon>
+          <p>Nema veličina za ovaj tip. Dodajte prvu veličinu.</p>
+        </div>
+      }
+
+      @if (velicine().length > 0) {
+        <table
+          mat-table
+          [dataSource]="velicine()"
+          cdkDropList
+          (cdkDropListDropped)="onDropVelicina($event)"
+          class="velicine-table"
+          aria-label="Lista veličina">
+          <ng-container matColumnDef="dragHandle">
+            <th mat-header-cell *matHeaderCellDef class="drag-col" aria-label="Redosljed">
+              <mat-icon>drag_indicator</mat-icon>
+            </th>
+            <td mat-cell *matCellDef="let row" class="drag-col" cdkDragHandle>
+              <mat-icon class="drag-handle" matTooltip="Povuci za promjenu redosljeda">drag_indicator</mat-icon>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="oznaka">
+            <th mat-header-cell *matHeaderCellDef>Oznaka</th>
+            <td mat-cell *matCellDef="let row">{{ row.oznaka }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="redosljed">
+            <th mat-header-cell *matHeaderCellDef>Redosljed</th>
+            <td mat-cell *matCellDef="let row">{{ row.redosljed }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="aktivan">
+            <th mat-header-cell *matHeaderCellDef>Aktivan</th>
+            <td mat-cell *matCellDef="let row">
+              <mat-checkbox
+                [checked]="row.aktivan"
+                (change)="onToggleVelicinuAktivan(row)"
+                [attr.aria-label]="'Aktivan status za ' + row.oznaka">
+              </mat-checkbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="akcije">
+            <th mat-header-cell *matHeaderCellDef>Akcije</th>
+            <td mat-cell *matCellDef="let row">
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="onDeleteVelicina(row)"
+                [matTooltip]="'Obriši ' + row.oznaka"
+                [attr.aria-label]="'Obriši veličinu ' + row.oznaka">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="velicineColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: velicineColumns;"
+            cdkDrag
+            [cdkDragData]="row"
+            class="drag-row">
+          </tr>
+        </table>
+      }
+    </div>
+  }
+</div>

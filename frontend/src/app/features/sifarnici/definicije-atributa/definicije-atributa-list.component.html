@@ -1,0 +1,154 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Definicije atributa</h2>
+    <p class="subtitle">Upravljanje definicijama atributa i njihovim vrijednostima</p>
+  </div>
+
+  <mat-progress-bar
+    *ngIf="isLoading"
+    mode="indeterminate"
+    aria-label="Učitavanje definicija atributa">
+  </mat-progress-bar>
+
+  <app-crud-table
+    [headers]="tableHeaders"
+    [data]="items"
+    [fields]="fields"
+    [actions]="tableActions"
+    [showCheckbox]="false"
+    [externalSave]="true"
+    [externalDelete]="true"
+    [idField]="'id'"
+    [saving]="isSaving"
+    [pdfHeader]="pdfHeader()"
+    exportName="DefinicijeAtributa"
+    (add)="onCreate($event)"
+    (edit)="onUpdate($event)"
+    (delete)="onDeactivate($event)"
+    (deleteMany)="onDeactivateMany($event)"
+    (rowClick)="onRowClick($event)">
+  </app-crud-table>
+
+  @if (selectedDefinicija(); as definicija) {
+    <div class="vrijednosti-section">
+      <div class="vrijednosti-header">
+        <h3>
+          Vrijednosti za atribut:
+          <strong>{{ definicija.naziv }}</strong>
+        </h3>
+      </div>
+
+      <mat-progress-bar
+        *ngIf="isLoadingVrijednosti()"
+        mode="indeterminate"
+        aria-label="Učitavanje vrijednosti atributa">
+      </mat-progress-bar>
+
+      <div class="inline-add-form" [formGroup]="vrijednostForm">
+        <mat-form-field appearance="outline" class="vrijednost-field">
+          <mat-label>Vrijednost atributa</mat-label>
+          <input
+            matInput
+            id="vrijednost-atributa"
+            formControlName="vrijednost"
+            placeholder="npr. Crvena, Plava, Zelena"
+            aria-label="Vrijednost atributa"
+            (keydown.enter)="onDodajVrijednost()" />
+          @if (vrijednostForm.controls.vrijednost.hasError('required') && vrijednostForm.controls.vrijednost.touched) {
+            <mat-error role="alert">Vrijednost je obavezna.</mat-error>
+          }
+          @if (vrijednostForm.controls.vrijednost.hasError('maxlength')) {
+            <mat-error role="alert">Maksimalno 200 znakova.</mat-error>
+          }
+        </mat-form-field>
+
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="vrijednostForm.invalid || isSavingVrijednost()"
+          (click)="onDodajVrijednost()"
+          aria-label="Dodaj vrijednost atributa">
+          @if (isSavingVrijednost()) {
+            <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+            Dodavanje...
+          } @else {
+            <ng-container>
+              <mat-icon>add</mat-icon>
+              Dodaj
+            </ng-container>
+          }
+        </button>
+      </div>
+
+      @if (!isLoadingVrijednosti() && vrijednosti().length === 0) {
+        <div class="empty-state" role="status">
+          <mat-icon class="empty-icon">label_off</mat-icon>
+          <p>Nema vrijednosti za ovaj atribut. Dodajte prvu vrijednost.</p>
+        </div>
+      }
+
+      @if (vrijednosti().length > 0) {
+        <table
+          mat-table
+          [dataSource]="vrijednosti()"
+          cdkDropList
+          (cdkDropListDropped)="onDropVrijednost($event)"
+          class="vrijednosti-table"
+          aria-label="Lista vrijednosti atributa">
+          <ng-container matColumnDef="dragHandle">
+            <th mat-header-cell *matHeaderCellDef class="drag-col" aria-label="Redosljed">
+              <mat-icon>drag_indicator</mat-icon>
+            </th>
+            <td mat-cell *matCellDef="let row" class="drag-col" cdkDragHandle>
+              <mat-icon class="drag-handle" matTooltip="Povuci za promjenu redosljeda">drag_indicator</mat-icon>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="vrijednost">
+            <th mat-header-cell *matHeaderCellDef>Vrijednost</th>
+            <td mat-cell *matCellDef="let row">{{ row.vrijednost }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="redosljed">
+            <th mat-header-cell *matHeaderCellDef>Redosljed</th>
+            <td mat-cell *matCellDef="let row">{{ row.redosljed }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="aktivan">
+            <th mat-header-cell *matHeaderCellDef>Aktivan</th>
+            <td mat-cell *matCellDef="let row">
+              <mat-checkbox
+                [checked]="row.aktivan"
+                (change)="onToggleVrijednostAktivan(row)"
+                [attr.aria-label]="'Aktivan status za ' + row.vrijednost">
+              </mat-checkbox>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="akcije">
+            <th mat-header-cell *matHeaderCellDef>Akcije</th>
+            <td mat-cell *matCellDef="let row">
+              <button
+                mat-icon-button
+                color="warn"
+                (click)="onDeleteVrijednost(row)"
+                [matTooltip]="'Obriši ' + row.vrijednost"
+                [attr.aria-label]="'Obriši vrijednost ' + row.vrijednost">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="vrijednostiColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: vrijednostiColumns;"
+            cdkDrag
+            [cdkDragData]="row"
+            class="drag-row">
+          </tr>
+        </table>
+      }
+    </div>
+  }
+</div>

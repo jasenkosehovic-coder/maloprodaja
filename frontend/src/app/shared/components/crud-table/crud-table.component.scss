@@ -1,9 +1,17 @@
+// ─── Host ─────────────────────────────────────────────────────────────────────
+
+:host {
+  display: block;
+  width: 100%;
+}
+
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 .crud-table-wrapper {
   display: flex;
   flex-direction: column;
   gap: 0;
+  width: 100%;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   overflow: hidden;
@@ -27,6 +35,7 @@
 // ─── Table scroll wrapper ─────────────────────────────────────────────────────
 
 .crud-table-scroll {
+  width: 100%;
   overflow-x: auto;
   overflow-y: visible;
 }
@@ -35,9 +44,8 @@
 
 .crud-table {
   width: 100%;
-  min-width: 600px;
   border-collapse: collapse;
-  table-layout: auto;
+  table-layout: fixed;
 
   th,
   td {
@@ -45,6 +53,14 @@
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
     vertical-align: middle;
+  }
+
+  th {
+    white-space: nowrap;
+  }
+
+  td {
+    overflow: hidden;
     white-space: nowrap;
   }
 }
@@ -278,6 +294,15 @@
 .col-multiselect {
   max-width: 200px;
   .crud-cell-text { max-width: 200px; }
+}
+
+// ─── Cell state classes ───────────────────────────────────────────────────────
+
+.cell-kolicina-nula {
+  .crud-cell-text {
+    color: #e65100;
+    font-weight: 500;
+  }
 }
 
 // ─── Row actions ──────────────────────────────────────────────────────────────

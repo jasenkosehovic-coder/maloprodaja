@@ -2,26 +2,24 @@ package ba.maloprodaja.dokumenti.pdf.service;
 
 import ba.maloprodaja.common.exception.BusinessException;
 import ba.maloprodaja.common.exception.ResourceNotFoundException;
-import ba.maloprodaja.dokumenti.faktura.entity.UlaznaFaktura;
-import ba.maloprodaja.dokumenti.faktura.entity.UlaznaFakturaStavka;
-import ba.maloprodaja.dokumenti.faktura.repository.UlaznaFakturaRepository;
-import ba.maloprodaja.dokumenti.faktura.repository.UlaznaFakturaStavkaRepository;
 import ba.maloprodaja.dokumenti.nivelacija.entity.Nivelacija;
 import ba.maloprodaja.dokumenti.nivelacija.entity.NivelacijaStavka;
 import ba.maloprodaja.dokumenti.nivelacija.repository.NivelacijaRepository;
 import ba.maloprodaja.dokumenti.nivelacija.repository.NivelacijaStavkaRepository;
-import ba.maloprodaja.dokumenti.otpremnica.entity.Otpremnica;
-import ba.maloprodaja.dokumenti.otpremnica.entity.OtpremnicaStavka;
-import ba.maloprodaja.dokumenti.otpremnica.repository.OtpremnicaRepository;
-import ba.maloprodaja.dokumenti.otpremnica.repository.OtpremnicaStavkaRepository;
 import ba.maloprodaja.kompanija.entity.Kompanija;
 import ba.maloprodaja.kompanija.repository.KompanijaRepository;
 import ba.maloprodaja.poslovnica.entity.Poslovnica;
 import ba.maloprodaja.poslovnica.repository.PoslovnicaRepository;
+import ba.maloprodaja.promet.dokument.entity.Dokument;
+import ba.maloprodaja.promet.dokument.repository.DokumentRepository;
+import ba.maloprodaja.promet.stavka.entity.StavkaDokumenta;
+import ba.maloprodaja.promet.stavka.repository.StavkaRepository;
 import ba.maloprodaja.sifarnici.artikalkomp.entity.ArtikalKompanija;
 import ba.maloprodaja.sifarnici.artikalkomp.repository.ArtikalKompanijeRepository;
 import ba.maloprodaja.sifarnici.dobavljac.entity.Dobavljac;
 import ba.maloprodaja.sifarnici.dobavljac.repository.DobavljacRepository;
+import ba.maloprodaja.sifarnici.varijanta.entity.VarijantaArtikla;
+import ba.maloprodaja.sifarnici.varijanta.repository.VarijantaArtiklaRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +36,13 @@ import net.sf.jasperreports.export.SimplePdfExporterConfiguration;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,68 +54,17 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class DokumentiPdfService {
 
-    private final UlaznaFakturaRepository fakturaRepository;
-    private final UlaznaFakturaStavkaRepository fakturaStavkaRepository;
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
     private final NivelacijaRepository nivelacijaRepository;
     private final NivelacijaStavkaRepository nivelacijaStavkaRepository;
-    private final OtpremnicaRepository otpremnicaRepository;
-    private final OtpremnicaStavkaRepository otpremnicaStavkaRepository;
-    private final KompanijaRepository kompanijaRepository;
     private final PoslovnicaRepository poslovnicaRepository;
-    private final DobavljacRepository dobavljacRepository;
     private final ArtikalKompanijeRepository artikalKompRepository;
-
-    public byte[] fakturaPdf(Long id) {
-        UlaznaFaktura faktura = fakturaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", id));
-
-        List<UlaznaFakturaStavka> stavke = fakturaStavkaRepository.findByFakturaId(id);
-
-        Map<Long, ArtikalKompanija> artikliMap = dohvatiArtikle(
-                stavke.stream().map(UlaznaFakturaStavka::getIdArtikla).distinct().toList()
-        );
-
-        String nazivDobavljaca = dobavljacRepository.findById(faktura.getIdDobavljaca())
-                .map(Dobavljac::getNaziv)
-                .orElse("");
-
-        String nazivKompanije = kompanijaRepository.findById(faktura.getIdKompanije())
-                .map(Kompanija::getNaziv)
-                .orElse("");
-
-        String nazivPoslovnice = poslovnicaRepository.findById(faktura.getIdPoslovnice())
-                .map(Poslovnica::getNaziv)
-                .orElse("");
-
-        List<FakturaStavkaRedDTO> redovi = stavke.stream()
-                .map(s -> {
-                    ArtikalKompanija a = artikliMap.get(s.getIdArtikla());
-                    return new FakturaStavkaRedDTO(
-                            a != null ? a.getSifra() : "",
-                            a != null ? a.getNaziv() : "",
-                            s.getKolicina(),
-                            s.getVpc(),
-                            s.getPdvStopa().setScale(0, RoundingMode.HALF_UP),
-                            s.getIznosPdv(),
-                            s.getUkupno()
-                    );
-                })
-                .toList();
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("KOMPANIJA",      nazivKompanije);
-        params.put("POSLOVNICA",     nazivPoslovnice);
-        params.put("NASLOV",         "ULAZNA FAKTURA br: " + faktura.getBroj());
-        params.put("DATUM",          faktura.getDatum() != null ? faktura.getDatum().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")) : "");
-        params.put("DOBAVLJAC",      nazivDobavljaca);
-        params.put("BROJ_DOKUMENTA", String.valueOf(faktura.getId()));
-        params.put("UKUPNO_BEZ_PDV", faktura.getUkupnoBezPdv());
-        params.put("UKUPNO_PDV",     faktura.getUkupnoPdv());
-        params.put("UKUPNO",         faktura.getUkupno());
-
-        JasperReport report = PdfReportBuilder.buildFakturaReport();
-        return generisiPdf(report, params, redovi);
-    }
+    private final DokumentRepository dokumentRepository;
+    private final StavkaRepository stavkaRepository;
+    private final KompanijaRepository kompanijaRepository;
+    private final VarijantaArtiklaRepository varijantaArtiklaRepository;
+    private final DobavljacRepository dobavljacRepository;
 
     public byte[] nivelacijaPdf(Long id) {
         Nivelacija nivelacija = nivelacijaRepository.findById(id)
@@ -122,9 +72,10 @@ public class DokumentiPdfService {
 
         List<NivelacijaStavka> stavke = nivelacijaStavkaRepository.findByNivelacijaId(id);
 
-        Map<Long, ArtikalKompanija> artikliMap = dohvatiArtikle(
-                stavke.stream().map(NivelacijaStavka::getIdArtikla).distinct().toList()
-        );
+        Map<Long, ArtikalKompanija> artikliMap = artikalKompRepository.findAllById(
+                        stavke.stream().map(NivelacijaStavka::getIdArtikla).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(ArtikalKompanija::getId, a -> a));
 
         String nazivPoslovnice = poslovnicaRepository.findById(nivelacija.getIdPoslovnice())
                 .map(Poslovnica::getNaziv)
@@ -141,7 +92,8 @@ public class DokumentiPdfService {
                             a != null ? a.getSifra() : "",
                             a != null ? a.getNaziv() : "",
                             s.getKolicina(),
-                            s.getVpc(),
+                            s.getVpcStara(),
+                            s.getVpcNova(),
                             s.getMpcStara(),
                             s.getMpcNova(),
                             s.getIznosNivelacije()
@@ -160,52 +112,124 @@ public class DokumentiPdfService {
         return generisiPdf(report, params, redovi);
     }
 
-    public byte[] otpremnicaPdf(Long id) {
-        Otpremnica otpremnica = otpremnicaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Otpremnica", id));
+    // ------------------------------------------------------------------ promet
 
-        List<OtpremnicaStavka> stavke = otpremnicaStavkaRepository.findByOtpremnicaId(id);
+    public byte[] prometDokumentPdf(Long id, Long idKompanije) {
+        Dokument dokument = dokumentRepository.findById(id)
+                .filter(d -> d.getIdKompanije().equals(idKompanije))
+                .orElseThrow(() -> new ResourceNotFoundException("Dokument", id));
 
-        Map<Long, ArtikalKompanija> artikliMap = dohvatiArtikle(
-                stavke.stream().map(OtpremnicaStavka::getIdArtikla).distinct().toList()
-        );
+        List<StavkaDokumenta> stavke = stavkaRepository.findByDokumentId(id);
 
-        String posiljalac = poslovnicaRepository.findById(otpremnica.getIdPoslovnicePosiljaoca())
-                .map(Poslovnica::getNaziv)
-                .orElse("");
+        // Batch-load all variants for this document in a single query to avoid N+1
+        Map<Long, VarijantaArtikla> varijanteMap = varijantaArtiklaRepository
+                .findAllById(stavke.stream().map(StavkaDokumenta::getIdVarijante).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
 
-        String primalac = poslovnicaRepository.findById(otpremnica.getIdPoslovnicePrimaoca())
-                .map(Poslovnica::getNaziv)
-                .orElse("");
+        Kompanija kompanija = kompanijaRepository.findById(idKompanije)
+                .orElseThrow(() -> new ResourceNotFoundException("Kompanija", idKompanije));
 
-        List<OtpremnicaStavkaRedDTO> redovi = stavke.stream()
-                .map(s -> {
-                    ArtikalKompanija a = artikliMap.get(s.getIdArtikla());
-                    return new OtpremnicaStavkaRedDTO(
-                            a != null ? a.getSifra() : "",
-                            a != null ? a.getNaziv() : "",
-                            s.getKolicina(),
-                            s.getVpcPosiljalac(),
-                            s.getMpcPosiljalac()
-                    );
-                })
-                .toList();
+        Poslovnica poslovnica = poslovnicaRepository.findById(dokument.getIdPoslovnice())
+                .orElseThrow(() -> new ResourceNotFoundException("Poslovnica", dokument.getIdPoslovnice()));
+
+        BufferedImage logoImage = resolveLogoImage(kompanija.getLogo());
+
+        String partner = resolvePartner(dokument);
+
+        BigDecimal ukupno = stavke.stream()
+                .map(StavkaDokumenta::getUkupno)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .abs();
+
+        List<PrometStavkaRedDTO> redovi = buildRedovi(stavke, varijanteMap);
 
         Map<String, Object> params = new HashMap<>();
-        params.put("NASLOV", "OTPREMNICA br: " + otpremnica.getBroj());
-        params.put("DATUM", otpremnica.getDatum() != null ? otpremnica.getDatum().toString() : "");
-        params.put("STATUS", otpremnica.getStatus() != null ? otpremnica.getStatus().name() : "");
-        params.put("POSILJALAC", posiljalac);
-        params.put("PRIMALAC", primalac);
+        params.put("KOMPANIJA_NAZIV",   kompanija.getNaziv());
+        params.put("KOMPANIJA_ADRESA",  kompanija.getAdresa() != null ? kompanija.getAdresa() : "");
+        params.put("KOMPANIJA_GRAD",    kompanija.getGrad()   != null ? kompanija.getGrad()   : "");
+        params.put("POSLOVNICA_NAZIV",  poslovnica.getNaziv());
+        params.put("TIP_NAZIV",         dokument.getTipDokumenta().getNaziv());
+        params.put("BROJ_DOKUMENTA",    dokument.getBrojDokumenta() != null ? dokument.getBrojDokumenta() : "");
+        params.put("DATUM",             dokument.getDatum() != null ? dokument.getDatum().format(DATE_FORMAT) : "");
+        params.put("PARTNER",           partner);
+        params.put("NAPOMENA",          dokument.getNapomena() != null ? dokument.getNapomena() : "");
+        params.put("UKUPNO",            ukupno);
+        params.put("LOGO_IMAGE",        logoImage); // nullable — JasperReports renders blank when null
 
-        JasperReport report = PdfReportBuilder.buildOtpremnicaReport();
+        JasperReport report = PdfReportBuilder.buildPrometDokumentReport();
         return generisiPdf(report, params, redovi);
     }
 
-    private Map<Long, ArtikalKompanija> dohvatiArtikle(List<Long> ids) {
-        return artikalKompRepository.findAllById(ids)
-                .stream()
-                .collect(Collectors.toMap(ArtikalKompanija::getId, a -> a));
+    private List<PrometStavkaRedDTO> buildRedovi(List<StavkaDokumenta> stavke,
+                                                  Map<Long, VarijantaArtikla> varijanteMap) {
+        List<PrometStavkaRedDTO> redovi = new ArrayList<>(stavke.size());
+        int rb = 1;
+        for (StavkaDokumenta s : stavke) {
+            VarijantaArtikla v = varijanteMap.get(s.getIdVarijante());
+
+            String artikalNaziv = "";
+            String varijantaLabel = "";
+            if (v != null) {
+                if (v.getArtikalKompanija() != null) {
+                    artikalNaziv = v.getArtikalKompanija().getNaziv();
+                }
+                String velicina = v.getVelicina() != null ? v.getVelicina().getOznaka() : null;
+                String boja     = v.getBoja()     != null ? v.getBoja().getNaziv()      : null;
+                if (velicina != null && boja != null) {
+                    varijantaLabel = velicina + " / " + boja;
+                } else if (velicina != null) {
+                    varijantaLabel = velicina;
+                } else if (boja != null) {
+                    varijantaLabel = boja;
+                }
+            }
+
+            redovi.add(new PrometStavkaRedDTO(
+                    rb++,
+                    artikalNaziv,
+                    varijantaLabel,
+                    s.getKolicina().abs(),
+                    s.getCijena(),
+                    s.getPopust(),
+                    s.getUkupno().abs()
+            ));
+        }
+        return redovi;
+    }
+
+    private String resolvePartner(Dokument dokument) {
+        if (dokument.getIdDobavljaca() != null) {
+            return dobavljacRepository.findById(dokument.getIdDobavljaca())
+                    .map(Dobavljac::getNaziv)
+                    .orElse("");
+        }
+        if (dokument.getIdKupca() != null) {
+            // Kupac module is planned for future — return empty for now
+            return "";
+        }
+        String tipKod = dokument.getTipDokumenta().getKod();
+        return switch (tipKod) {
+            case "MSI" -> "Međuskladišnica (izlaz)";
+            case "MSU" -> "Međuskladišnica (ulaz)";
+            default    -> "";
+        };
+    }
+
+    /**
+     * Converts the raw BYTEA logo stored on Kompanija into a BufferedImage.
+     * Returns null (logo is optional) when the byte array is null, empty, or unreadable.
+     */
+    private BufferedImage resolveLogoImage(byte[] logoBytes) {
+        if (logoBytes == null || logoBytes.length == 0) {
+            return null;
+        }
+        try {
+            return ImageIO.read(new ByteArrayInputStream(logoBytes));
+        } catch (Exception e) {
+            log.warn("Logo nije mogao biti učitan iz baze — PDF će biti generisan bez loga: {}", e.getMessage());
+            return null;
+        }
     }
 
     private <T> byte[] generisiPdf(JasperReport report, Map<String, Object> params, List<T> redovi) {
@@ -230,41 +254,39 @@ public class DokumentiPdfService {
         }
     }
 
-    // ---- DTO za redove tabela ----
-    // Namjerno klase umjesto record — JasperReports (Commons BeanUtils) traži JavaBean getere (getSifra()),
-    // a Java record exposes sifra() bez get-prefiksa.
-
-    @Getter
-    @AllArgsConstructor
-    public static class FakturaStavkaRedDTO {
-        private String sifra;
-        private String naziv;
-        private BigDecimal kolicina;
-        private BigDecimal vpc;
-        private BigDecimal pdvStopa;
-        private BigDecimal iznosPdv;
-        private BigDecimal ukupno;
-    }
-
+    // Namjerno klase umjesto record — JasperReports (Commons BeanUtils) traži JavaBean getere (getSifra())
     @Getter
     @AllArgsConstructor
     public static class NivelacijaStavkaRedDTO {
         private String sifra;
         private String naziv;
         private BigDecimal kolicina;
-        private BigDecimal vpc;
+        private BigDecimal vpcStara;
+        private BigDecimal vpcNova;
         private BigDecimal mpcStara;
         private BigDecimal mpcNova;
         private BigDecimal iznosNivelacije;
     }
 
+    /**
+     * Row DTO for promet document PDF.
+     * Uses a class (not a record) because JasperReports relies on Commons BeanUtils
+     * which requires standard JavaBean getters (getRb(), getArtikl(), ...).
+     */
     @Getter
     @AllArgsConstructor
-    public static class OtpremnicaStavkaRedDTO {
-        private String sifra;
-        private String naziv;
+    public static class PrometStavkaRedDTO {
+        /** 1-based row number. */
+        private int rb;
+        /** Article name from ArtikalKompanija. */
+        private String artikal;
+        /** Variant label e.g. "M / Plava", "XL", "Crvena", or "" for default (no size/colour). */
+        private String varijanta;
+        /** Absolute value of kolicina (sign is stripped — sign lives on tipDokumenta). */
         private BigDecimal kolicina;
-        private BigDecimal vpc;
-        private BigDecimal mpc;
+        private BigDecimal cijena;
+        private BigDecimal popust;
+        /** Absolute value of ukupno. */
+        private BigDecimal ukupno;
     }
 }

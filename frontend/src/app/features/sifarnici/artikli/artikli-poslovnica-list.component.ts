@@ -65,8 +65,7 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
   private appOptions: AppOptions | null = null;
 
   readonly tableHeaders: string[] = [
-    'artikalNaziv', 'artikalSifra', 'vpc', 'mpc', 'marza', 'tipMarze',
-    'kolicina', 'minZaliha', 'optimalnaZaliha', 'aktivan',
+    'artikalNaziv', 'artikalSifra', 'vpc', 'mpc', 'marza', 'tipMarze', 'popustProcenat', 'ukupnaKolicina', 'aktivan',
   ];
 
   readonly tableActions: CrudActionsConfig = {
@@ -152,10 +151,9 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
         addOptions: artikliAddOptions,   // filtered — used in add modal (excludes existing)
         readOnlyOnEdit: true,
       },
-      // vpc and kolicina are set via incoming documents — hidden from form, shown in table
-      { key: 'vpc',   label: 'VPC',      type: 'number', visible: false },
-      { key: 'mpc',   label: 'MPC',      type: 'number', visible: false },
-      { key: 'kolicina', label: 'Količina', type: 'number', visible: false },
+      // vpc and mpc are set via incoming documents — hidden from form, shown in table
+      { key: 'vpc', label: 'VPC', type: 'number', visible: false },
+      { key: 'mpc', label: 'MPC', type: 'number', visible: false },
       {
         key: 'marza',
         label: 'Marža (%)',
@@ -173,18 +171,23 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
         options: options.tipoviMarze,
       },
       {
-        key: 'minZaliha',
-        label: 'Min. zaliha',
+        key: 'popustProcenat',
+        label: 'Popust (%)',
         type: 'number',
         min: 0,
-        minMessage: 'Min. zaliha ne može biti negativna.',
+        max: 100,
+        minMessage: 'Popust ne može biti negativan.',
+        maxMessage: 'Popust ne može biti veći od 100.',
+        decimals: 2,
+        defaultValue: 0,
       },
       {
-        key: 'optimalnaZaliha',
-        label: 'Opt. zaliha',
+        key: 'ukupnaKolicina',
+        label: 'Ukupna količina',
         type: 'number',
-        min: 0,
-        minMessage: 'Opt. zaliha ne može biti negativna.',
+        visible: false,
+        decimals: 2,
+        cellClass: (value: number) => value === 0 ? 'cell-kolicina-nula' : '',
       },
       { key: 'aktivan', label: 'Aktivan', type: 'boolean', defaultValue: true },
     ];
@@ -208,8 +211,7 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
       idPoslovnice: idPosl,
       marza: row['marza'] != null ? Number(row['marza']) : undefined,
       tipMarze: row['tipMarze'] || 'SLOBODNA',
-      minZaliha: row['minZaliha'] != null ? Number(row['minZaliha']) : undefined,
-      optimalnaZaliha: row['optimalnaZaliha'] != null ? Number(row['optimalnaZaliha']) : undefined,
+      popustProcenat: row['popustProcenat'] != null ? Number(row['popustProcenat']) : 0,
     };
 
     this.isSaving = true;
@@ -233,9 +235,8 @@ export class ArtikliPoslovnicaListComponent implements OnInit {
     const dto: UpdateArtikalPoslovnica = {
       marza: row['marza'] != null ? Number(row['marza']) : undefined,
       tipMarze: row['tipMarze'] || undefined,
-      minZaliha: row['minZaliha'] != null ? Number(row['minZaliha']) : undefined,
-      optimalnaZaliha: row['optimalnaZaliha'] != null ? Number(row['optimalnaZaliha']) : undefined,
       aktivan: row['aktivan'] !== undefined ? row['aktivan'] : true,
+      popustProcenat: row['popustProcenat'] != null ? Number(row['popustProcenat']) : undefined,
     };
 
     this.isSaving = true;

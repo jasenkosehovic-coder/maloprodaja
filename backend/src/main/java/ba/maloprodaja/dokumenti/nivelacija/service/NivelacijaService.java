@@ -3,10 +3,6 @@ package ba.maloprodaja.dokumenti.nivelacija.service;
 import ba.maloprodaja.common.exception.BusinessException;
 import ba.maloprodaja.common.exception.ResourceNotFoundException;
 import ba.maloprodaja.dokumenti.enums.VrstaNivelacije;
-import ba.maloprodaja.dokumenti.faktura.entity.UlaznaFaktura;
-import ba.maloprodaja.dokumenti.faktura.entity.UlaznaFakturaStavka;
-import ba.maloprodaja.dokumenti.faktura.repository.UlaznaFakturaRepository;
-import ba.maloprodaja.dokumenti.faktura.repository.UlaznaFakturaStavkaRepository;
 import ba.maloprodaja.dokumenti.nivelacija.dto.NivelacijaDTO;
 import ba.maloprodaja.dokumenti.nivelacija.entity.Nivelacija;
 import ba.maloprodaja.dokumenti.nivelacija.entity.NivelacijaStavka;
@@ -41,8 +37,6 @@ public class NivelacijaService implements INivelacijaService {
 
     private final NivelacijaRepository nivelacijaRepository;
     private final NivelacijaStavkaRepository stavkaRepository;
-    private final UlaznaFakturaRepository fakturaRepository;
-    private final UlaznaFakturaStavkaRepository ulaznaFakturaStavkaRepository;
     private final ArtikalPoslovnicaRepository artikalPoslovnicaRepository;
     private final ArtikalKompanijeRepository artikalKompRepository;
 
@@ -100,7 +94,8 @@ public class NivelacijaService implements INivelacijaService {
                             ak != null ? ak.getNaziv() : "",
                             ak != null ? ak.getSifra() : "",
                             s.getKolicina(),
-                            s.getVpc(),
+                            s.getVpcStara(),
+                            s.getVpcNova(),
                             s.getMpcStara(),
                             s.getMpcNova(),
                             s.getIznosNivelacije()
@@ -123,75 +118,14 @@ public class NivelacijaService implements INivelacijaService {
 
     @Override
     @Transactional
-    public void kreirajAutomatskuZaFakturu(Long idFakture, Long idKompanije, Long idPoslovnice) {
-        UlaznaFaktura faktura = fakturaRepository.findById(idFakture)
-                .orElseThrow(() -> new ResourceNotFoundException("UlaznaFaktura", idFakture));
-
-        List<UlaznaFakturaStavka> fakturaStavke = ulaznaFakturaStavkaRepository.findByFakturaId(idFakture);
-
-        List<NivelacijaStavka> nivelacijaStavke = new ArrayList<>();
-
-        for (UlaznaFakturaStavka fs : fakturaStavke) {
-            Optional<ArtikalPoslovnica> apOpt = artikalPoslovnicaRepository
-                    .findByIdArtiklaAndIdPoslovnice(fs.getIdArtikla(), idPoslovnice);
-
-            if (apOpt.isEmpty()) {
-                continue;
-            }
-
-            ArtikalPoslovnica ap = apOpt.get();
-            BigDecimal razlikaVpc = fs.getVpc().subtract(ap.getVpc() != null ? ap.getVpc() : BigDecimal.ZERO).abs();
-
-            if (razlikaVpc.compareTo(VPC_TOLERANCE) <= 0) {
-                continue;
-            }
-
-            BigDecimal mpcStara = ap.getMpc() != null ? ap.getMpc() : BigDecimal.ZERO;
-            BigDecimal pdvFrakcija = fs.getPdvStopa().divide(new BigDecimal("100"), 10, RoundingMode.HALF_UP);
-            BigDecimal mpcNova = izracunajMpcNovu(ap, fs.getVpc(), pdvFrakcija, mpcStara);
-
-            ap.setVpc(fs.getVpc());
-            ap.setMpc(mpcNova);
-            artikalPoslovnicaRepository.save(ap);
-
-            BigDecimal iznosNivelacije = ap.getKolicina().multiply(mpcNova.subtract(mpcStara))
-                    .setScale(4, RoundingMode.HALF_UP);
-
-            nivelacijaStavke.add(buildStavka(fs.getIdArtikla(), ap.getKolicina(), fs.getVpc(), mpcStara, mpcNova, iznosNivelacije));
-        }
-
-        if (nivelacijaStavke.isEmpty()) {
-            log.info("Automatska nivelacija za fakturu id={}: nema stavki za nivelaciju (sve iste cijene).", idFakture);
-            return;
-        }
-
-        Nivelacija nivelacija = buildNivelacija(
-                generišiBroj(idKompanije, idPoslovnice),
-                LocalDate.now(),
-                VrstaNivelacije.AUTOMATSKA_FAKTURA,
-                idKompanije,
-                idPoslovnice,
-                faktura.getNapomena()
-        );
-        nivelacija.setIdFakture(idFakture);
-
-        Nivelacija saved = nivelacijaRepository.save(nivelacija);
-        nivelacijaStavke.forEach(s -> s.setNivelacija(saved));
-        stavkaRepository.saveAll(nivelacijaStavke);
-
-        log.info("Kreirana automatska nivelacija za fakturu id={}: broj='{}', stavki={}.",
-                idFakture, saved.getBroj(), nivelacijaStavke.size());
-    }
-
-    @Override
-    @Transactional
-    public void kreirajAutomatskuZaOtpremnicu(Long idOtpremnice, Long idKompanije, Long idPoslovnicePrimaoca,
-                                              List<NivelacijaStavkaInfo> stavkeInfo) {
+    public void kreirajAutomatskuZaDokument(Long idDokumenta, VrstaNivelacije vrsta,
+                                            Long idKompanije, Long idPoslovnice,
+                                            String napomena, List<NivelacijaStavkaInfo> stavkeInfo) {
         List<NivelacijaStavka> nivelacijaStavke = new ArrayList<>();
 
         for (NivelacijaStavkaInfo info : stavkeInfo) {
             Optional<ArtikalPoslovnica> apOpt = artikalPoslovnicaRepository
-                    .findByIdArtiklaAndIdPoslovnice(info.idArtikla(), idPoslovnicePrimaoca);
+                    .findByIdArtiklaAndIdPoslovnice(info.idArtikla(), idPoslovnice);
 
             if (apOpt.isEmpty()) {
                 continue;
@@ -212,33 +146,46 @@ public class NivelacijaService implements INivelacijaService {
             ap.setMpc(mpcNova);
             artikalPoslovnicaRepository.save(ap);
 
-            BigDecimal iznosNivelacije = ap.getKolicina().multiply(mpcNova.subtract(mpcStara))
+            BigDecimal vpcStara = ap.getVpc() != null ? ap.getVpc() : BigDecimal.ZERO;
+            BigDecimal vpcNova = info.vpc();
+            BigDecimal kolicinaStavke = info.kolicina() != null ? info.kolicina() : BigDecimal.ZERO;
+            BigDecimal iznosNivelacije = kolicinaStavke
+                    .multiply(mpcNova.subtract(mpcStara))
                     .setScale(4, RoundingMode.HALF_UP);
 
-            nivelacijaStavke.add(buildStavka(info.idArtikla(), ap.getKolicina(), info.vpc(), mpcStara, mpcNova, iznosNivelacije));
+            nivelacijaStavke.add(buildStavka(
+                    info.idArtikla(), kolicinaStavke,
+                    vpcStara, vpcNova,
+                    mpcStara, mpcNova, iznosNivelacije));
         }
 
         if (nivelacijaStavke.isEmpty()) {
-            log.info("Automatska nivelacija za otpremnicu id={}: nema stavki za nivelaciju (sve iste cijene).", idOtpremnice);
+            log.info("Automatska nivelacija za dokument id={}: nema stavki za nivelaciju (sve iste cijene).", idDokumenta);
             return;
         }
 
         Nivelacija nivelacija = buildNivelacija(
-                generišiBroj(idKompanije, idPoslovnicePrimaoca),
+                generišiBroj(idKompanije, idPoslovnice),
                 LocalDate.now(),
-                VrstaNivelacije.AUTOMATSKA_OTPREMNICA,
+                vrsta,
                 idKompanije,
-                idPoslovnicePrimaoca,
-                null
+                idPoslovnice,
+                napomena
         );
-        nivelacija.setIdOtpremnice(idOtpremnice);
+
+        // Čuvamo referencu na izvorni prometni dokument u odgovarajuće polje
+        if (vrsta == VrstaNivelacije.AUTOMATSKA_FAKTURA) {
+            nivelacija.setIdFakture(idDokumenta);
+        } else {
+            nivelacija.setIdOtpremnice(idDokumenta);
+        }
 
         Nivelacija saved = nivelacijaRepository.save(nivelacija);
         nivelacijaStavke.forEach(s -> s.setNivelacija(saved));
         stavkaRepository.saveAll(nivelacijaStavke);
 
-        log.info("Kreirana automatska nivelacija za otpremnicu id={}: broj='{}', stavki={}.",
-                idOtpremnice, saved.getBroj(), nivelacijaStavke.size());
+        log.info("Kreirana automatska nivelacija za dokument id={}, vrsta={}: broj='{}', stavki={}.",
+                idDokumenta, vrsta, saved.getBroj(), nivelacijaStavke.size());
     }
 
     @Override
@@ -262,11 +209,15 @@ public class NivelacijaService implements INivelacijaService {
             ap.setMpc(mpcNova);
             artikalPoslovnicaRepository.save(ap);
 
-            BigDecimal iznosNivelacije = ap.getKolicina().multiply(mpcNova.subtract(mpcStara))
-                    .setScale(4, RoundingMode.HALF_UP);
+            // TODO Sprint 4: prebaciti na varijante_artikla_poslovnica
+            BigDecimal iznosNivelacije = BigDecimal.ZERO;
+            // BigDecimal iznosNivelacije = ap.getKolicina().multiply(mpcNova.subtract(mpcStara))
+            //         .setScale(4, RoundingMode.HALF_UP);
 
+            // Ručna nivelacija mijenja samo MPC — VPC ostaje ista
             BigDecimal vpc = ap.getVpc() != null ? ap.getVpc() : BigDecimal.ZERO;
-            nivelacijaStavke.add(buildStavka(stavkaDto.idArtikla(), ap.getKolicina(), vpc, mpcStara, mpcNova, iznosNivelacije));
+            nivelacijaStavke.add(buildStavka(stavkaDto.idArtikla(), BigDecimal.ZERO,
+                    vpc, vpc, mpcStara, mpcNova, iznosNivelacije));
         }
 
         Nivelacija nivelacija = buildNivelacija(
@@ -314,12 +265,15 @@ public class NivelacijaService implements INivelacijaService {
         return BigDecimal.ZERO;
     }
 
-    private NivelacijaStavka buildStavka(Long idArtikla, BigDecimal kolicina, BigDecimal vpc,
-                                         BigDecimal mpcStara, BigDecimal mpcNova, BigDecimal iznosNivelacije) {
+    private NivelacijaStavka buildStavka(Long idArtikla, BigDecimal kolicina,
+                                         BigDecimal vpcStara, BigDecimal vpcNova,
+                                         BigDecimal mpcStara, BigDecimal mpcNova,
+                                         BigDecimal iznosNivelacije) {
         NivelacijaStavka stavka = new NivelacijaStavka();
         stavka.setIdArtikla(idArtikla);
         stavka.setKolicina(kolicina);
-        stavka.setVpc(vpc);
+        stavka.setVpcStara(vpcStara);
+        stavka.setVpcNova(vpcNova);
         stavka.setMpcStara(mpcStara);
         stavka.setMpcNova(mpcNova);
         stavka.setIznosNivelacije(iznosNivelacije);

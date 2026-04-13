@@ -9,11 +9,8 @@ public class BarkodDTO {
     public record ListItemDTO(
             Long id,
             String barkod,
-            Long idArtikla,
-            String artikalNaziv,
-            String artikalSifra,
-            Long idPoslovnice,
-            String poslovnicaNaziv,
+            Long idVarijante,
+            String oznakaVelicine,
             boolean aktivan
     ) {}
 
@@ -22,10 +19,8 @@ public class BarkodDTO {
             @Size(max = 100, message = "Barkod ne smije biti duži od 100 znakova")
             String barkod,
 
-            @NotNull(message = "Artikal je obavezan")
-            Long idArtikla,
-
-            Long idPoslovnice
+            @NotNull(message = "Varijanta je obavezna")
+            Long idVarijante
     ) {}
 
     public record UpdateDTO(
@@ -33,8 +28,10 @@ public class BarkodDTO {
             @Size(max = 100, message = "Barkod ne smije biti duži od 100 znakova")
             String barkod,
 
-            Long idPoslovnice,
-
             Boolean aktivan
+    ) {}
+
+    public record PretragaDTO(
+            Long idArtikla
     ) {}
 }

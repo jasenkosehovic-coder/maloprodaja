@@ -24,7 +24,7 @@ public class PopustService implements IPopustService {
 
     @Override
     public List<PopustDTO.ListItemDTO> listAll(Long idKompanije) {
-        return popustRepository.findByIdKompanije(idKompanije)
+        return popustRepository.findByIdKompanijeOrderByNazivAsc(idKompanije)
                 .stream()
                 .map(this::toListItemDTO)
                 .toList();
@@ -32,7 +32,7 @@ public class PopustService implements IPopustService {
 
     @Override
     @Transactional
-    public PopustDTO.ListItemDTO create(PopustDTO.CreateDTO dto, Long idKompanije) {
+    public PopustDTO.ListItemDTO create(PopustDTO.CreateDTO dto, Long idKompanije, Long idPoslovnice) {
         Popust p = new Popust();
         p.setNaziv(dto.naziv());
         p.setProcenat(dto.procenat());
@@ -40,7 +40,7 @@ public class PopustService implements IPopustService {
         p.setDatumDo(dto.datumDo());
         p.setAktivan(true);
         p.setIdKompanije(idKompanije);
-        p.setIdPoslovnice(dto.idPoslovnice());
+        p.setIdPoslovnice(idPoslovnice);
 
         Popust saved = popustRepository.save(p);
         log.info("Kreiran novi popust: naziv='{}', procenat={}, idKompanije={}", saved.getNaziv(), saved.getProcenat(), idKompanije);
@@ -49,7 +49,7 @@ public class PopustService implements IPopustService {
 
     @Override
     @Transactional
-    public PopustDTO.ListItemDTO update(Long id, PopustDTO.UpdateDTO dto) {
+    public PopustDTO.ListItemDTO update(Long id, PopustDTO.UpdateDTO dto, Long idPoslovnice) {
         Popust p = popustRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Popust", id));
 
@@ -60,7 +60,7 @@ public class PopustService implements IPopustService {
         if (dto.aktivan() != null) {
             p.setAktivan(dto.aktivan());
         }
-        p.setIdPoslovnice(dto.idPoslovnice());
+        p.setIdPoslovnice(idPoslovnice);
 
         Popust saved = popustRepository.save(p);
         log.info("Ažuriran popust: id={}", id);

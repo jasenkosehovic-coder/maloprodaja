@@ -1,0 +1,26 @@
+<mat-progress-bar *ngIf="isLoading" mode="indeterminate" />
+
+<div *ngIf="isSuperAdminBezPoslovnice" class="poslovnica-filter">
+  <mat-form-field appearance="outline">
+    <mat-label>Poslovnica</mat-label>
+    <mat-select
+      [(ngModel)]="selectedPoslovnicaId"
+      (ngModelChange)="onPoslovnicaChange($event)"
+      aria-label="Odaberi poslovnicu">
+      <mat-option *ngFor="let p of poslovnice" [value]="p.id">
+        {{ p.naziv }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<app-crud-table
+  *ngIf="!isSuperAdminBezPoslovnice || selectedPoslovnicaId"
+  [data]="items"
+  [headers]="tableHeaders"
+  [fields]="fields"
+  [actions]="tableActions"
+  [saving]="isSaving"
+  [pdfHeader]="pdfHeader()"
+  [externalSave]="true"
+  (edit)="onUpdate($event)" />

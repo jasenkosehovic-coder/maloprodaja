@@ -8,9 +8,9 @@ public interface IPopustService {
 
     List<PopustDTO.ListItemDTO> listAll(Long idKompanije);
 
-    PopustDTO.ListItemDTO create(PopustDTO.CreateDTO dto, Long idKompanije);
+    PopustDTO.ListItemDTO create(PopustDTO.CreateDTO dto, Long idKompanije, Long idPoslovnice);
 
-    PopustDTO.ListItemDTO update(Long id, PopustDTO.UpdateDTO dto);
+    PopustDTO.ListItemDTO update(Long id, PopustDTO.UpdateDTO dto, Long idPoslovnice);
 
     void deactivate(Long id);
 }

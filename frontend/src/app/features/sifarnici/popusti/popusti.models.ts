@@ -15,7 +15,6 @@ export interface CreatePopust {
   datumOd?: string;
   datumDo?: string;
   aktivan: boolean;
-  idPoslovnice?: number;
 }
 
 export interface UpdatePopust {
@@ -24,5 +23,4 @@ export interface UpdatePopust {
   datumOd?: string;
   datumDo?: string;
   aktivan?: boolean;
-  idPoslovnice?: number | null;
 }

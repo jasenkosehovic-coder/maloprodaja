@@ -5,224 +5,385 @@ import {
   DestroyRef,
   OnInit,
   computed,
+  effect,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { EMPTY, forkJoin, of } from 'rxjs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
-import { CrudTableComponent } from '../../../shared/components/crud-table/crud-table.component';
-import { CrudActionsConfig, CrudFieldConfig, CrudFieldOption, CrudPdfHeader } from '../../../shared/components/crud-table/crud-field-config';
-import { AuthService } from '../../../core/auth/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
-import { PoslovnicaService, PoslovnicaOption } from '../../korisnici/poslovnica.service';
 import { ArtikliService } from './artikli.service';
-import { ArtikalKompanija, Barkod, CreateBarkod, UpdateBarkod } from './artikli.models';
+import { ArtikalKompanija, ArtikalVarijanta, CreateVarijanta, CreateVarijantaBarkod } from './artikli.models';
+import { BojeService } from '../boje/boje.service';
+import { Boja } from '../boje/boje.models';
+import { TipoviVelicinaService } from '../tipovi-velicina/tipovi-velicina.service';
+import { Velicina } from '../tipovi-velicina/tipovi-velicina.models';
+
+export interface VarijantaUiState {
+  varijanta: ArtikalVarijanta;
+  noviBarkodinput: string;
+  isAddingBarkod: boolean;
+  isSavingBarkod: boolean;
+  barkodError: string | null;
+}
 
 @Component({
   selector: 'app-barkodovi-list',
   standalone: true,
-  imports: [CommonModule, MatProgressBarModule, CrudTableComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatIconModule,
+    MatExpansionModule,
+    MatChipsModule,
+    MatTooltipModule,
+  ],
   templateUrl: './barkodovi-list.component.html',
   styleUrl: './barkodovi-list.component.scss',
   changeDetection: ChangeDetectionStrategy.Default,
 })
 export class BarkodoviListComponent implements OnInit {
   private readonly artikliService = inject(ArtikliService);
-  private readonly authService = inject(AuthService);
-  private readonly poslovnicaService = inject(PoslovnicaService);
+  private readonly bojeService = inject(BojeService);
+  private readonly tipoviVelicinaService = inject(TipoviVelicinaService);
   private readonly notification = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  readonly pdfHeader = computed<CrudPdfHeader | null>(() => {
-    const k = this.authService.korisnik();
-    if (!k) return null;
-    return {
-      kompanijaNaziv: k.kompanijaNaziv,
-      kompanijaAdresa: k.kompanijaAdresa,
-      kompanijaGrad: k.kompanijaGrad,
-      poslovnicaNaziv: k.poslovnicaId ? k.poslovnicaNaziv : undefined,
-      poslovnicaAdresa: k.poslovnicaId ? k.poslovnicaAdresa : undefined,
-      poslovnicaGrad: k.poslovnicaId ? k.poslovnicaGrad : undefined,
-    };
+  // State
+  readonly isLoadingArtikli = signal(false);
+  readonly isLoadingVarijante = signal(false);
+  readonly isLoadingBoje = signal(false);
+  readonly isSavingVarijanta = signal(false);
+  readonly loadError = signal<string | null>(null);
+
+  readonly artikli = signal<ArtikalKompanija[]>([]);
+  readonly selectedArtikalId = signal<number | null>(null);
+  readonly artikalSearch = signal('');
+  readonly barkodPretraga = signal('');
+  readonly isBarkodPretragaLoading = signal(false);
+  readonly barkodPretragaError = signal<string | null>(null);
+  readonly varijante = signal<VarijantaUiState[]>([]);
+  readonly boje = signal<Boja[]>([]);
+  readonly velicine = signal<Velicina[]>([]);
+  readonly isAddingVarijanta = signal(false);
+
+  readonly novaVarijantaForm = this.fb.group({
+    idVelicine: this.fb.control<number | null>(null),
+    idBoje: this.fb.control<number | null>(null),
   });
 
-  items: Barkod[] = [];
-  isLoading = false;
-  isSaving = false;
-  fields: CrudFieldConfig[] = [];
+  readonly selectedArtikal = computed(() => {
+    const id = this.selectedArtikalId();
+    return id ? this.artikli().find(a => a.id === id) ?? null : null;
+  });
 
-  private artikliSvi: ArtikalKompanija[] = [];
-  private poslovnice: PoslovnicaOption[] = [];
+  readonly filteredArtikli = computed(() => {
+    const term = this.artikalSearch().toLowerCase().trim();
+    if (!term) return this.artikli();
+    return this.artikli().filter(a =>
+      a.naziv.toLowerCase().includes(term) || a.sifra.toLowerCase().includes(term)
+    );
+  });
 
-  readonly tableHeaders: string[] = [
-    'artikalNaziv', 'artikalSifra', 'barkod', 'poslovnicaNaziv', 'aktivan',
-  ];
+  readonly hasVarijante = computed(() => this.varijante().length > 0);
 
-  readonly tableActions: CrudActionsConfig = {
-    add: true,
-    edit: true,
-    delete: true,
-    export: true,
-  };
-
-  private get hasPoslovnica(): boolean {
-    return !!this.authService.korisnik()?.poslovnicaId;
+  constructor() {
+    effect(() => {
+      const artikal = this.selectedArtikal();
+      const idTipa = artikal?.idTipaVelicina ?? null;
+      if (!idTipa) {
+        this.velicine.set([]);
+        return;
+      }
+      this.tipoviVelicinaService.getVelicine(idTipa)
+        .pipe(
+          catchError(err => {
+            console.error('Greška pri učitavanju veličina:', err);
+            this.velicine.set([]);
+            return EMPTY;
+          }),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe(data => {
+          this.velicine.set(data);
+          this.cdr.markForCheck();
+        });
+    });
   }
 
   ngOnInit(): void {
-    const artikli$ = this.artikliService.getAll().pipe(catchError(() => of([] as ArtikalKompanija[])));
-    const poslovnice$ = this.poslovnicaService.getAll().pipe(catchError(() => of([] as PoslovnicaOption[])));
-
-    forkJoin({ artikli: artikli$, poslovnice: poslovnice$ })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(({ artikli, poslovnice }) => {
-        this.artikliSvi = artikli;
-        this.poslovnice = poslovnice;
-        this.fields = this.buildFields();
-        this.loadData();
-      });
+    this.loadArtikli();
+    this.loadBoje();
   }
 
-  private buildFields(): CrudFieldConfig[] {
-    const artikliOptions: CrudFieldOption[] = this.artikliSvi
-      .filter(a => a.aktivan)
-      .map(a => ({ label: `${a.sifra} — ${a.naziv}`, value: a.id }));
-
-    const poslovnicaField: CrudFieldConfig = {
-      key: 'idPoslovnice',
-      label: 'Poslovnica',
-      type: 'select',
-      defaultValue: null,
-      hideEmptyOption: true,
-      options: [
-        { label: 'Sve poslovnice', value: null },
-        ...this.poslovnice.map(p => ({ label: p.naziv, value: p.id })),
-      ],
-    };
-
-    return [
-      { key: 'id',              label: 'ID',         type: 'number', visible: false },
-      { key: 'artikalNaziv',    label: 'Naziv',       type: 'text',   visible: false },
-      { key: 'artikalSifra',    label: 'Šifra',       type: 'text',   visible: false },
-      { key: 'poslovnicaNaziv', label: 'Poslovnica',  type: 'text',   visible: false },
-      {
-        key: 'idArtikla',
-        label: 'Artikal',
-        type: 'select',
-        required: true,
-        requiredMessage: 'Artikal je obavezan.',
-        options: artikliOptions,
-        readOnlyOnEdit: true,
-      },
-      {
-        key: 'barkod',
-        label: 'Barkod',
-        type: 'text',
-        required: true,
-        requiredMessage: 'Barkod je obavezan.',
-      },
-      poslovnicaField,
-      { key: 'aktivan', label: 'Aktivan', type: 'boolean', defaultValue: true },
-    ];
-  }
-
-  loadData(): void {
-    this.isLoading = true;
-    this.artikliService.getAllBarkodovi()
+  private loadArtikli(): void {
+    this.isLoadingArtikli.set(true);
+    this.artikliService.getAll()
       .pipe(
-        finalize(() => { this.isLoading = false; this.cdr.markForCheck(); }),
+        finalize(() => {
+          this.isLoadingArtikli.set(false);
+          this.cdr.markForCheck();
+        }),
         catchError(err => {
-          this.notification.error('Greška pri učitavanju barkodova.');
+          this.loadError.set('Greška pri učitavanju artikala.');
           console.error(err);
           return EMPTY;
         }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(data => {
-        this.items = data;
+        this.artikli.set(data.filter(a => a.aktivan));
         this.cdr.markForCheck();
       });
   }
 
-  onCreate(row: any): void {
-    const dto: CreateBarkod = {
-      barkod: row['barkod'],
-      idArtikla: row['idArtikla'],
-      idPoslovnice: row['idPoslovnice'] ?? null,
+  private loadBoje(): void {
+    this.isLoadingBoje.set(true);
+    this.bojeService.getAktivne()
+      .pipe(
+        finalize(() => {
+          this.isLoadingBoje.set(false);
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          console.error('Greška pri učitavanju boja:', err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(data => {
+        this.boje.set(data);
+        this.cdr.markForCheck();
+      });
+  }
+
+  onArtikalChange(idArtikla: number | null): void {
+    this.selectedArtikalId.set(idArtikla);
+    this.varijante.set([]);
+    this.loadError.set(null);
+    this.isAddingVarijanta.set(false);
+    this.novaVarijantaForm.reset();
+    if (!idArtikla) return;
+    this.loadVarijante(idArtikla);
+  }
+
+  private loadVarijante(idArtikla: number): void {
+    this.isLoadingVarijante.set(true);
+    this.loadError.set(null);
+    this.artikliService.getVarijante(idArtikla)
+      .pipe(
+        finalize(() => {
+          this.isLoadingVarijante.set(false);
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          this.loadError.set('Greška pri učitavanju varijanti artikla.');
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(varijante => {
+        this.varijante.set(
+          varijante.map(v => ({
+            varijanta: v,
+            noviBarkodinput: '',
+            isAddingBarkod: false,
+            isSavingBarkod: false,
+            barkodError: null,
+          }))
+        );
+        this.cdr.markForCheck();
+      });
+  }
+
+  buildVarijantaNaziv(varijanta: ArtikalVarijanta): string {
+    const dijelovi: string[] = [];
+    if (varijanta.oznakaVelicine) {
+      dijelovi.push(varijanta.oznakaVelicine);
+    }
+    if (varijanta.nazivBoje) {
+      dijelovi.push(varijanta.nazivBoje);
+    }
+    return dijelovi.length > 0 ? dijelovi.join(' / ') : 'Default';
+  }
+
+  onBarkodPretragaEnter(): void {
+    const barkod = this.barkodPretraga().trim();
+    if (!barkod) return;
+
+    this.isBarkodPretragaLoading.set(true);
+    this.barkodPretragaError.set(null);
+
+    this.artikliService.findArtikalByBarkod(barkod)
+      .pipe(
+        finalize(() => {
+          this.isBarkodPretragaLoading.set(false);
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          const message = err?.error?.message ?? 'Barkod ne postoji.';
+          this.barkodPretragaError.set(message);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(result => {
+        this.barkodPretraga.set('');
+        this.barkodPretragaError.set(null);
+        this.onArtikalChange(result.idArtikla);
+        this.cdr.markForCheck();
+      });
+  }
+
+  onToggleAddVarijanta(): void {
+    this.isAddingVarijanta.update(v => !v);
+    if (!this.isAddingVarijanta()) {
+      this.novaVarijantaForm.reset();
+    }
+  }
+
+  onSpremiVarijantu(): void {
+    const idArtikla = this.selectedArtikalId();
+    if (!idArtikla) return;
+
+    const dto: CreateVarijanta = {
+      idVelicine: this.novaVarijantaForm.controls.idVelicine.value,
+      idBoje: this.novaVarijantaForm.controls.idBoje.value,
     };
 
-    this.isSaving = true;
-    this.artikliService.createBarkod(dto)
+    this.isSavingVarijanta.set(true);
+    this.artikliService.createVarijanta(idArtikla, dto)
       .pipe(
-        finalize(() => { this.isSaving = false; this.cdr.markForCheck(); }),
+        finalize(() => {
+          this.isSavingVarijanta.set(false);
+          this.cdr.markForCheck();
+        }),
         catchError(err => {
-          this.notification.error('Greška pri kreiranju barkoda.');
+          const message = err?.error?.message ?? 'Greška pri kreiranju varijante.';
+          this.notification.error(message);
           console.error(err);
           return EMPTY;
         }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe(() => {
-        const scope = dto.idPoslovnice ? 'za odabranu poslovnicu' : 'za sve poslovnice';
-        this.notification.success(`Barkod uspješno kreiran ${scope}.`);
-        this.loadData();
+        this.notification.success('Varijanta uspješno kreirana.');
+        this.isAddingVarijanta.set(false);
+        this.novaVarijantaForm.reset();
+        this.loadVarijante(idArtikla);
       });
   }
 
-  onUpdate(row: any): void {
-    const dto: UpdateBarkod = {
-      barkod: row['barkod'],
-      idPoslovnice: row['idPoslovnice'] ?? null,
-      aktivan: row['aktivan'] !== undefined ? row['aktivan'] : true,
-    };
-
-    this.isSaving = true;
-    this.artikliService.updateBarkod(row['id'], dto)
-      .pipe(
-        finalize(() => { this.isSaving = false; this.cdr.markForCheck(); }),
-        catchError(err => {
-          this.notification.error('Greška pri ažuriranju barkoda.');
-          console.error(err);
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef),
+  toggleAddBarkod(varijanataId: number): void {
+    this.varijante.update(list =>
+      list.map(item =>
+        item.varijanta.id === varijanataId
+          ? { ...item, isAddingBarkod: !item.isAddingBarkod, noviBarkodinput: '', barkodError: null }
+          : item
       )
-      .subscribe(() => {
-        this.notification.success('Barkod uspješno ažuriran.');
-        this.loadData();
-      });
-  }
-
-  onDeactivate(row: any): void {
-    this.artikliService.deactivateBarkod(row['id'])
-      .pipe(
-        catchError(err => {
-          this.notification.error('Greška pri deaktivaciji barkoda.');
-          console.error(err);
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => {
-        this.notification.success('Barkod uspješno deaktiviran.');
-        this.loadData();
-      });
-  }
-
-  onDeactivateMany(rows: any[]): void {
-    if (!rows.length) return;
-    const requests = rows.map(r =>
-      this.artikliService.deactivateBarkod(r['id']).pipe(catchError(() => EMPTY))
     );
-    forkJoin(requests)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+  }
+
+  dodajBarkod(varijantaId: number): void {
+    const uiItem = this.varijante().find(v => v.varijanta.id === varijantaId);
+    if (!uiItem || !uiItem.noviBarkodinput.trim()) return;
+
+    const dto: CreateVarijantaBarkod = {
+      barkod: uiItem.noviBarkodinput.trim(),
+      idVarijante: varijantaId,
+    };
+
+    this.updateVarijanataState(varijantaId, { isSavingBarkod: true, barkodError: null });
+
+    this.artikliService.createVarijantaBarkod(dto)
+      .pipe(
+        finalize(() => {
+          this.updateVarijanataState(varijantaId, { isSavingBarkod: false });
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          const message = err?.error?.message ?? 'Greška pri dodavanju barkoda. Provjeri jedinstvenost.';
+          this.updateVarijanataState(varijantaId, { barkodError: message });
+          this.notification.error(message);
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(() => {
-        this.notification.success(`${rows.length} barkod(a) uspješno deaktivirano.`);
-        this.loadData();
+        this.updateVarijanataState(varijantaId, {
+          noviBarkodinput: '',
+          isAddingBarkod: false,
+          barkodError: null,
+        });
+        this.notification.success('Barkod uspješno dodan.');
+        const id = this.selectedArtikalId();
+        if (id) this.loadVarijante(id);
       });
+  }
+
+  obrisiBarkod(varijantaId: number, barkodId: number): void {
+    this.artikliService.deleteVarijantaBarkod(barkodId)
+      .pipe(
+        catchError(err => {
+          this.notification.error('Greška pri brisanju barkoda.');
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => {
+        this.notification.success('Barkod uspješno obrisan.');
+        this.varijante.update(list =>
+          list.map(item =>
+            item.varijanta.id === varijantaId
+              ? {
+                  ...item,
+                  varijanta: {
+                    ...item.varijanta,
+                    barkodovi: item.varijanta.barkodovi.filter(b => b.id !== barkodId),
+                  },
+                }
+              : item
+          )
+        );
+        this.cdr.markForCheck();
+      });
+  }
+
+  updateBarkodinput(varijantaId: number, value: string): void {
+    this.updateVarijanataState(varijantaId, { noviBarkodinput: value, barkodError: null });
+  }
+
+  private updateVarijanataState(varijantaId: number, patch: Partial<VarijantaUiState>): void {
+    this.varijante.update(list =>
+      list.map(item =>
+        item.varijanta.id === varijantaId ? { ...item, ...patch } : item
+      )
+    );
   }
 }

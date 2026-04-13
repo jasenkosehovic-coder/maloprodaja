@@ -1,0 +1,25 @@
+.full-width {
+  width: 100%;
+}
+
+.select-search-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  gap: 6px;
+}
+
+.select-search-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #9e9e9e;
+}
+
+.select-search-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background: transparent;
+}

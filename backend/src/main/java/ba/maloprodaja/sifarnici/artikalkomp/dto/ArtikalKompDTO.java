@@ -3,6 +3,7 @@ package ba.maloprodaja.sifarnici.artikalkomp.dto;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 public class ArtikalKompDTO {
 
@@ -19,7 +20,11 @@ public class ArtikalKompDTO {
             Long idProizvodjaca,
             String nazivProizvodjaca,
             Long idDobavljaca,
-            String nazivDobavljaca
+            String nazivDobavljaca,
+            Long idTipaVelicina,
+            String nazivTipaVelicina,
+            Map<Long, Long> atributi,
+            BigDecimal popustProcenat
     ) {}
 
     public record CreateDTO(
@@ -43,7 +48,12 @@ public class ArtikalKompDTO {
 
             Long idGrupe,
             Long idProizvodjaca,
-            Long idDobavljaca
+            Long idDobavljaca,
+            Long idTipaVelicina,
+
+            @DecimalMin(value = "0.00", message = "Popust ne može biti negativan")
+            @DecimalMax(value = "100.00", message = "Popust ne može biti veći od 100%")
+            BigDecimal popustProcenat
     ) {}
 
     public record UpdateDTO(
@@ -68,7 +78,12 @@ public class ArtikalKompDTO {
             Long idGrupe,
             Long idProizvodjaca,
             Long idDobavljaca,
+            Long idTipaVelicina,
 
-            Boolean aktivan
+            Boolean aktivan,
+
+            @DecimalMin(value = "0.00", message = "Popust ne može biti negativan")
+            @DecimalMax(value = "100.00", message = "Popust ne može biti veći od 100%")
+            BigDecimal popustProcenat
     ) {}
 }

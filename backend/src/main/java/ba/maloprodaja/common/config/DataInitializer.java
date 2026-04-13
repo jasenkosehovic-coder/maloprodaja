@@ -14,6 +14,12 @@ import ba.maloprodaja.sifarnici.artikalkomp.entity.TipMarze;
 import ba.maloprodaja.sifarnici.artikalkomp.repository.ArtikalKompanijeRepository;
 import ba.maloprodaja.sifarnici.artikalposl.entity.ArtikalPoslovnica;
 import ba.maloprodaja.sifarnici.artikalposl.repository.ArtikalPoslovnicaRepository;
+import ba.maloprodaja.sifarnici.atribut.entity.DefinicijaAtributa;
+import ba.maloprodaja.sifarnici.atribut.entity.VrijednostAtributa;
+import ba.maloprodaja.sifarnici.atribut.repository.DefinicijaAtributaRepository;
+import ba.maloprodaja.sifarnici.atribut.repository.VrijednostAtributaRepository;
+import ba.maloprodaja.sifarnici.boja.entity.Boja;
+import ba.maloprodaja.sifarnici.boja.repository.BojaRepository;
 import ba.maloprodaja.sifarnici.dobavljac.entity.Dobavljac;
 import ba.maloprodaja.sifarnici.dobavljac.repository.DobavljacRepository;
 import ba.maloprodaja.sifarnici.grupaartikala.entity.GrupaArtikala;
@@ -22,6 +28,16 @@ import ba.maloprodaja.sifarnici.kupac.entity.Kupac;
 import ba.maloprodaja.sifarnici.kupac.repository.KupacRepository;
 import ba.maloprodaja.sifarnici.proizvodjac.entity.Proizvodjac;
 import ba.maloprodaja.sifarnici.proizvodjac.repository.ProizvodjacRepository;
+import ba.maloprodaja.promet.tipdokumenta.entity.TipDokumenta;
+import ba.maloprodaja.promet.tipdokumenta.repository.TipDokumentaRepository;
+import ba.maloprodaja.sifarnici.varijanta.entity.VarijantaArtikla;
+import ba.maloprodaja.sifarnici.varijanta.entity.VarijantaArtiklaPoslovnica;
+import ba.maloprodaja.sifarnici.varijanta.repository.VarijantaArtiklaRepository;
+import ba.maloprodaja.sifarnici.varijanta.repository.VarijantaArtiklaPoslovnicaRepository;
+import ba.maloprodaja.sifarnici.velicina.entity.TipVelicina;
+import ba.maloprodaja.sifarnici.velicina.entity.Velicina;
+import ba.maloprodaja.sifarnici.velicina.repository.TipVelicinaRepository;
+import ba.maloprodaja.sifarnici.velicina.repository.VelicinaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -47,6 +63,8 @@ public class DataInitializer implements ApplicationRunner {
             "sifarnici.grupe-artikala",
             "sifarnici.artikli-poslovnica",
             "sifarnici.barkodovi",
+            "sifarnici.tipovi-velicina",
+            "sifarnici.definicije-atributa",
             "sifarnici.proizvodjaci",
             "sifarnici.dobavljaci",
             "sifarnici.kupci",
@@ -92,6 +110,14 @@ public class DataInitializer implements ApplicationRunner {
     private final GrupaArtikalaRepository grupaArtikalaRepository;
     private final ArtikalKompanijeRepository artikalKompanijeRepository;
     private final ArtikalPoslovnicaRepository artikalPoslovnicaRepository;
+    private final VarijantaArtiklaRepository varijantaArtiklaRepository;
+    private final VarijantaArtiklaPoslovnicaRepository varijantaArtiklaPoslovnicaRepository;
+    private final TipVelicinaRepository tipVelicinaRepository;
+    private final VelicinaRepository velicinaRepository;
+    private final BojaRepository bojaRepository;
+    private final DefinicijaAtributaRepository definicijaAtributaRepository;
+    private final VrijednostAtributaRepository vrijednostAtributaRepository;
+    private final TipDokumentaRepository tipDokumentaRepository;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -101,8 +127,12 @@ public class DataInitializer implements ApplicationRunner {
         seedDobavljaci();
         seedKupci();
         seedGrupeArtikala();
+        seedTipoviVelicina();
         seedArtikliKompanije();
         seedArtikliPoslovnice();
+        seedBoje();
+        seedDefinicijeAtributa();
+        seedTipoviDokumenata();
     }
 
     @Transactional
@@ -232,36 +262,69 @@ public class DataInitializer implements ApplicationRunner {
 
         Proizvodjac p1 = new Proizvodjac();
         p1.setIdKompanije(idKompanije);
-        p1.setNaziv("Philips");
-        p1.setDrzava("Nizozemska");
-        p1.setKontaktOsoba("Jan de Vries");
-        p1.setTelefon("+31 20 123 4567");
-        p1.setEmail("contact@philips.com");
+        p1.setNaziv("Zara (Inditex)");
+        p1.setDrzava("Španija");
+        p1.setKontaktOsoba("María García");
+        p1.setTelefon("+34 91 123 4567");
+        p1.setEmail("sourcing@zara.com");
         p1.setAktivan(true);
         proizvodjacRepository.save(p1);
-        log.info("Kreiran proizvođač: Philips");
+        log.info("Kreiran proizvođač: Zara (Inditex)");
 
         Proizvodjac p2 = new Proizvodjac();
         p2.setIdKompanije(idKompanije);
-        p2.setNaziv("Samsung");
-        p2.setDrzava("Južna Koreja");
-        p2.setKontaktOsoba("Kim Jae Won");
-        p2.setTelefon("+82 2 2255 0114");
-        p2.setEmail("contact@samsung.com");
+        p2.setNaziv("H&M Group");
+        p2.setDrzava("Švedska");
+        p2.setKontaktOsoba("Lars Eriksson");
+        p2.setTelefon("+46 8 796 5500");
+        p2.setEmail("supply@hm.com");
         p2.setAktivan(true);
         proizvodjacRepository.save(p2);
-        log.info("Kreiran proizvođač: Samsung");
+        log.info("Kreiran proizvođač: H&M Group");
 
         Proizvodjac p3 = new Proizvodjac();
         p3.setIdKompanije(idKompanije);
-        p3.setNaziv("LG Electronics");
-        p3.setDrzava("Južna Koreja");
-        p3.setKontaktOsoba("Park Min Ho");
-        p3.setTelefon("+82 2 3777 1114");
-        p3.setEmail("contact@lg.com");
+        p3.setNaziv("Mango");
+        p3.setDrzava("Španija");
+        p3.setKontaktOsoba("Carlos López");
+        p3.setTelefon("+34 93 860 9000");
+        p3.setEmail("orders@mango.com");
         p3.setAktivan(true);
         proizvodjacRepository.save(p3);
-        log.info("Kreiran proizvođač: LG Electronics");
+        log.info("Kreiran proizvođač: Mango");
+
+        Proizvodjac p4 = new Proizvodjac();
+        p4.setIdKompanije(idKompanije);
+        p4.setNaziv("Nike Inc.");
+        p4.setDrzava("SAD");
+        p4.setKontaktOsoba("James Wilson");
+        p4.setTelefon("+1 503 671 6453");
+        p4.setEmail("wholesale@nike.com");
+        p4.setAktivan(true);
+        proizvodjacRepository.save(p4);
+        log.info("Kreiran proizvođač: Nike Inc.");
+
+        Proizvodjac p5 = new Proizvodjac();
+        p5.setIdKompanije(idKompanije);
+        p5.setNaziv("Adidas AG");
+        p5.setDrzava("Njemačka");
+        p5.setKontaktOsoba("Hans Müller");
+        p5.setTelefon("+49 9132 84 0");
+        p5.setEmail("orders@adidas.com");
+        p5.setAktivan(true);
+        proizvodjacRepository.save(p5);
+        log.info("Kreiran proizvođač: Adidas AG");
+
+        Proizvodjac p6 = new Proizvodjac();
+        p6.setIdKompanije(idKompanije);
+        p6.setNaziv("Levi Strauss & Co.");
+        p6.setDrzava("SAD");
+        p6.setKontaktOsoba("Sarah Johnson");
+        p6.setTelefon("+1 415 501 6000");
+        p6.setEmail("trade@levis.com");
+        p6.setAktivan(true);
+        proizvodjacRepository.save(p6);
+        log.info("Kreiran proizvođač: Levi Strauss & Co.");
     }
 
     @Transactional
@@ -276,51 +339,51 @@ public class DataInitializer implements ApplicationRunner {
 
         Dobavljac d1 = new Dobavljac();
         d1.setIdKompanije(idKompanije);
-        d1.setNaziv("Elektronika d.o.o.");
-        d1.setAdresa("Zmaja od Bosne 12");
+        d1.setNaziv("Tekstil Import d.o.o.");
+        d1.setAdresa("Maršala Tita 22");
         d1.setGrad("Sarajevo");
-        d1.setTelefon("033 445 566");
-        d1.setEmail("nabavka@elektronika.ba");
+        d1.setTelefon("033 201 301");
+        d1.setEmail("nabavka@tekstilimport.ba");
         d1.setPib("1111111111");
         d1.setAktivan(true);
         dobavljacRepository.save(d1);
-        log.info("Kreiran dobavljač: Elektronika d.o.o.");
+        log.info("Kreiran dobavljač: Tekstil Import d.o.o.");
 
         Dobavljac d2 = new Dobavljac();
         d2.setIdKompanije(idKompanije);
-        d2.setNaziv("Tehno Trade d.o.o.");
-        d2.setAdresa("Bulevar Meše Selimovića 5");
-        d2.setGrad("Sarajevo");
-        d2.setTelefon("033 778 899");
-        d2.setEmail("info@tehnotrade.ba");
+        d2.setNaziv("Fashion Trade d.o.o.");
+        d2.setAdresa("Ilica 55");
+        d2.setGrad("Zagreb");
+        d2.setTelefon("+385 1 234 5678");
+        d2.setEmail("trade@fashiontrade.hr");
         d2.setPib("2222222222");
         d2.setAktivan(true);
         dobavljacRepository.save(d2);
-        log.info("Kreiran dobavljač: Tehno Trade d.o.o.");
+        log.info("Kreiran dobavljač: Fashion Trade d.o.o.");
 
         Dobavljac d3 = new Dobavljac();
         d3.setIdKompanije(idKompanije);
-        d3.setNaziv("GlobalSupply d.o.o.");
-        d3.setAdresa("Rondo 8");
-        d3.setGrad("Mostar");
-        d3.setTelefon("036 321 654");
-        d3.setEmail("supply@globalsupply.ba");
+        d3.setNaziv("Euro Tekstil d.o.o.");
+        d3.setAdresa("Kralja Petra I 8");
+        d3.setGrad("Banja Luka");
+        d3.setTelefon("051 302 403");
+        d3.setEmail("info@eurotekstil.ba");
         d3.setPib("3333333333");
         d3.setAktivan(true);
         dobavljacRepository.save(d3);
-        log.info("Kreiran dobavljač: GlobalSupply d.o.o.");
+        log.info("Kreiran dobavljač: Euro Tekstil d.o.o.");
 
         Dobavljac d4 = new Dobavljac();
         d4.setIdKompanije(idKompanije);
-        d4.setNaziv("ProDistribucija d.o.o.");
-        d4.setAdresa("Titova 44");
-        d4.setGrad("Banja Luka");
-        d4.setTelefon("051 987 654");
-        d4.setEmail("distribucija@prodist.ba");
+        d4.setNaziv("Global Fashion d.o.o.");
+        d4.setAdresa("Braće Fejića 12");
+        d4.setGrad("Mostar");
+        d4.setTelefon("036 401 502");
+        d4.setEmail("orders@globalfashion.ba");
         d4.setPib("4444444444");
         d4.setAktivan(true);
         dobavljacRepository.save(d4);
-        log.info("Kreiran dobavljač: ProDistribucija d.o.o.");
+        log.info("Kreiran dobavljač: Global Fashion d.o.o.");
     }
 
     @Transactional
@@ -396,40 +459,42 @@ public class DataInitializer implements ApplicationRunner {
 
     @Transactional
     protected void seedGrupeArtikala() {
-        if (grupaArtikalaRepository.count() > 0) {
-            return;
-        }
-
         Long idKompanije = kompanijaRepository.findByPib("1234567890")
                 .orElseThrow(() -> new IllegalStateException("Kompanija s PIB-om '1234567890' nije pronađena."))
                 .getId();
 
-        GrupaArtikala g1 = new GrupaArtikala();
-        g1.setIdKompanije(idKompanije);
-        g1.setNaziv("Bijela tehnika");
-        g1.setOpis("Veći kućanski aparati: hladnjaci, perilice, sušilice");
-        g1.setAktivan(true);
-        g1.setIdRoditeljskeGrupe(null);
-        grupaArtikalaRepository.save(g1);
-        log.info("Kreirana grupa artikala: Bijela tehnika");
+        List<String> postojeceNazive = grupaArtikalaRepository.findByIdKompanijeOrderByNazivAsc(idKompanije)
+                .stream()
+                .map(GrupaArtikala::getNaziv)
+                .toList();
 
-        GrupaArtikala g2 = new GrupaArtikala();
-        g2.setIdKompanije(idKompanije);
-        g2.setNaziv("Mala kućanska elektronika");
-        g2.setOpis("Manji kućanski aparati: usisivači, tostere, mikseri");
-        g2.setAktivan(true);
-        g2.setIdRoditeljskeGrupe(null);
-        grupaArtikalaRepository.save(g2);
-        log.info("Kreirana grupa artikala: Mala kućanska elektronika");
+        List<SeedGrupa> grupe = List.of(
+                new SeedGrupa("Majice",          "Majice kratkih i dugih rukava"),
+                new SeedGrupa("Hlače",           "Hlače svih stilova i materijala"),
+                new SeedGrupa("Haljine",         "Haljine za sve prilike"),
+                new SeedGrupa("Jakne",           "Jakne i kaputi"),
+                new SeedGrupa("Obuća",           "Cipele, čizme i sportska obuća"),
+                new SeedGrupa("Donje rublje",    "Donje rublje i pidžame"),
+                new SeedGrupa("Sportska odjeća", "Odjeća za sport i rekreaciju"),
+                new SeedGrupa("Džemperi",        "Džemperi, kardigani i puloveri"),
+                new SeedGrupa("Košulje",         "Košulje i bluze"),
+                new SeedGrupa("Accessories",     "Šalovi, kape, torbe i ostali dodaci")
+        );
 
-        GrupaArtikala g3 = new GrupaArtikala();
-        g3.setIdKompanije(idKompanije);
-        g3.setNaziv("Audio i video tehnika");
-        g3.setOpis("Televizori, zvučnici, projektori i oprema za zabavu");
-        g3.setAktivan(true);
-        g3.setIdRoditeljskeGrupe(null);
-        grupaArtikalaRepository.save(g3);
-        log.info("Kreirana grupa artikala: Audio i video tehnika");
+        for (SeedGrupa seed : grupe) {
+            if (postojeceNazive.contains(seed.naziv())) {
+                log.debug("Grupa artikala '{}' već postoji za kompaniju {} — preskačem.", seed.naziv(), idKompanije);
+                continue;
+            }
+            GrupaArtikala g = new GrupaArtikala();
+            g.setIdKompanije(idKompanije);
+            g.setNaziv(seed.naziv());
+            g.setOpis(seed.opis());
+            g.setAktivan(true);
+            g.setIdRoditeljskeGrupe(null);
+            grupaArtikalaRepository.save(g);
+            log.info("Kreirana grupa artikala: '{}'", seed.naziv());
+        }
     }
 
     @Transactional
@@ -443,41 +508,84 @@ public class DataInitializer implements ApplicationRunner {
                 .getId();
 
         List<GrupaArtikala> grupe = grupaArtikalaRepository.findAll();
-        Long idGrupaBijela  = grupe.stream().filter(g -> g.getNaziv().equals("Bijela tehnika")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Grupa 'Bijela tehnika' nije pronađena.")).getId();
-        Long idGrupaMala    = grupe.stream().filter(g -> g.getNaziv().equals("Mala kućanska elektronika")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Grupa 'Mala kućanska elektronika' nije pronađena.")).getId();
-        Long idGrupaAV      = grupe.stream().filter(g -> g.getNaziv().equals("Audio i video tehnika")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Grupa 'Audio i video tehnika' nije pronađena.")).getId();
+        Long idGrupaMajice   = grupe.stream().filter(g -> g.getNaziv().equals("Majice")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Majice' nije pronađena.")).getId();
+        Long idGrupaHlace    = grupe.stream().filter(g -> g.getNaziv().equals("Hlače")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Hlače' nije pronađena.")).getId();
+        Long idGrupaHaljine  = grupe.stream().filter(g -> g.getNaziv().equals("Haljine")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Haljine' nije pronađena.")).getId();
+        Long idGrupaJakne    = grupe.stream().filter(g -> g.getNaziv().equals("Jakne")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Jakne' nije pronađena.")).getId();
+        Long idGrupaDzemperi = grupe.stream().filter(g -> g.getNaziv().equals("Džemperi")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Džemperi' nije pronađena.")).getId();
+        Long idGrupaObuca    = grupe.stream().filter(g -> g.getNaziv().equals("Obuća")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Grupa 'Obuća' nije pronađena.")).getId();
 
         List<Proizvodjac> proizvodjaci = proizvodjacRepository.findAll();
-        Long idPhilips  = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Philips")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Philips' nije pronađen.")).getId();
-        Long idSamsung  = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Samsung")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Samsung' nije pronađen.")).getId();
-        Long idLG       = proizvodjaci.stream().filter(p -> p.getNaziv().equals("LG Electronics")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Proizvođač 'LG Electronics' nije pronađen.")).getId();
+        Long idZara    = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Zara (Inditex)")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Zara (Inditex)' nije pronađen.")).getId();
+        Long idHM      = proizvodjaci.stream().filter(p -> p.getNaziv().equals("H&M Group")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'H&M Group' nije pronađen.")).getId();
+        Long idMango   = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Mango")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Mango' nije pronađen.")).getId();
+        Long idNike    = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Nike Inc.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Nike Inc.' nije pronađen.")).getId();
+        Long idAdidas  = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Adidas AG")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Adidas AG' nije pronađen.")).getId();
+        Long idLevis   = proizvodjaci.stream().filter(p -> p.getNaziv().equals("Levi Strauss & Co.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Proizvođač 'Levi Strauss & Co.' nije pronađen.")).getId();
 
         List<Dobavljac> dobavljaci = dobavljacRepository.findAll();
-        Long idDobavljac1 = dobavljaci.stream().filter(d -> d.getNaziv().equals("Elektronika d.o.o.")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Elektronika d.o.o.' nije pronađen.")).getId();
-        Long idDobavljac2 = dobavljaci.stream().filter(d -> d.getNaziv().equals("Tehno Trade d.o.o.")).findFirst()
-                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Tehno Trade d.o.o.' nije pronađen.")).getId();
+        Long idTekstilImport = dobavljaci.stream().filter(d -> d.getNaziv().equals("Tekstil Import d.o.o.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Tekstil Import d.o.o.' nije pronađen.")).getId();
+        Long idFashionTrade  = dobavljaci.stream().filter(d -> d.getNaziv().equals("Fashion Trade d.o.o.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Fashion Trade d.o.o.' nije pronađen.")).getId();
+        Long idEuroTekstil   = dobavljaci.stream().filter(d -> d.getNaziv().equals("Euro Tekstil d.o.o.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Euro Tekstil d.o.o.' nije pronađen.")).getId();
+        Long idGlobalFashion = dobavljaci.stream().filter(d -> d.getNaziv().equals("Global Fashion d.o.o.")).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Dobavljač 'Global Fashion d.o.o.' nije pronađen.")).getId();
 
-        saveArtikalKompanije(idKompanije, "Hladnjak Samsung 300L",        "ART-001", "kom", new BigDecimal("17.00"), idGrupaBijela,  idSamsung,  idDobavljac1);
-        saveArtikalKompanije(idKompanije, "Perilica rublja LG 7kg",        "ART-002", "kom", new BigDecimal("17.00"), idGrupaBijela,  idLG,       idDobavljac1);
-        saveArtikalKompanije(idKompanije, "Sušilica Philips 8kg",          "ART-003", "kom", new BigDecimal("17.00"), idGrupaBijela,  idPhilips,  idDobavljac2);
-        saveArtikalKompanije(idKompanije, "Usisivač Samsung Cyclone",      "ART-004", "kom", new BigDecimal("17.00"), idGrupaMala,    idSamsung,  idDobavljac2);
-        saveArtikalKompanije(idKompanije, "Mikser Philips 500W",           "ART-005", "kom", new BigDecimal("17.00"), idGrupaMala,    idPhilips,  idDobavljac1);
-        saveArtikalKompanije(idKompanije, "Toster LG 2 proreza",          "ART-006", "kom", new BigDecimal("17.00"), idGrupaMala,    idLG,       idDobavljac2);
-        saveArtikalKompanije(idKompanije, "Televizor Samsung QLED 55\"",   "ART-007", "kom", new BigDecimal("17.00"), idGrupaAV,      idSamsung,  idDobavljac1);
-        saveArtikalKompanije(idKompanije, "Televizor LG OLED 65\"",        "ART-008", "kom", new BigDecimal("17.00"), idGrupaAV,      idLG,       idDobavljac2);
-        saveArtikalKompanije(idKompanije, "Soundbar Philips 200W",         "ART-009", "kom", new BigDecimal("17.00"), idGrupaAV,      idPhilips,  idDobavljac1);
-        saveArtikalKompanije(idKompanije, "Projektor Samsung Smart 4K",    "ART-010", "kom", new BigDecimal("17.00"), idGrupaAV,      idSamsung,  idDobavljac2);
+        List<TipVelicina> tipoviVelicina = tipVelicinaRepository.findAll();
+        Long idTipaAbecedni  = tipoviVelicina.stream().filter(t -> t.getNaziv().equals("Konfekcija (abecedni)")).findFirst()
+                .map(TipVelicina::getId).orElse(null);
+        Long idTipaNumericki = tipoviVelicina.stream().filter(t -> t.getNaziv().equals("Konfekcija (numerički)")).findFirst()
+                .map(TipVelicina::getId).orElse(null);
+        Long idTipaObuca     = tipoviVelicina.stream().filter(t -> t.getNaziv().equals("Čarape/Čizme")).findFirst()
+                .map(TipVelicina::getId).orElse(null);
+
+        // Majice — Konfekcija (abecedni)
+        saveArtikalKompanije(idKompanije, "Majica kratkih rukava bijela", "MAJ-001", "kom", new BigDecimal("17.00"), idGrupaMajice,   idZara,   idTekstilImport, idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Majica polo crna",             "MAJ-002", "kom", new BigDecimal("17.00"), idGrupaMajice,   idHM,     idEuroTekstil,   idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Sportska majica Dri-FIT",      "MAJ-003", "kom", new BigDecimal("17.00"), idGrupaMajice,   idNike,   idTekstilImport, idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Oversized majica siva",        "MAJ-004", "kom", new BigDecimal("17.00"), idGrupaMajice,   idMango,  idFashionTrade,  idTipaAbecedni);
+
+        // Hlače — Konfekcija (abecedni)
+        saveArtikalKompanije(idKompanije, "Chino hlače bež",              "HLA-001", "kom", new BigDecimal("17.00"), idGrupaHlace,    idZara,   idFashionTrade,  idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Sportske hlače Track",         "HLA-002", "kom", new BigDecimal("17.00"), idGrupaHlace,    idAdidas, idEuroTekstil,   idTipaAbecedni);
+
+        // Traperice — Konfekcija (numerički)
+        saveArtikalKompanije(idKompanije, "Traperice Slim Fit plave",     "TRA-001", "kom", new BigDecimal("17.00"), idGrupaHlace,    idLevis,  idGlobalFashion, idTipaNumericki);
+        saveArtikalKompanije(idKompanije, "Traperice Wide Leg crne",      "TRA-002", "kom", new BigDecimal("17.00"), idGrupaHlace,    idMango,  idGlobalFashion, idTipaNumericki);
+
+        // Haljine — Konfekcija (abecedni)
+        saveArtikalKompanije(idKompanije, "Ljetna haljina cvjetna",       "HAL-001", "kom", new BigDecimal("17.00"), idGrupaHaljine,  idMango,  idFashionTrade,  idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Mini haljina crna",            "HAL-002", "kom", new BigDecimal("17.00"), idGrupaHaljine,  idZara,   idTekstilImport, idTipaAbecedni);
+
+        // Jakne — Konfekcija (abecedni)
+        saveArtikalKompanije(idKompanije, "Zimska jakna puffer crna",     "JAK-001", "kom", new BigDecimal("17.00"), idGrupaJakne,    idHM,     idEuroTekstil,   idTipaAbecedni);
+        saveArtikalKompanije(idKompanije, "Sportska jakna Tiro",          "JAK-002", "kom", new BigDecimal("17.00"), idGrupaJakne,    idAdidas, idEuroTekstil,   idTipaAbecedni);
+
+        // Džemperi — Konfekcija (abecedni)
+        saveArtikalKompanije(idKompanije, "Džemper vuneni sivi",          "DZE-001", "kom", new BigDecimal("17.00"), idGrupaDzemperi, idHM,     idTekstilImport, idTipaAbecedni);
+
+        // Obuća — Čarape/Čizme
+        saveArtikalKompanije(idKompanije, "Tenisice Air Max bijele",      "OBU-001", "kom", new BigDecimal("17.00"), idGrupaObuca,    idNike,   idGlobalFashion, idTipaObuca);
+        saveArtikalKompanije(idKompanije, "Patike Superstar bijele",      "OBU-002", "kom", new BigDecimal("17.00"), idGrupaObuca,    idAdidas, idGlobalFashion, idTipaObuca);
     }
 
-    private void saveArtikalKompanije(Long idKompanije, String naziv, String sifra, String jedin,
-                                      BigDecimal pdv, Long idGrupe, Long idProizvodjaca, Long idDobavljaca) {
+    private ArtikalKompanija saveArtikalKompanije(Long idKompanije, String naziv, String sifra, String jedin,
+                                                   BigDecimal pdv, Long idGrupe, Long idProizvodjaca,
+                                                   Long idDobavljaca, Long idTipaVelicina) {
         ArtikalKompanija a = new ArtikalKompanija();
         a.setIdKompanije(idKompanije);
         a.setNaziv(naziv);
@@ -487,9 +595,30 @@ public class DataInitializer implements ApplicationRunner {
         a.setIdGrupe(idGrupe);
         a.setIdProizvodjaca(idProizvodjaca);
         a.setIdDobavljaca(idDobavljaca);
+        a.setIdTipaVelicina(idTipaVelicina);
         a.setAktivan(true);
-        artikalKompanijeRepository.save(a);
+        ArtikalKompanija saved = artikalKompanijeRepository.save(a);
         log.info("Kreiran artikal kompanije: {} ({})", naziv, sifra);
+
+        // Kreira default varijantu (bez veličine) za svaki novi artikal
+        VarijantaArtikla varijanta = new VarijantaArtikla();
+        varijanta.setIdArtikla(saved.getId());
+        varijanta.setIdVelicine(null);
+        varijanta.setAktivan(true);
+        varijanta.setIdKompanije(idKompanije);
+        varijantaArtiklaRepository.save(varijanta);
+
+        // Kreira zapis zalihe (kolicina=0) za svaku poslovnicu kompanije
+        poslovnicaRepository.findByIdKompanije(idKompanije).forEach(poslovnica -> {
+            VarijantaArtiklaPoslovnica vap = new VarijantaArtiklaPoslovnica();
+            vap.setIdVarijante(varijanta.getId());
+            vap.setIdPoslovnice(poslovnica.getId());
+            vap.setIdKompanije(idKompanije);
+            vap.setKolicina(BigDecimal.ZERO);
+            varijantaArtiklaPoslovnicaRepository.save(vap);
+        });
+
+        return saved;
     }
 
     @Transactional
@@ -533,11 +662,174 @@ public class DataInitializer implements ApplicationRunner {
             ap.setMarza(new BigDecimal("20.00"));
             ap.setTipMarze(TipMarze.SLOBODNA);
             ap.setMpc(mpc);
-            ap.setKolicina(new BigDecimal("10.00"));
             ap.setAktivan(true);
             artikalPoslovnicaRepository.save(ap);
             log.info("Kreiran artikal poslovnice: artikal='{}', poslovnica={}, vpc={}, mpc={}",
                     artikal.getNaziv(), idPoslovnice, vpc, mpc);
+        }
+    }
+
+    @Transactional
+    protected void seedTipoviVelicina() {
+        Long idKompanije = kompanijaRepository.findByPib("1234567890")
+                .orElseThrow(() -> new IllegalStateException("Kompanija s PIB-om '1234567890' nije pronađena."))
+                .getId();
+
+        seedTipVelicina(idKompanije, "Konfekcija (abecedni)",
+                "Standardne abecedne konfekcijske veličine",
+                List.of("XS", "S", "M", "L", "XL", "XXL", "3XL"));
+
+        seedTipVelicina(idKompanije, "Konfekcija (numerički)",
+                "Standardne numeričke konfekcijske veličine",
+                List.of("36", "38", "40", "42", "44", "46", "48"));
+
+        seedTipVelicina(idKompanije, "Dječija (cm)",
+                "Dječije veličine izražene u centimetrima",
+                List.of("86", "92", "98", "104", "110", "116", "122", "128"));
+
+        seedTipVelicina(idKompanije, "Čarape/Čizme",
+                "Veličine za čarape i čizme u rasponu brojeva",
+                List.of("36/37", "38/39", "40/41", "42/43", "44/45"));
+    }
+
+    private void seedTipVelicina(Long idKompanije, String naziv, String opis, List<String> oznake) {
+        if (tipVelicinaRepository.existsByNazivAndIdKompanije(naziv, idKompanije)) {
+            log.debug("Tip veličine '{}' već postoji za kompaniju {} — preskačem.", naziv, idKompanije);
+            return;
+        }
+
+        TipVelicina tip = new TipVelicina();
+        tip.setIdKompanije(idKompanije);
+        tip.setNaziv(naziv);
+        tip.setOpis(opis);
+        tip.setAktivan(true);
+        TipVelicina savedTip = tipVelicinaRepository.save(tip);
+        log.info("Kreiran tip veličine: '{}'", naziv);
+
+        for (int i = 0; i < oznake.size(); i++) {
+            Velicina v = new Velicina();
+            v.setIdKompanije(idKompanije);
+            v.setIdTipaVelicina(savedTip.getId());
+            v.setOznaka(oznake.get(i));
+            v.setRedosljed(i + 1);
+            v.setAktivan(true);
+            velicinaRepository.save(v);
+        }
+        log.info("Kreirano {} veličina za tip '{}'.", oznake.size(), naziv);
+    }
+
+    @Transactional
+    protected void seedBoje() {
+        Long idKompanije = kompanijaRepository.findByPib("1234567890")
+                .orElseThrow(() -> new IllegalStateException("Kompanija s PIB-om '1234567890' nije pronađena."))
+                .getId();
+
+        List<SeedBoja> boje = List.of(
+                new SeedBoja("Crvena",     "#FF0000"),
+                new SeedBoja("Plava",      "#0000FF"),
+                new SeedBoja("Zelena",     "#008000"),
+                new SeedBoja("Crna",       "#000000"),
+                new SeedBoja("Bijela",     "#FFFFFF"),
+                new SeedBoja("Žuta",       "#FFFF00"),
+                new SeedBoja("Narandžasta","#FF6600"),
+                new SeedBoja("Roza",       "#FF69B4"),
+                new SeedBoja("Siva",       "#808080"),
+                new SeedBoja("Bež",        "#F5F5DC")
+        );
+
+        for (SeedBoja seed : boje) {
+            if (bojaRepository.existsByNazivAndIdKompanije(seed.naziv(), idKompanije)) {
+                log.debug("Boja '{}' već postoji za kompaniju {} — preskačem.", seed.naziv(), idKompanije);
+                continue;
+            }
+            Boja b = new Boja();
+            b.setIdKompanije(idKompanije);
+            b.setNaziv(seed.naziv());
+            b.setHexKod(seed.hexKod());
+            b.setAktivan(true);
+            bojaRepository.save(b);
+            log.info("Kreirana boja: '{}' ({})", seed.naziv(), seed.hexKod());
+        }
+    }
+
+    @Transactional
+    protected void seedDefinicijeAtributa() {
+        Long idKompanije = kompanijaRepository.findByPib("1234567890")
+                .orElseThrow(() -> new IllegalStateException("Kompanija s PIB-om '1234567890' nije pronađena."))
+                .getId();
+
+        seedDefinicijaAtributa(idKompanije, "Fit",       1, false, false,
+                List.of("Regular", "Slim", "Relaxed", "Oversized", "Skinny"));
+
+        seedDefinicijaAtributa(idKompanije, "Sezona",    2, false, true,
+                List.of("Proljeće/Ljeto", "Jesen/Zima", "Sve sezone"));
+
+        seedDefinicijaAtributa(idKompanije, "Spol",      3, false, true,
+                List.of("Muški", "Ženski", "Unisex", "Dječiji"));
+
+        seedDefinicijaAtributa(idKompanije, "Materijal", 4, false, true,
+                List.of("100% Pamuk", "Pamuk/Poliester", "100% Vuna", "Viskoze", "Denim", "Koža", "Sintetika"));
+    }
+
+    private void seedDefinicijaAtributa(Long idKompanije, String naziv, int redosljed,
+                                         boolean obavezno, boolean zaWeb, List<String> vrijednosti) {
+        if (definicijaAtributaRepository.existsByNazivAndIdKompanije(naziv, idKompanije)) {
+            log.debug("Definicija atributa '{}' već postoji za kompaniju {} — preskačem.", naziv, idKompanije);
+            return;
+        }
+
+        DefinicijaAtributa def = new DefinicijaAtributa();
+        def.setIdKompanije(idKompanije);
+        def.setNaziv(naziv);
+        def.setRedosljed(redosljed);
+        def.setObavezno(obavezno);
+        def.setZaWeb(zaWeb);
+        def.setAktivan(true);
+        DefinicijaAtributa savedDef = definicijaAtributaRepository.save(def);
+        log.info("Kreirana definicija atributa: '{}' (redosljed={}, zaWeb={})", naziv, redosljed, zaWeb);
+
+        for (int i = 0; i < vrijednosti.size(); i++) {
+            VrijednostAtributa va = new VrijednostAtributa();
+            va.setIdKompanije(idKompanije);
+            va.setIdDefinicije(savedDef.getId());
+            va.setVrijednost(vrijednosti.get(i));
+            va.setRedosljed(i + 1);
+            va.setAktivan(true);
+            vrijednostAtributaRepository.save(va);
+        }
+        log.info("Kreirano {} vrijednosti za atribut '{}'.", vrijednosti.size(), naziv);
+    }
+
+    @Transactional
+    protected void seedTipoviDokumenata() {
+        List<ba.maloprodaja.kompanija.entity.Kompanija> kompanije = kompanijaRepository.findAll();
+
+        record SeedTip(String kod, String naziv, short smjer) {}
+
+        List<SeedTip> tipovi = List.of(
+                new SeedTip("UF",   "Ulazna faktura",          (short)  1),
+                new SeedTip("PD",   "Povrat dobavljaču",       (short) -1),
+                new SeedTip("IF",   "Izlazna faktura",         (short) -1),
+                new SeedTip("MSI",  "Međuskladišnica - izlaz", (short) -1),
+                new SeedTip("MSU",  "Međuskladišnica - ulaz",  (short)  1),
+                new SeedTip("PROD", "Prodaja (blagajna)",      (short) -1)
+        );
+
+        for (ba.maloprodaja.kompanija.entity.Kompanija kompanija : kompanije) {
+            Long idKompanije = kompanija.getId();
+            for (SeedTip seed : tipovi) {
+                if (tipDokumentaRepository.existsByKodAndIdKompanije(seed.kod(), idKompanije)) {
+                    log.debug("Tip dokumenta '{}' već postoji za kompaniju {} — preskačem.", seed.kod(), idKompanije);
+                    continue;
+                }
+                TipDokumenta tip = new TipDokumenta();
+                tip.setKod(seed.kod());
+                tip.setNaziv(seed.naziv());
+                tip.setSmjerKolicine(seed.smjer());
+                tip.setIdKompanije(idKompanije);
+                tipDokumentaRepository.save(tip);
+                log.info("Kreiran tip dokumenta: '{}' ({}) za kompaniju {}", seed.naziv(), seed.kod(), idKompanije);
+            }
         }
     }
 
@@ -550,4 +842,8 @@ public class DataInitializer implements ApplicationRunner {
             String kompanijaPib,
             @Nullable String poslovnicaNaziv
     ) {}
+
+    private record SeedBoja(String naziv, String hexKod) {}
+
+    private record SeedGrupa(String naziv, String opis) {}
 }

@@ -83,9 +83,13 @@ body {
 // ============================================================
 
 .page-container {
-  padding: vars.$spacing-lg;
+  padding: vars.$spacing-lg 0;
   max-width: 1600px;
   margin: 0 auto;
+}
+
+.page-header {
+  padding: 0 vars.$spacing-md vars.$spacing-sm;
 }
 
 .flex-row {

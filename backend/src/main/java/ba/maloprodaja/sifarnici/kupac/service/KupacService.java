@@ -21,7 +21,7 @@ public class KupacService implements IKupacService {
 
     @Override
     public List<KupacDTO.ListItemDTO> listAll(Long idKompanije) {
-        return kupacRepository.findByIdKompanije(idKompanije)
+        return kupacRepository.findByIdKompanijeOrderByNazivAsc(idKompanije)
                 .stream()
                 .map(this::toListItemDTO)
                 .toList();

@@ -2,7 +2,7 @@
 
 <mat-dialog-content>
   @if (isLoading()) {
-    <app-loading-spinner message="Učitavanje fakture..." minHeight="200px" />
+    <app-loading-spinner message="Učitavanje..." minHeight="200px" />
   } @else {
     <form [formGroup]="form" autocomplete="off">
 
@@ -33,77 +33,16 @@
         }
       </mat-form-field>
 
-      <!-- Broj / Datum / Datum valute -->
-      <div class="row-3col">
-        <mat-form-field appearance="outline">
-          <mat-label>Broj fakture</mat-label>
-          <input matInput formControlName="broj" id="faktura-broj" maxlength="50" aria-label="Broj fakture" />
-          @if (form.controls['broj'].hasError('required') && form.controls['broj'].touched) {
-            <mat-error role="alert" aria-live="polite">Broj je obavezan.</mat-error>
-          }
-          @if (form.controls['broj'].hasError('maxlength')) {
-            <mat-error role="alert" aria-live="polite">Maksimalno 50 znakova.</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Datum</mat-label>
-          <input matInput [matDatepicker]="datumPicker" formControlName="datum" id="faktura-datum" aria-label="Datum fakture" />
-          <mat-datepicker-toggle matIconSuffix [for]="datumPicker" aria-label="Otvorite kalendar za datum"></mat-datepicker-toggle>
-          <mat-datepicker #datumPicker></mat-datepicker>
-          @if (form.controls['datum'].invalid && form.controls['datum'].touched) {
-            <mat-error role="alert" aria-live="polite">Datum je obavezan.</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Datum valute</mat-label>
-          <input matInput [matDatepicker]="datumValutePicker" formControlName="datumValute" id="faktura-datum-valute" aria-label="Datum valute fakture" />
-          <mat-datepicker-toggle matIconSuffix [for]="datumValutePicker" aria-label="Otvorite kalendar za datum valute"></mat-datepicker-toggle>
-          <mat-datepicker #datumValutePicker></mat-datepicker>
-        </mat-form-field>
-      </div>
-
-      <!-- Iznosi -->
-      <div class="row-2col">
-        <mat-form-field appearance="outline">
-          <mat-label>Iznos bez PDV (KM) *</mat-label>
-          <input
-            matInput
-            type="number"
-            formControlName="ukupnoBezPdv"
-            id="faktura-ukupno-bez-pdv"
-            min="0"
-            step="0.01"
-            aria-label="Ukupan iznos bez PDV"
-          />
-          @if (form.controls['ukupnoBezPdv'].hasError('required') && form.controls['ukupnoBezPdv'].touched) {
-            <mat-error role="alert" aria-live="polite">Iznos bez PDV je obavezan.</mat-error>
-          }
-          @if (form.controls['ukupnoBezPdv'].hasError('min')) {
-            <mat-error role="alert" aria-live="polite">Iznos ne može biti negativan.</mat-error>
-          }
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Iznos sa PDV / Ukupno (KM) *</mat-label>
-          <input
-            matInput
-            type="number"
-            formControlName="ukupno"
-            id="faktura-ukupno"
-            min="0"
-            step="0.01"
-            aria-label="Ukupan iznos sa PDV"
-          />
-          @if (form.controls['ukupno'].hasError('required') && form.controls['ukupno'].touched) {
-            <mat-error role="alert" aria-live="polite">Ukupan iznos je obavezan.</mat-error>
-          }
-          @if (form.controls['ukupno'].hasError('min')) {
-            <mat-error role="alert" aria-live="polite">Iznos ne može biti negativan.</mat-error>
-          }
-        </mat-form-field>
-      </div>
+      <!-- Datum -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Datum</mat-label>
+        <input matInput [matDatepicker]="datumPicker" formControlName="datum" id="faktura-datum" aria-label="Datum fakture" />
+        <mat-datepicker-toggle matIconSuffix [for]="datumPicker" aria-label="Otvorite kalendar za datum"></mat-datepicker-toggle>
+        <mat-datepicker #datumPicker></mat-datepicker>
+        @if (form.controls['datum'].invalid && form.controls['datum'].touched) {
+          <mat-error role="alert" aria-live="polite">Datum je obavezan.</mat-error>
+        }
+      </mat-form-field>
 
       <!-- Napomena -->
       <mat-form-field appearance="outline" class="full-width">
@@ -125,15 +64,15 @@
     type="button"
     [disabled]="form.invalid || isSaving()"
     (click)="onSubmit()"
-    aria-label="Snimi fakturu"
+    aria-label="Kreiraj fakturu"
   >
     @if (isSaving()) {
-      <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Snimanje u toku"></mat-progress-spinner>
-      Snimanje...
+      <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Kreiranje u toku"></mat-progress-spinner>
+      Kreiranje...
     } @else {
       <ng-container>
-        <mat-icon>save</mat-icon>
-        Snimi
+        <mat-icon>add_circle</mat-icon>
+        Kreiraj nacrt
       </ng-container>
     }
   </button>

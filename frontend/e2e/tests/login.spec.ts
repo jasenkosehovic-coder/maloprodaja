@@ -188,7 +188,7 @@ test.describe('Login — happy path (mock API)', () => {
     expect(page.url()).toContain('/blagajna');
   });
 
-  test('uspješan login čuva accessToken u localStorage', async ({ page, loginPage }) => {
+  test('uspješan login čuva accessToken u sessionStorage', async ({ page, loginPage }) => {
     await page.route('**/api/auth/login', async (route) => {
       await route.fulfill({
         status: 200,
@@ -202,7 +202,7 @@ test.describe('Login — happy path (mock API)', () => {
     await loginPage.login(TEST_CREDENTIALS.admin.username, TEST_CREDENTIALS.admin.password);
     await page.waitForURL('**/blagajna', { timeout: 10_000 });
 
-    const accessToken = await page.evaluate(() => localStorage.getItem('mp_access_token'));
+    const accessToken = await page.evaluate(() => sessionStorage.getItem('mp_access_token'));
     expect(accessToken).toBe('mock-access-token-12345');
   });
 });
@@ -211,9 +211,9 @@ test.describe('Login — auth guard (zaštićene rute)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.evaluate(() => {
-      localStorage.removeItem('mp_access_token');
-      localStorage.removeItem('mp_refresh_token');
-      localStorage.removeItem('mp_korisnik');
+      sessionStorage.removeItem('mp_access_token');
+      sessionStorage.removeItem('mp_refresh_token');
+      sessionStorage.removeItem('mp_korisnik');
     });
   });
 

@@ -1,0 +1,272 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Boje</h2>
+    <p class="subtitle">Upravljanje bojama kao varijantama dimenzija artikla</p>
+  </div>
+
+  @if (isLoading()) {
+    <mat-progress-bar mode="indeterminate" aria-label="Učitavanje boja"></mat-progress-bar>
+  }
+
+  @if (loadError()) {
+    <div class="state-error" role="alert">
+      <p>{{ loadError() }}</p>
+      <button mat-stroked-button type="button" (click)="retry()">Pokušaj ponovo</button>
+    </div>
+  }
+
+  @if (!isLoading() && !loadError()) {
+
+    <!-- Inline forma za dodavanje nove boje -->
+    @if (isAddingNew()) {
+      <div class="inline-form" [formGroup]="bojaForm">
+        <mat-form-field appearance="outline" class="naziv-field">
+          <mat-label>Naziv boje</mat-label>
+          <input
+            matInput
+            id="nova-boja-naziv"
+            formControlName="naziv"
+            placeholder="npr. Crvena, Plava..."
+            aria-label="Naziv boje"
+            (keydown.enter)="onSaveAdd()" />
+          @if (bojaForm.controls.naziv.hasError('required') && bojaForm.controls.naziv.touched) {
+            <mat-error role="alert">Naziv je obavezan.</mat-error>
+          }
+          @if (bojaForm.controls.naziv.hasError('maxlength')) {
+            <mat-error role="alert">Maksimalno 100 znakova.</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="hex-input-group">
+          <mat-form-field appearance="outline" class="hex-field">
+            <mat-label>Hex kod (opciono)</mat-label>
+            <input
+              matInput
+              id="nova-boja-hex"
+              formControlName="hexKod"
+              placeholder="#RRGGBB"
+              aria-label="Hex kod boje"
+              maxlength="7" />
+            @if (bojaForm.controls.hexKod.hasError('pattern') && bojaForm.controls.hexKod.touched) {
+              <mat-error role="alert">Format mora biti #RRGGBB (npr. #FF5733).</mat-error>
+            }
+          </mat-form-field>
+          <span
+            class="color-preview"
+            [class.color-preview--visible]="addHexPreview()"
+            [style.background-color]="addHexPreview() ?? 'transparent'"
+            aria-hidden="true">
+          </span>
+          <input
+            type="color"
+            class="color-picker-native"
+            [value]="addHexPreview() ?? '#000000'"
+            (input)="bojaForm.controls.hexKod.setValue($any($event.target).value)"
+            aria-label="Odaberi boju iz palete" />
+        </div>
+
+        <div class="form-actions">
+          <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            [disabled]="bojaForm.invalid || isSaving()"
+            (click)="onSaveAdd()"
+            aria-label="Spremi novu boju">
+            @if (isSaving()) {
+              <mat-spinner diameter="18" aria-hidden="true"></mat-spinner>
+              Čuvanje...
+            } @else {
+              <ng-container>
+                <mat-icon>save</mat-icon>
+                Spremi
+              </ng-container>
+            }
+          </button>
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isSaving()"
+            (click)="onCancelAdd()"
+            aria-label="Otkaži dodavanje boje">
+            Otkaži
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="add-trigger">
+        <button
+          mat-raised-button
+          color="primary"
+          type="button"
+          (click)="onDodajBojaClick()"
+          aria-label="Dodaj novu boju">
+          <mat-icon>add</mat-icon>
+          Dodaj boju
+        </button>
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!isLoading() && items().length === 0) {
+      <div class="state-empty" role="status">
+        <mat-icon class="empty-icon">palette</mat-icon>
+        <p>Nema unesenih boja. Dodajte prvu boju.</p>
+      </div>
+    }
+
+    <!-- Tabela boja — formGroup wrapper outside table so formControlName works inside cells -->
+    @if (items().length > 0) {
+      <div [formGroup]="editForm">
+        <table
+          mat-table
+          [dataSource]="items()"
+          class="boje-table"
+          aria-label="Lista boja">
+
+          <!-- Naziv kolona -->
+          <ng-container matColumnDef="naziv">
+            <th mat-header-cell *matHeaderCellDef>Naziv</th>
+            <td mat-cell *matCellDef="let row">
+              @if (editingId() === row.id) {
+                <mat-form-field appearance="outline" class="edit-naziv-field">
+                  <mat-label>Naziv</mat-label>
+                  <input
+                    matInput
+                    formControlName="naziv"
+                    [id]="'edit-naziv-' + row.id"
+                    aria-label="Naziv boje za uređivanje" />
+                  @if (editForm.controls.naziv.hasError('required') && editForm.controls.naziv.touched) {
+                    <mat-error role="alert">Naziv je obavezan.</mat-error>
+                  }
+                </mat-form-field>
+              } @else {
+                {{ row.naziv }}
+              }
+            </td>
+          </ng-container>
+
+          <!-- Hex kod kolona -->
+          <ng-container matColumnDef="hexKod">
+            <th mat-header-cell *matHeaderCellDef>Hex kod</th>
+            <td mat-cell *matCellDef="let row">
+              @if (editingId() === row.id) {
+                <div class="hex-input-group">
+                  <mat-form-field appearance="outline" class="edit-hex-field">
+                    <mat-label>Hex kod</mat-label>
+                    <input
+                      matInput
+                      formControlName="hexKod"
+                      [id]="'edit-hex-' + row.id"
+                      placeholder="#RRGGBB"
+                      aria-label="Hex kod boje za uređivanje"
+                      maxlength="7"
+                      (input)="onEditHexTextChange($any($event.target).value)" />
+                    @if (editForm.controls.hexKod.hasError('pattern') && editForm.controls.hexKod.touched) {
+                      <mat-error role="alert">Format mora biti #RRGGBB.</mat-error>
+                    }
+                  </mat-form-field>
+                  <span
+                    class="color-preview"
+                    [class.color-preview--visible]="editHexPreview()"
+                    [style.background-color]="editHexPreview() ?? 'transparent'"
+                    aria-hidden="true">
+                  </span>
+                  <input
+                    type="color"
+                    class="color-picker-native"
+                    [value]="editHexValue()"
+                    (input)="onEditColorPickerChange($any($event.target).value)"
+                    aria-label="Odaberi boju iz palete" />
+                </div>
+              } @else {
+                <div class="hex-kod-cell">
+                  @if (row.hexKod) {
+                    <span
+                      class="color-swatch"
+                      [style.background-color]="row.hexKod"
+                      [attr.aria-label]="'Boja: ' + row.hexKod"
+                      role="img">
+                    </span>
+                    <span class="hex-tekst">{{ row.hexKod }}</span>
+                  } @else {
+                    <span class="hex-prazno" aria-label="Bez hex koda">—</span>
+                  }
+                </div>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Aktivan kolona -->
+          <ng-container matColumnDef="aktivan">
+            <th mat-header-cell *matHeaderCellDef>Aktivan</th>
+            <td mat-cell *matCellDef="let row">
+              @if (editingId() === row.id) {
+                <mat-checkbox
+                  formControlName="aktivan"
+                  [attr.aria-label]="'Aktivan status za boju ' + row.naziv">
+                </mat-checkbox>
+              } @else {
+                <mat-checkbox
+                  [checked]="row.aktivan"
+                  [disabled]="true"
+                  [attr.aria-label]="'Aktivan status za boju ' + row.naziv">
+                </mat-checkbox>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Akcije kolona -->
+          <ng-container matColumnDef="akcije">
+            <th mat-header-cell *matHeaderCellDef>Akcije</th>
+            <td mat-cell *matCellDef="let row">
+              @if (editingId() === row.id) {
+                <button
+                  mat-icon-button
+                  color="primary"
+                  type="button"
+                  [disabled]="editForm.invalid || isSaving()"
+                  (click)="onSaveEdit(row.id)"
+                  [matTooltip]="'Spremi ' + row.naziv"
+                  [attr.aria-label]="'Spremi izmjene boje ' + row.naziv">
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="isSaving()"
+                  (click)="onCancelEdit()"
+                  matTooltip="Otkaži uređivanje"
+                  [attr.aria-label]="'Otkaži uređivanje boje ' + row.naziv">
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              } @else {
+                <button
+                  mat-icon-button
+                  color="primary"
+                  type="button"
+                  (click)="onEditClick(row)"
+                  [matTooltip]="'Uredi ' + row.naziv"
+                  [attr.aria-label]="'Uredi boju ' + row.naziv">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  type="button"
+                  (click)="onDeleteClick(row)"
+                  [matTooltip]="'Deaktiviraj ' + row.naziv"
+                  [attr.aria-label]="'Deaktiviraj boju ' + row.naziv">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="boja-row"></tr>
+        </table>
+      </div>
+    }
+  }
+</div>

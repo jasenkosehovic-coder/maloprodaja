@@ -54,7 +54,41 @@ export const SIFARNICI_ROUTES: Routes = [
               import('./popusti/popusti-list.component').then((m) => m.PopustiListComponent),
             title: 'Popusti — Šifarnici',
           },
+          {
+            path: 'tipovi-velicina',
+            loadComponent: () =>
+              import('./tipovi-velicina/tipovi-velicina-list.component').then(
+                (m) => m.TipoviVelicinaListComponent
+              ),
+            title: 'Tipovi veličina — Šifarnici',
+          },
+          {
+            path: 'definicije-atributa',
+            loadComponent: () =>
+              import('./definicije-atributa/definicije-atributa-list.component').then(
+                (m) => m.DefinicijeAtributaListComponent
+              ),
+            title: 'Definicije atributa — Šifarnici',
+          },
+          {
+            path: 'boje',
+            loadComponent: () =>
+              import('./boje/boje-list.component').then((m) => m.BojeListComponent),
+            title: 'Boje — Šifarnici',
+          },
+          {
+            path: 'min-opt-zalihe',
+            loadComponent: () =>
+              import('./artikli/min-opt-zalihe.component').then((m) => m.MinOptZaliheComponent),
+            title: 'Min/Opt zalihe — Šifarnici',
+          },
         ],
+      },
+      {
+        path: 'artikli-web',
+        loadComponent: () =>
+          import('./artikli/web-artikli-list.component').then((m) => m.WebArtikliListComponent),
+        title: 'Web shop — Šifarnici',
       },
       {
         path: 'kupci',

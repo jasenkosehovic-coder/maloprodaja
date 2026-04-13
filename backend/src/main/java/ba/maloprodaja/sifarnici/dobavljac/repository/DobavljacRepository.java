@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface DobavljacRepository extends JpaRepository<Dobavljac, Long> {
 
-    List<Dobavljac> findByIdKompanije(Long idKompanije);
+    List<Dobavljac> findByIdKompanijeOrderByNazivAsc(Long idKompanije);
 }

@@ -39,7 +39,8 @@ public class NivelacijaDTO {
             String nazivArtikla,
             String sifraArtikla,
             BigDecimal kolicina,
-            BigDecimal vpc,
+            BigDecimal vpcStara,
+            BigDecimal vpcNova,
             BigDecimal mpcStara,
             BigDecimal mpcNova,
             BigDecimal iznosNivelacije

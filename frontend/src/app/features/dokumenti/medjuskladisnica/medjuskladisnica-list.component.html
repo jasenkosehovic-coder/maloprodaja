@@ -1,0 +1,51 @@
+<div class="page-container">
+  <app-page-header title="Međuskladišnica" subtitle="Pregled prijenosa robe između poslovnica (MSI/MSU)" icon="swap_horiz" />
+
+  <div class="filter-bar">
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Datum od</mat-label>
+      <input
+        matInput
+        [matDatepicker]="odPicker"
+        [value]="filterOd()"
+        (dateChange)="onOdChange($event.value)"
+        aria-label="Datum od"
+        readonly
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="odPicker" aria-label="Otvori kalendar za datum od"></mat-datepicker-toggle>
+      <mat-datepicker #odPicker></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-date">
+      <mat-label>Datum do</mat-label>
+      <input
+        matInput
+        [matDatepicker]="doPicker"
+        [value]="filterDo()"
+        (dateChange)="filterDo.set($event.value)"
+        [min]="filterOd()"
+        aria-label="Datum do"
+        readonly
+      />
+      <mat-datepicker-toggle matIconSuffix [for]="doPicker" aria-label="Otvori kalendar za datum do"></mat-datepicker-toggle>
+      <mat-datepicker #doPicker></mat-datepicker>
+    </mat-form-field>
+
+    <button mat-stroked-button type="button" (click)="resetFilters()" aria-label="Poništi filtere">
+      <mat-icon>clear</mat-icon>
+      Poništi
+    </button>
+  </div>
+
+  <app-crud-table
+    [data]="filtrirani()"
+    [headers]="['id', 'brojDokumenta', 'datum', 'poslovnicaNaziv', 'status', 'ukupno']"
+    [fields]="fields"
+    [actions]="actions"
+    [filterableColumns]="filterableColumns"
+    [externalAdd]="true"
+    [rowStyleClass]="rowStyleClass"
+    exportName="Medjuskladisnica"
+    (addClick)="onAddClick()"
+  />
+</div>

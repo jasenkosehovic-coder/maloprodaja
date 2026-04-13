@@ -37,7 +37,7 @@ public class PopustController {
             Authentication auth
     ) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
-        PopustDTO.ListItemDTO created = popustService.create(dto, korisnik.getIdKompanije());
+        PopustDTO.ListItemDTO created = popustService.create(dto, korisnik.getIdKompanije(), korisnik.getIdPoslovnice());
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(created));
     }
 
@@ -45,9 +45,11 @@ public class PopustController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER')")
     public ResponseEntity<ApiResponse<PopustDTO.ListItemDTO>> update(
             @PathVariable Long id,
-            @Valid @RequestBody PopustDTO.UpdateDTO dto
+            @Valid @RequestBody PopustDTO.UpdateDTO dto,
+            Authentication auth
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(popustService.update(id, dto)));
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(popustService.update(id, dto, korisnik.getIdPoslovnice())));
     }
 
     @DeleteMapping("/{id}")

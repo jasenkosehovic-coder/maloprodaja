@@ -1,0 +1,113 @@
+:host {
+  display: block;
+}
+
+.page-container {
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.page-header .subtitle {
+  margin: 4px 0 0;
+  color: rgba(0, 0, 0, 0.54);
+  font-size: 0.875rem;
+}
+
+.velicine-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.velicine-header h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.inline-add-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.oznaka-field {
+  flex: 0 0 220px;
+}
+
+.velicine-table {
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.drag-col {
+  width: 40px;
+  padding-left: 8px;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: rgba(0, 0, 0, 0.38);
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.drag-row {
+  &:hover .drag-handle {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.cdk-drag-preview {
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.velicine-table.cdk-drop-list-dragging .drag-row:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+  color: rgba(0, 0, 0, 0.38);
+  gap: 8px;
+
+  .empty-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}

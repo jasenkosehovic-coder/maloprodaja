@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -28,17 +29,19 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
 
     @Override
     public List<ArtikalPoslovnicaDTO.ListItemDTO> listByPoslovnica(Long idPoslovnice) {
-        return artikalPoslovnicaRepository.findByIdPoslovnice(idPoslovnice)
+        Map<Long, BigDecimal> kolicineMap = artikalPoslovnicaRepository.ukupnaKolicinaMapByPoslovnica(idPoslovnice);
+        return artikalPoslovnicaRepository.findByIdPoslovniceOrderByArtikalKompanijaNazivAsc(idPoslovnice)
                 .stream()
-                .map(this::toDTO)
+                .map(ap -> toDTO(ap, kolicineMap.getOrDefault(ap.getId(), BigDecimal.ZERO)))
                 .toList();
     }
 
     @Override
     public List<ArtikalPoslovnicaDTO.ListItemDTO> listByArtikalKompanija(Long idArtikla) {
+        Map<Long, BigDecimal> kolicineMap = artikalPoslovnicaRepository.ukupnaKolicinaMapByArtikla(idArtikla);
         return artikalPoslovnicaRepository.findByIdArtikla(idArtikla)
                 .stream()
-                .map(this::toDTO)
+                .map(ap -> toDTO(ap, kolicineMap.getOrDefault(ap.getId(), BigDecimal.ZERO)))
                 .toList();
     }
 
@@ -62,14 +65,14 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
         ap.setMarza(dto.marza());
         ap.setTipMarze(tipMarze);
         ap.setMpc(kalkulisajMpc(dto.vpc(), dto.marza(), artikalKompanija.getPdv()));
-        ap.setKolicina(dto.kolicina() != null ? dto.kolicina() : BigDecimal.ZERO);
-        ap.setMinZaliha(dto.minZaliha());
-        ap.setOptimalnaZaliha(dto.optimalnaZaliha());
         ap.setAktivan(true);
+        if (dto.popustProcenat() != null) {
+            ap.setPopustProcenat(dto.popustProcenat());
+        }
 
         ArtikalPoslovnica saved = artikalPoslovnicaRepository.save(ap);
         log.info("Kreiran ArtikalPoslovnica: idArtikla={}, idPoslovnice={}", dto.idArtikla(), dto.idPoslovnice());
-        return toDTO(saved);
+        return toDTO(saved, BigDecimal.ZERO);
     }
 
     @Override
@@ -90,17 +93,11 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
         if (dto.tipMarze() != null) {
             ap.setTipMarze(dto.tipMarze());
         }
-        if (dto.kolicina() != null) {
-            ap.setKolicina(dto.kolicina());
-        }
-        if (dto.minZaliha() != null) {
-            ap.setMinZaliha(dto.minZaliha());
-        }
-        if (dto.optimalnaZaliha() != null) {
-            ap.setOptimalnaZaliha(dto.optimalnaZaliha());
-        }
         if (dto.aktivan() != null) {
             ap.setAktivan(dto.aktivan());
+        }
+        if (dto.popustProcenat() != null) {
+            ap.setPopustProcenat(dto.popustProcenat());
         }
 
         // Recalculate MPC from current vpc/marza after applying updates
@@ -108,7 +105,7 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
 
         ArtikalPoslovnica saved = artikalPoslovnicaRepository.save(ap);
         log.info("Ažuriran ArtikalPoslovnica: id={}", id);
-        return toDTO(saved);
+        return toDTO(saved, BigDecimal.ZERO);
     }
 
     @Override
@@ -119,6 +116,39 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
         ap.setAktivan(false);
         artikalPoslovnicaRepository.save(ap);
         log.info("Deaktiviran ArtikalPoslovnica: id={}", id);
+    }
+
+    @Override
+    public List<ArtikalPoslovnicaDTO.ListItemDTO> listByKompanija(Long idKompanije) {
+        return artikalPoslovnicaRepository.findByIdKompanije(idKompanije)
+                .stream()
+                .map(ap -> toDTO(ap, BigDecimal.ZERO))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void batchUpdateMpc(List<ArtikalPoslovnicaDTO.BatchMpcUpdateDTO> updates) {
+        for (ArtikalPoslovnicaDTO.BatchMpcUpdateDTO dto : updates) {
+            ArtikalPoslovnica ap = artikalPoslovnicaRepository.findById(dto.id())
+                    .orElseThrow(() -> new ResourceNotFoundException("ArtikalPoslovnica", dto.id()));
+            ap.setMpc(dto.novaMpc());
+            ap.setTipMarze(TipMarze.FIKSNA_CIJENA);
+            artikalPoslovnicaRepository.save(ap);
+            log.info("Batch MPC update: id={}, novaMpc={}", dto.id(), dto.novaMpc());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void batchUpdatePopust(List<ArtikalPoslovnicaDTO.BatchPopustUpdateDTO> updates) {
+        for (ArtikalPoslovnicaDTO.BatchPopustUpdateDTO dto : updates) {
+            ArtikalPoslovnica ap = artikalPoslovnicaRepository.findById(dto.id())
+                    .orElseThrow(() -> new ResourceNotFoundException("ArtikalPoslovnica", dto.id()));
+            ap.setPopustProcenat(dto.popustProcenat());
+            artikalPoslovnicaRepository.save(ap);
+            log.info("Batch popust update: id={}, popustProcenat={}", dto.id(), dto.popustProcenat());
+        }
     }
 
     // ---- Private helpers ----
@@ -139,7 +169,7 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
         return cijenaSaPdv.setScale(4, RoundingMode.HALF_UP);
     }
 
-    private ArtikalPoslovnicaDTO.ListItemDTO toDTO(ArtikalPoslovnica ap) {
+    private ArtikalPoslovnicaDTO.ListItemDTO toDTO(ArtikalPoslovnica ap, BigDecimal ukupnaKolicina) {
         String artikalNaziv = null;
         String artikalSifra = null;
 
@@ -164,10 +194,9 @@ public class ArtikalPoslovnicaService implements IArtikalPoslovnicaService {
                 ap.getMarza(),
                 ap.getTipMarze(),
                 ap.getMpc(),
-                ap.getKolicina(),
-                ap.getMinZaliha(),
-                ap.getOptimalnaZaliha(),
-                ap.isAktivan()
+                ap.isAktivan(),
+                ukupnaKolicina != null ? ukupnaKolicina : BigDecimal.ZERO,
+                ap.getPopustProcenat()
         );
     }
 }

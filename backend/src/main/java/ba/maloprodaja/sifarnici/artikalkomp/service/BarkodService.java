@@ -2,12 +2,11 @@ package ba.maloprodaja.sifarnici.artikalkomp.service;
 
 import ba.maloprodaja.common.exception.BusinessException;
 import ba.maloprodaja.common.exception.ResourceNotFoundException;
-import ba.maloprodaja.poslovnica.repository.PoslovnicaRepository;
 import ba.maloprodaja.sifarnici.artikalkomp.dto.BarkodDTO;
-import ba.maloprodaja.sifarnici.artikalkomp.entity.ArtikalKompanija;
 import ba.maloprodaja.sifarnici.artikalkomp.entity.Barkod;
-import ba.maloprodaja.sifarnici.artikalkomp.repository.ArtikalKompanijeRepository;
 import ba.maloprodaja.sifarnici.artikalkomp.repository.BarkodRepository;
+import ba.maloprodaja.sifarnici.varijanta.entity.VarijantaArtikla;
+import ba.maloprodaja.sifarnici.varijanta.repository.VarijantaArtiklaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,42 +23,46 @@ import java.util.stream.Collectors;
 public class BarkodService implements IBarkodService {
 
     private final BarkodRepository barkodRepository;
-    private final ArtikalKompanijeRepository artikalKompanijeRepository;
-    private final PoslovnicaRepository poslovnicaRepository;
+    private final VarijantaArtiklaRepository varijantaRepository;
 
     @Override
-    public List<BarkodDTO.ListItemDTO> listByKompanija(Long idKompanije) {
+    public List<BarkodDTO.ListItemDTO> listAll(Long idKompanije) {
         List<Barkod> barkodovi = barkodRepository.findByIdKompanije(idKompanije);
 
-        List<Long> artikalIds = barkodovi.stream()
-                .map(Barkod::getIdArtikla)
+        List<Long> varijantaIds = barkodovi.stream()
+                .map(Barkod::getIdVarijante)
                 .distinct()
                 .toList();
 
-        Map<Long, ArtikalKompanija> artikliMap = artikalKompanijeRepository.findAllById(artikalIds)
+        Map<Long, VarijantaArtikla> varijanteMap = varijantaRepository.findAllById(varijantaIds)
                 .stream()
-                .collect(Collectors.toMap(ArtikalKompanija::getId, a -> a));
-
-        List<Long> poslovnicaIds = barkodovi.stream()
-                .map(Barkod::getIdPoslovnice)
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
-
-        Map<Long, String> poslovniceNazivi = poslovnicaRepository.findAllById(poslovnicaIds)
-                .stream()
-                .collect(Collectors.toMap(p -> p.getId(), p -> p.getNaziv()));
+                .collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
 
         return barkodovi.stream()
-                .map(b -> toDTO(b, artikliMap.get(b.getIdArtikla()), poslovniceNazivi))
+                .map(b -> toDTO(b, varijanteMap.get(b.getIdVarijante())))
+                .toList();
+    }
+
+    @Override
+    public List<BarkodDTO.ListItemDTO> listByVarijanta(Long idVarijante) {
+        VarijantaArtikla varijanta = varijantaRepository.findById(idVarijante)
+                .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtikla", idVarijante));
+
+        return barkodRepository.findByIdVarijanteAndAktivanTrue(idVarijante)
+                .stream()
+                .map(b -> toDTO(b, varijanta))
                 .toList();
     }
 
     @Override
     @Transactional
-    public BarkodDTO.ListItemDTO create(BarkodDTO.CreateDTO dto, Long idKompanije, Long idPoslovnice) {
-        ArtikalKompanija artikal = artikalKompanijeRepository.findById(dto.idArtikla())
-                .orElseThrow(() -> new ResourceNotFoundException("ArtikalKompanija", dto.idArtikla()));
+    public BarkodDTO.ListItemDTO create(BarkodDTO.CreateDTO dto, Long idKompanije) {
+        VarijantaArtikla varijanta = varijantaRepository.findById(dto.idVarijante())
+                .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtikla", dto.idVarijante()));
+
+        if (!varijanta.getIdKompanije().equals(idKompanije)) {
+            throw new BusinessException("Varijanta sa ID=" + dto.idVarijante() + " ne pripada ovoj kompaniji.");
+        }
 
         if (barkodRepository.existsByBarkodAndIdKompanije(dto.barkod(), idKompanije)) {
             throw new BusinessException("Barkod '" + dto.barkod() + "' već postoji u ovoj kompaniji.");
@@ -67,17 +70,14 @@ public class BarkodService implements IBarkodService {
 
         Barkod b = new Barkod();
         b.setBarkod(dto.barkod());
-        b.setIdArtikla(dto.idArtikla());
+        b.setIdVarijante(dto.idVarijante());
         b.setIdKompanije(idKompanije);
-        b.setIdPoslovnice(idPoslovnice);
         b.setAktivan(true);
 
         Barkod saved = barkodRepository.save(b);
-        log.info("Kreiran barkod '{}' za artikal id={}, idKompanije={}, idPoslovnice={}",
-                saved.getBarkod(), saved.getIdArtikla(), idKompanije, idPoslovnice);
+        log.info("Kreiran barkod '{}' za varijantu id={}, idKompanije={}", saved.getBarkod(), saved.getIdVarijante(), idKompanije);
 
-        String poslovnicaNaziv = resolvePoslovnicaNaziv(idPoslovnice);
-        return toDTO(saved, artikal, poslovnicaNaziv);
+        return toDTO(saved, varijanta);
     }
 
     @Override
@@ -92,7 +92,6 @@ public class BarkodService implements IBarkodService {
         }
 
         b.setBarkod(dto.barkod());
-        b.setIdPoslovnice(dto.idPoslovnice());
         if (dto.aktivan() != null) {
             b.setAktivan(dto.aktivan());
         }
@@ -100,9 +99,8 @@ public class BarkodService implements IBarkodService {
         Barkod saved = barkodRepository.save(b);
         log.info("Ažuriran barkod: id={}", id);
 
-        ArtikalKompanija artikal = artikalKompanijeRepository.findById(saved.getIdArtikla()).orElse(null);
-        String poslovnicaNaziv = resolvePoslovnicaNaziv(saved.getIdPoslovnice());
-        return toDTO(saved, artikal, poslovnicaNaziv);
+        VarijantaArtikla varijanta = varijantaRepository.findById(saved.getIdVarijante()).orElse(null);
+        return toDTO(saved, varijanta);
     }
 
     @Override
@@ -115,38 +113,40 @@ public class BarkodService implements IBarkodService {
         log.info("Deaktiviran barkod: id={}", id);
     }
 
+    @Override
+    public BarkodDTO.PretragaDTO findArtikalByBarkod(String barkod, Long idKompanije) {
+        Barkod b = barkodRepository.findByBarkodAndIdKompanijeAndAktivanTrue(barkod, idKompanije)
+                .orElseThrow(() -> new ResourceNotFoundException("Barkod '" + barkod + "' ne postoji."));
+
+        VarijantaArtikla varijanta = varijantaRepository.findById(b.getIdVarijante())
+                .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtikla", b.getIdVarijante()));
+
+        return new BarkodDTO.PretragaDTO(varijanta.getIdArtikla());
+    }
+
     // ---- Private helpers ----
 
-    private String resolvePoslovnicaNaziv(Long idPoslovnice) {
-        if (idPoslovnice == null) {
+    private BarkodDTO.ListItemDTO toDTO(Barkod b, VarijantaArtikla varijanta) {
+        String oznakaVelicine = resolveOznakaVelicine(varijanta);
+        return new BarkodDTO.ListItemDTO(
+                b.getId(),
+                b.getBarkod(),
+                b.getIdVarijante(),
+                oznakaVelicine,
+                b.isAktivan()
+        );
+    }
+
+    private String resolveOznakaVelicine(VarijantaArtikla varijanta) {
+        if (varijanta == null) {
             return null;
         }
-        return poslovnicaRepository.findById(idPoslovnice)
-                .map(p -> p.getNaziv())
-                .orElse(null);
-    }
-
-    private BarkodDTO.ListItemDTO toDTO(Barkod b, ArtikalKompanija artikal,
-                                        Map<Long, String> poslovniceNazivi) {
-        String artikalNaziv = artikal != null ? artikal.getNaziv() : null;
-        String artikalSifra = artikal != null ? artikal.getSifra() : null;
-        String poslovnicaNaziv = b.getIdPoslovnice() != null ? poslovniceNazivi.get(b.getIdPoslovnice()) : null;
-        return new BarkodDTO.ListItemDTO(
-                b.getId(), b.getBarkod(), b.getIdArtikla(),
-                artikalNaziv, artikalSifra,
-                b.getIdPoslovnice(), poslovnicaNaziv,
-                b.isAktivan()
-        );
-    }
-
-    private BarkodDTO.ListItemDTO toDTO(Barkod b, ArtikalKompanija artikal, String poslovnicaNaziv) {
-        String artikalNaziv = artikal != null ? artikal.getNaziv() : null;
-        String artikalSifra = artikal != null ? artikal.getSifra() : null;
-        return new BarkodDTO.ListItemDTO(
-                b.getId(), b.getBarkod(), b.getIdArtikla(),
-                artikalNaziv, artikalSifra,
-                b.getIdPoslovnice(), poslovnicaNaziv,
-                b.isAktivan()
-        );
+        if (varijanta.getVelicina() != null) {
+            return varijanta.getVelicina().getOznaka();
+        }
+        if (varijanta.getIdVelicine() == null) {
+            return "Default";
+        }
+        return null;
     }
 }

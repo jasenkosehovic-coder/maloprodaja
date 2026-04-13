@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface KupacRepository extends JpaRepository<Kupac, Long> {
 
-    List<Kupac> findByIdKompanije(Long idKompanije);
+    List<Kupac> findByIdKompanijeOrderByNazivAsc(Long idKompanije);
 }

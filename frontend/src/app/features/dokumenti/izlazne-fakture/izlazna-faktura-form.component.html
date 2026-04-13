@@ -1,0 +1,53 @@
+<h2 mat-dialog-title>Nova izlazna faktura (Veleprodaja)</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" autocomplete="off">
+
+    <!-- Datum -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Datum</mat-label>
+      <input matInput [matDatepicker]="datumPicker" formControlName="datum" id="if-datum" aria-label="Datum fakture" />
+      <mat-datepicker-toggle matIconSuffix [for]="datumPicker" aria-label="Otvorite kalendar za datum"></mat-datepicker-toggle>
+      <mat-datepicker #datumPicker></mat-datepicker>
+      @if (form.controls['datum'].invalid && form.controls['datum'].touched) {
+        <mat-error role="alert" aria-live="polite">Datum je obavezan.</mat-error>
+      }
+    </mat-form-field>
+
+    <!-- Napomena -->
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Napomena</mat-label>
+      <textarea matInput formControlName="napomena" id="if-napomena" rows="2" aria-label="Napomena"></textarea>
+    </mat-form-field>
+
+    <p class="hint-text">
+      <mat-icon class="hint-icon">info</mat-icon>
+      Kupac se može dodijeliti naknadno u detalju fakture.
+    </p>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="odustani()" aria-label="Odustani od unosa">
+    Odustani
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="form.invalid || isSaving()"
+    (click)="onSubmit()"
+    aria-label="Kreiraj izlaznu fakturu"
+  >
+    @if (isSaving()) {
+      <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Kreiranje u toku"></mat-progress-spinner>
+      Kreiranje...
+    } @else {
+      <ng-container>
+        <mat-icon>add_circle</mat-icon>
+        Kreiraj nacrt
+      </ng-container>
+    }
+  </button>
+</mat-dialog-actions>

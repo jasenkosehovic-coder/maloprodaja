@@ -22,6 +22,15 @@ public class ArtikalPoslovnicaController {
 
     private final IArtikalPoslovnicaService artikalPoslovnicaService;
 
+    @GetMapping("/api/artikli-poslovnice/kompanija")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<List<ArtikalPoslovnicaDTO.ListItemDTO>>> listByKompanija(
+            Authentication auth
+    ) {
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(artikalPoslovnicaService.listByKompanija(korisnik.getIdKompanije())));
+    }
+
     @GetMapping("/api/artikli-poslovnice")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
     public ResponseEntity<ApiResponse<List<ArtikalPoslovnicaDTO.ListItemDTO>>> listByPoslovnica(
@@ -62,6 +71,24 @@ public class ArtikalPoslovnicaController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
     public ResponseEntity<ApiResponse<Void>> deactivate(@PathVariable Long id) {
         artikalPoslovnicaService.deactivate(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/api/artikli-poslovnice/batch-mpc")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<Void>> batchUpdateMpc(
+            @Valid @RequestBody List<ArtikalPoslovnicaDTO.BatchMpcUpdateDTO> updates
+    ) {
+        artikalPoslovnicaService.batchUpdateMpc(updates);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/api/artikli-poslovnice/batch-popust")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<ApiResponse<Void>> batchUpdatePopust(
+            @Valid @RequestBody List<ArtikalPoslovnicaDTO.BatchPopustUpdateDTO> updates
+    ) {
+        artikalPoslovnicaService.batchUpdatePopust(updates);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

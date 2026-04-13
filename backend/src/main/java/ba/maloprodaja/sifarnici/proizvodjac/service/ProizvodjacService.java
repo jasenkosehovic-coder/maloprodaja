@@ -21,7 +21,7 @@ public class ProizvodjacService implements IProizvodjacService {
 
     @Override
     public List<ProizvodjacDTO.ListItemDTO> listAll(Long idKompanije) {
-        return proizvodjacRepository.findByIdKompanije(idKompanije)
+        return proizvodjacRepository.findByIdKompanijeOrderByNazivAsc(idKompanije)
                 .stream()
                 .map(this::toListItemDTO)
                 .toList();

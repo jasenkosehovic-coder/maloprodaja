@@ -10,9 +10,9 @@ async function injectSessionAndNavigate(
       email: 'test@maloprodaja.ba', uloga: 'ADMIN',
       poslovnicaId: 1, poslovnicaNaziv: 'Centralna poslovnica', aktivan: true,
     };
-    localStorage.setItem('mp_access_token', 'mock-token');
-    localStorage.setItem('mp_refresh_token', 'mock-refresh');
-    localStorage.setItem('mp_korisnik', JSON.stringify(korisnik));
+    sessionStorage.setItem('mp_access_token', 'mock-token');
+    sessionStorage.setItem('mp_refresh_token', 'mock-refresh');
+    sessionStorage.setItem('mp_korisnik', JSON.stringify(korisnik));
   });
   await page.goto('/blagajna');
   await page.waitForLoadState('networkidle');
@@ -27,7 +27,7 @@ test.describe('Inactivity logout — simulacija sa Playwright Clock API', () => 
     await page.clock.fastForward(3_601_000);
 
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
-    expect(await page.evaluate(() => localStorage.getItem('mp_access_token'))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem('mp_access_token'))).toBeNull();
   });
 
   test('korisnička aktivnost (keydown) resetira inactivity timer', async ({ page }) => {
@@ -46,10 +46,10 @@ test.describe('Inactivity logout — simulacija sa Playwright Clock API', () => 
 
     // Korisnik treba biti i dalje ulogiran
     await expect(page).not.toHaveURL(/\/login/);
-    expect(await page.evaluate(() => localStorage.getItem('mp_access_token'))).toBe('mock-token');
+    expect(await page.evaluate(() => sessionStorage.getItem('mp_access_token'))).toBe('mock-token');
   });
 
-  test('svi localStorage ključevi se brišu nakon inactivity logoutа', async ({ page }) => {
+  test('svi sessionStorage ključevi se brišu nakon inactivity logoutа', async ({ page }) => {
     await page.clock.install();
     await injectSessionAndNavigate(page);
 
@@ -58,9 +58,9 @@ test.describe('Inactivity logout — simulacija sa Playwright Clock API', () => 
     await expect(page).toHaveURL(/\/login/, { timeout: 10_000 });
 
     const keys = await page.evaluate(() => ({
-      accessToken:  localStorage.getItem('mp_access_token'),
-      refreshToken: localStorage.getItem('mp_refresh_token'),
-      korisnik:     localStorage.getItem('mp_korisnik'),
+      accessToken:  sessionStorage.getItem('mp_access_token'),
+      refreshToken: sessionStorage.getItem('mp_refresh_token'),
+      korisnik:     sessionStorage.getItem('mp_korisnik'),
     }));
 
     expect(keys.accessToken).toBeNull();

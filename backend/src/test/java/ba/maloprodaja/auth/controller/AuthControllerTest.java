@@ -42,7 +42,8 @@ class AuthControllerTest {
                 "Bearer",
                 3600L,
                 new LoginResponseDTO.KorisnikInfo(1L, "testuser", "Test", "Korisnik",
-                        "test@test.ba", KorisnikUloga.ADMIN, null, null, true)
+                        "test@test.ba", KorisnikUloga.ADMIN, null, null, null,
+                        null, null, null, null, null, true)
         );
     }
 

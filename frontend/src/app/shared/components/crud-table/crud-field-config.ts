@@ -45,4 +45,6 @@ export interface CrudFieldConfig {
   requiredOnAdd?: boolean;
   readOnlyOnEdit?: boolean;
   dateFilterMode?: 'eq' | 'gte' | 'lte';
+  decimals?: number;
+  cellClass?: (value: any, row: any) => string;
 }

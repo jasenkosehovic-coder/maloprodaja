@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface ArtikalKompanijeRepository extends JpaRepository<ArtikalKompanija, Long> {
 
-    List<ArtikalKompanija> findByIdKompanije(Long idKompanije);
+    List<ArtikalKompanija> findByIdKompanijeOrderByNazivAsc(Long idKompanije);
 
     boolean existsBySifraAndIdKompanije(String sifra, Long idKompanije);
 

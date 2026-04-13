@@ -30,13 +30,14 @@ import { EMPTY } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 
 import { NotificationService } from '../../../core/services/notification.service';
-import { FaktureService } from '../services/fakture.service';
+import { PrometService } from '../services/promet.service';
+import { AuthService } from '../../../core/auth/services/auth.service';
 import { DobavljaciService } from '../../sifarnici/dobavljaci/dobavljaci.service';
 import { Dobavljac } from '../../sifarnici/dobavljaci/dobavljaci.models';
-import { CreateFakturaDTO, UlaznaFakturaDetail } from '../models/dokumenti.models';
+import { CreateDokumentDTO } from '../models/promet.models';
 
 export interface FakturaFormData {
-  fakturaId: number | null;
+  dokumentId: number | null;
 }
 
 @Component({
@@ -61,8 +62,9 @@ export interface FakturaFormData {
 })
 export class FakturaFormComponent implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
-  private readonly faktureService = inject(FaktureService);
+  private readonly prometService = inject(PrometService);
   private readonly dobavljaciService = inject(DobavljaciService);
+  private readonly authService = inject(AuthService);
   private readonly notification = inject(NotificationService);
   private readonly dialogRef = inject(MatDialogRef<FakturaFormComponent>);
   private readonly router = inject(Router);
@@ -75,6 +77,7 @@ export class FakturaFormComponent implements OnInit {
   readonly isSaving = signal(false);
   readonly dobavljaci = signal<Dobavljac[]>([]);
   readonly dobavljacFilter = signal('');
+  readonly tipId = signal<number | null>(null);
 
   readonly filtriranIDobavljaci = computed(() => {
     const q = this.dobavljacFilter().toLowerCase().trim();
@@ -84,28 +87,34 @@ export class FakturaFormComponent implements OnInit {
 
   readonly form = this.fb.group({
     idDobavljaca: this.fb.control<number | null>(null, Validators.required),
-    broj: ['', [Validators.required, Validators.maxLength(50)]],
     datum: [new Date(), Validators.required],
-    datumValute: this.fb.control<Date | null>(null),
-    ukupnoBezPdv: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
-    ukupno: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     napomena: [''],
   });
 
-  get isEditMode(): boolean {
-    return this.dialogData.fakturaId !== null;
-  }
-
   get dialogTitle(): string {
-    return this.isEditMode ? 'Uredi fakturu' : 'Nova ulazna faktura';
+    return 'Nova ulazna faktura';
   }
 
   ngOnInit(): void {
     this.ucitajDobavljace();
+    this.ucitajTipUF();
+  }
 
-    if (this.isEditMode) {
-      this.ucitajFakturu(this.dialogData.fakturaId!);
-    }
+  private ucitajTipUF(): void {
+    this.prometService.getTipoviDokumenata()
+      .pipe(
+        catchError(err => {
+          this.notification.error('Greška pri učitavanju tipova dokumenata.');
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(tipovi => {
+        const tip = tipovi.find(t => t.kod === 'UF');
+        this.tipId.set(tip?.id ?? null);
+        this.cdr.markForCheck();
+      });
   }
 
   private ucitajDobavljace(): void {
@@ -124,77 +133,52 @@ export class FakturaFormComponent implements OnInit {
       });
   }
 
-  private ucitajFakturu(id: number): void {
-    this.isLoading.set(true);
-    this.faktureService.findById(id)
-      .pipe(
-        finalize(() => {
-          this.isLoading.set(false);
-          this.cdr.markForCheck();
-        }),
-        catchError(err => {
-          this.notification.error('Greška pri učitavanju fakture.');
-          console.error(err);
-          return EMPTY;
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((faktura: UlaznaFakturaDetail) => {
-        this.form.patchValue({
-          idDobavljaca: faktura.idDobavljaca,
-          broj: faktura.broj,
-          datum: new Date(faktura.datum),
-          datumValute: faktura.datumValute ? new Date(faktura.datumValute) : null,
-          ukupnoBezPdv: faktura.ukupnoBezPdv || null,
-          ukupno: faktura.ukupno || null,
-          napomena: faktura.napomena ?? '',
-        });
-        this.cdr.markForCheck();
-      });
-  }
-
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
+    const tipId = this.tipId();
+    if (!tipId) {
+      this.notification.error('Tip dokumenta UF nije pronađen.');
+      return;
+    }
+
+    const poslovnicaId = this.authService.currentPoslovnicaId();
+    if (!poslovnicaId) {
+      this.notification.error('Poslovnica nije definisana za korisnika.');
+      return;
+    }
+
     const formValue = this.form.getRawValue();
-    const dto: CreateFakturaDTO = {
+    const dto: CreateDokumentDTO = {
+      idTipa: tipId,
+      idPoslovnice: poslovnicaId,
       idDobavljaca: formValue.idDobavljaca as number,
-      broj: formValue.broj,
       datum: this.formatDateToIso(formValue.datum),
-      datumValute: formValue.datumValute ? this.formatDateToIso(formValue.datumValute) : null,
-      ukupnoBezPdv: formValue.ukupnoBezPdv ?? null,
-      ukupno: formValue.ukupno ?? null,
-      napomena: formValue.napomena || null,
+      napomena: formValue.napomena || undefined,
     };
 
-    const isEdit = this.isEditMode;
-    const request$ = isEdit
-      ? this.faktureService.update(this.dialogData.fakturaId!, dto)
-      : this.faktureService.create(dto);
-
     this.isSaving.set(true);
-    request$.pipe(
-      finalize(() => {
-        this.isSaving.set(false);
-        this.cdr.markForCheck();
-      }),
-      catchError(err => {
-        this.notification.error('Greška pri snimanju fakture.');
-        console.error(err);
-        return EMPTY;
-      }),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(result => {
-      const msg = isEdit ? 'Faktura je uspješno ažurirana.' : 'Faktura je uspješno kreirana.';
-      this.notification.success(msg);
-      this.dialogRef.close(true);
-      if (!isEdit) {
+    this.prometService.create(dto)
+      .pipe(
+        finalize(() => {
+          this.isSaving.set(false);
+          this.cdr.markForCheck();
+        }),
+        catchError(err => {
+          this.notification.error('Greška pri snimanju fakture.');
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(result => {
+        this.notification.success('Faktura je uspješno kreirana.');
+        this.dialogRef.close(true);
         void this.router.navigate(['/dokumenti/fakture', result.id]);
-      }
-    });
+      });
   }
 
   odustani(): void {
