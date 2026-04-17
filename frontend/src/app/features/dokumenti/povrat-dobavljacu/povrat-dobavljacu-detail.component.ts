@@ -80,20 +80,22 @@ export class PovratDobavljacuDetailComponent implements OnInit {
 
   readonly artikliKompanija = signal<ArtikalKompanija[]>([]);
 
-  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno'];
-  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno', 'ukloni'];
+  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'mpc', 'pdvProcenat', 'marzaProcenat', 'popustProcenat', 'iznosMpc'];
+  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'mpc', 'pdvProcenat', 'marzaProcenat', 'popustProcenat', 'iznosMpc', 'ukloni'];
 
   readonly novStavkaForm = this.fb.group({
     idVarijante: this.fb.control<number | null>(null, Validators.required),
     kolicina: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001)]),
-    cijena: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
-    popust: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100)]),
+    vpc: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+    pdvProcenat: this.fb.control<number>(17, [Validators.required, Validators.min(0), Validators.max(100)]),
+    marzaProcenat: this.fb.control<number>(0, [Validators.required, Validators.min(0), Validators.max(100)]),
+    popustProcenat: this.fb.control<number>(0, [Validators.min(0), Validators.max(100)]),
   });
 
   readonly ukupnoStavki = computed(() => {
     const d = this.dokument();
     if (!d) return 0;
-    return d.stavke.reduce((sum, s) => sum + s.ukupno, 0);
+    return d.stavke.reduce((sum, s) => sum + s.iznosMpc, 0);
   });
 
   ngOnInit(): void {
@@ -159,8 +161,10 @@ export class PovratDobavljacuDetailComponent implements OnInit {
     const dto: CreateStavkaDTO = {
       idVarijante: formValue.idVarijante as number,
       kolicina: formValue.kolicina as number,
-      cijena: formValue.cijena as number,
-      popust: formValue.popust ?? 0,
+      vpc: formValue.vpc as number,
+      pdvProcenat: formValue.pdvProcenat,
+      marzaProcenat: formValue.marzaProcenat,
+      popustProcenat: formValue.popustProcenat,
     };
 
     this.isSavingStavka.set(true);

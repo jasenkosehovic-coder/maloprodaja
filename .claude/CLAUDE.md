@@ -24,7 +24,6 @@
 
 ## Frontend (Angular) LTS
 - **Agent:** `angular-expert`
-- **Plugin:** Always use the `frontend-design` plugin when creating or modifying UI
 - **Skills:**
   - When creating a component → follow the "Create Angular Component" skill
   - When adding a form → follow the "Create Reactive Form" skill
@@ -57,8 +56,7 @@
 - **Agent:** `qa-engineer`
 - **Skills:**
   - When testing a web page → use Playwright MCP
-  - Create JUnit and integration test's 
-  - End-to-end testing using Playwright via MCP (browser automation)
+  - Create JUnit and integration test's
   - API testing — verifying endpoints directly via HTTP
   - Test strategy — planning systematic test coverage across web
   - Regression detection — identifying what broke and when
@@ -106,6 +104,7 @@ When asked to create a new API endpoint:
 6. Use Result<T> pattern for return types
 7. Add CompletableFuture to all async methods
 8. Create endpoint naming like /api/[entity]
+9. For PDF report endpoints, generate reports using Jasper Report Studio LTS
 
 ## Create Service
 When asked to create a new service:
@@ -117,8 +116,6 @@ When asked to create a new service:
 6. Add structured logging with SLF4J + Logback / Log4j2
 7. Error log in DB with AOP automatic catch exception with user / requestId / correlationId
 8. GlobalExceptionHandler with @ControllerAdvice
-9. No business logic in controllers
-10. create pdf reports in jasper report studio LTS
 
 ## Create data layer
 1. use pattern code first for creating db tables from entities
@@ -130,29 +127,27 @@ When asked to create a new service:
 
 ## Create Angular Component
 When asked to create an Angular component:
-1. Use the `frontend-design` plugin for all UI/styling decisions
-2. Generate as standalone component
-3. Use signal inputs (input.required / input)
-4. Use output() for events
-5. Use OnPush change detection for presentational components
-6. Handle all 4 UI states (loading, error, empty, success)
-7. All form controls must have associated labels (label[for] or aria-label)
-8. Use takeUntilDestroyed() for any subscriptions
-9. Use computed() for derived state, not methods in templates
-10. Use @for with track by stable ID, never $index
-11. Keep templates under 80 lines — extract child components if larger
+1. Generate as standalone component
+2. Use signal inputs (input.required / input)
+3. Use output() for events
+4. Use OnPush change detection for presentational components
+5. Handle all 4 UI states (loading, error, empty, success)
+6. All form controls must have associated labels (label[for] or aria-label)
+7. Use takeUntilDestroyed() for any subscriptions
+8. Use computed() for derived state, not methods in templates
+9. Use @for with track by stable ID, never $index
+10. Keep templates under 80 lines — extract child components if larger
 
 ## Create Reactive Form
 When asked to create a form:
-1. Use the `frontend-design` plugin for form layout and styling
-2. Use NonNullableFormBuilder with typed FormGroup
-3. Define all validators (required, maxLength, pattern, custom...)
-4. Every input has a <label for="id"> or aria-label
-5. Show validation errors with role="alert" and aria-live="polite"
-6. Disable submit button when form.invalid or isSubmitting
-7. Show loading state on submit button during submission
-8. Use exhaustMap for form submission to prevent duplicate submits
-9. Handle API validation errors and map to form field errors
+1. Use NonNullableFormBuilder with typed FormGroup
+2. Define all validators (required, maxLength, pattern, custom...)
+3. Every input has a <label for="id"> or aria-label
+4. Show validation errors with role="alert" and aria-live="polite"
+5. Disable submit button when form.invalid or isSubmitting
+6. Show loading state on submit button during submission
+7. Use exhaustMap for form submission to prevent duplicate submits
+8. Handle API validation errors and map to form field errors
 
 ## SonarQube Fix
 When fixing SonarQube issues:

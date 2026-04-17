@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
+	"BASH_MAX_OUTPUT_LENGTH": "150000"
+  },
   "permissions": {
     "allow": [
       "Bash(python3.exe --version)",
@@ -48,10 +52,30 @@
       "Bash(mvn -version)",
       "Bash(mvn spring-boot:run -q)",
       "Bash(echo \"Backend starting with PID $!\")",
-      "Bash(npx playwright@latest --version)"
-    ]
-  },
-  "env": {
-	  "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000"
+      "Bash(npx playwright@latest --version)",
+      "Bash(git checkout:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_type",
+      "Bash(python -m json.tool)",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_evaluate",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d maloprodaja -c \"SELECT id, id_artikla, id_kompanije, aktivan FROM varijante_artikla WHERE id=1;\")",
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d maloprodaja -c \"SELECT k.id, k.username, k.id_kompanije FROM korisnici k WHERE k.username='admin';\")"
+    ],
+	"deny": [
+		"Read(node_modules/**)",
+		"Read(dist/**)",
+		"Read(build/**)",
+		"Read(coverage/**)",
+		"Read(*.lock)",
+		"Glob(node_modules/**)",
+		"Glob(dist/**)",
+		"Glob(build/**)",
+		"Glob(coverage/**)"
+	]
   }
 }

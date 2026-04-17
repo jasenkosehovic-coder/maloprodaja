@@ -24,11 +24,8 @@ import java.util.List;
 )
 public class Nivelacija extends PoslovnicaBaseEntity {
 
-    @Column(name = "id_fakture")
-    private Long idFakture;
-
-    @Column(name = "id_otpremnice")
-    private Long idOtpremnice;
+    @Column(name = "id_dokumenta")
+    private Long idDokumenta;
 
     @Column(name = "broj", nullable = false, length = 50)
     private String broj;

@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -83,15 +83,34 @@ export class FakturaDetailComponent implements OnInit {
   readonly artikliKompanija = signal<ArtikalKompanija[]>([]);
   readonly varijante = signal<ArtikalVarijanta[]>([]);
 
-  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno'];
-  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno', 'ukloni'];
+  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'popustProcenat', 'iznosPopusta', 'iznosMpc'];
+  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'popustProcenat', 'iznosPopusta', 'iznosMpc', 'ukloni'];
 
   readonly novStavkaForm = this.fb.group({
     idArtikla: this.fb.control<number | null>(null, Validators.required),
     idVarijante: this.fb.control<number | null>(null, Validators.required),
     kolicina: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001)]),
-    cijena: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
-    popust: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100)]),
+    vpc: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+    pdvProcenat: this.fb.control<number>(0),
+    marzaProcenat: this.fb.control<number>(0),
+    popustProcenat: this.fb.control<number>(0, [Validators.min(0), Validators.max(100)]),
+  });
+
+  private readonly idArtiklaSignal = toSignal(
+    this.novStavkaForm.controls.idArtikla.valueChanges,
+    { initialValue: null }
+  );
+
+  private readonly formValue = toSignal(
+    this.novStavkaForm.valueChanges,
+    { initialValue: this.novStavkaForm.getRawValue() }
+  );
+
+  readonly iznosPopustaPreview = computed(() => {
+    const val = this.formValue();
+    const mpc = val.vpc ?? 0;
+    const popust = val.popustProcenat ?? 0;
+    return Math.round(mpc * popust) / 100;
   });
 
   readonly artikalPretragaTekst = signal('');
@@ -106,7 +125,7 @@ export class FakturaDetailComponent implements OnInit {
   });
 
   readonly varijanteDrugogArtikla = computed(() => {
-    const idArtikla = this.novStavkaForm.controls.idArtikla.value;
+    const idArtikla = this.idArtiklaSignal();
     if (!idArtikla) return [];
     return this.varijante().filter(v => v.idArtikla === idArtikla && v.aktivan);
   });
@@ -114,7 +133,7 @@ export class FakturaDetailComponent implements OnInit {
   readonly ukupnoStavki = computed(() => {
     const d = this.dokument();
     if (!d) return 0;
-    return d.stavke.reduce((sum, s) => sum + s.ukupno, 0);
+    return d.stavke.reduce((sum, s) => sum + s.iznosMpc, 0);
   });
 
   ngOnInit(): void {
@@ -203,8 +222,10 @@ export class FakturaDetailComponent implements OnInit {
     const dto: CreateStavkaDTO = {
       idVarijante: formValue.idVarijante as number,
       kolicina: formValue.kolicina as number,
-      cijena: formValue.cijena as number,
-      popust: formValue.popust ?? 0,
+      vpc: formValue.vpc as number,
+      pdvProcenat: formValue.pdvProcenat,
+      marzaProcenat: formValue.marzaProcenat,
+      popustProcenat: formValue.popustProcenat,
     };
 
     this.isSavingStavka.set(true);

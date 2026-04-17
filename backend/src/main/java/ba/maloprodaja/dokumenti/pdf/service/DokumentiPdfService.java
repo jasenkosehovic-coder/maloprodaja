@@ -138,7 +138,7 @@ public class DokumentiPdfService {
         String partner = resolvePartner(dokument);
 
         BigDecimal ukupno = stavke.stream()
-                .map(StavkaDokumenta::getUkupno)
+                .map(StavkaDokumenta::getIznosMpc)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .abs();
 
@@ -190,9 +190,9 @@ public class DokumentiPdfService {
                     artikalNaziv,
                     varijantaLabel,
                     s.getKolicina().abs(),
-                    s.getCijena(),
-                    s.getPopust(),
-                    s.getUkupno().abs()
+                    s.getVpc(),
+                    s.getPopustProcenat(),
+                    s.getIznosMpc().abs()
             ));
         }
         return redovi;

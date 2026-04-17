@@ -68,7 +68,11 @@ public class DokumentDTO {
             String brojDokumenta,
             LocalDate datum,
             String napomena,
-            BigDecimal ukupno,
+            BigDecimal iznosMpc,
+            BigDecimal iznosVpc,
+            BigDecimal iznosPdv,
+            BigDecimal iznosPopusta,
+            BigDecimal iznosMarze,
             List<StavkaDTO.StavkaResponseDTO> stavke,
             LocalDateTime sysCreatedDate,
             LocalDateTime sysModifiedDate
@@ -84,7 +88,7 @@ public class DokumentDTO {
             String status,
             String brojDokumenta,
             LocalDate datum,
-            BigDecimal ukupno,
+            BigDecimal iznosMpc,
             LocalDateTime sysCreatedDate
     ) {}
 }
