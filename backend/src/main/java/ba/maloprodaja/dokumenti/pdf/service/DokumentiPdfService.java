@@ -114,6 +114,87 @@ public class DokumentiPdfService {
 
     // ------------------------------------------------------------------ promet
 
+    public byte[] ulaznaFakturaPdf(Long id, Long idKompanije) {
+        Dokument dokument = dokumentRepository.findById(id)
+                .filter(d -> d.getIdKompanije().equals(idKompanije))
+                .orElseThrow(() -> new ResourceNotFoundException("Dokument", id));
+
+        List<StavkaDokumenta> stavke = stavkaRepository.findByDokumentId(id);
+
+        Map<Long, VarijantaArtikla> varijanteMap = varijantaArtiklaRepository
+                .findAllById(stavke.stream().map(StavkaDokumenta::getIdVarijante).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
+
+        Kompanija kompanija = kompanijaRepository.findById(idKompanije)
+                .orElseThrow(() -> new ResourceNotFoundException("Kompanija", idKompanije));
+
+        Poslovnica poslovnica = poslovnicaRepository.findById(dokument.getIdPoslovnice())
+                .orElseThrow(() -> new ResourceNotFoundException("Poslovnica", dokument.getIdPoslovnice()));
+
+        BufferedImage logoImage = resolveLogoImage(kompanija.getLogo());
+        String partner = resolvePartner(dokument);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("KOMPANIJA_NAZIV",   kompanija.getNaziv());
+        params.put("KOMPANIJA_ADRESA",  kompanija.getAdresa()  != null ? kompanija.getAdresa()  : "");
+        params.put("KOMPANIJA_GRAD",    kompanija.getGrad()    != null ? kompanija.getGrad()    : "");
+        params.put("POSLOVNICA_NAZIV",  poslovnica.getNaziv());
+        params.put("TIP_NAZIV",         dokument.getTipDokumenta().getNaziv());
+        params.put("BROJ_DOKUMENTA",    dokument.getBrojDokumenta() != null ? dokument.getBrojDokumenta() : "");
+        params.put("DATUM",             dokument.getDatum() != null ? dokument.getDatum().format(DATE_FORMAT) : "");
+        params.put("PARTNER",           partner);
+        params.put("NAPOMENA",          dokument.getNapomena() != null ? dokument.getNapomena() : "");
+        params.put("BROJ_FAKTURE",      dokument.getBrojFakture() != null ? dokument.getBrojFakture() : "");
+        params.put("LOGO_IMAGE",        logoImage);
+        params.put("UKUPNO_VPC",        dokument.getIznosVpc().abs());
+        params.put("UKUPNO_POPUSTA",    dokument.getIznosPopusta().abs());
+        params.put("UKUPNO_MARZE",      dokument.getIznosMarze().abs());
+        params.put("UKUPNO_PDV",        dokument.getIznosPdv().abs());
+        params.put("UKUPNO_MPC",        dokument.getIznosMpc().abs());
+
+        List<FakturaStavkaRedDTO> redovi = buildFakturaRedovi(stavke, varijanteMap);
+
+        JasperReport report = PdfReportBuilder.buildUlaznaFakturaReport();
+        return generisiPdf(report, params, redovi);
+    }
+
+    private List<FakturaStavkaRedDTO> buildFakturaRedovi(List<StavkaDokumenta> stavke,
+                                                          Map<Long, VarijantaArtikla> varijanteMap) {
+        List<FakturaStavkaRedDTO> redovi = new ArrayList<>(stavke.size());
+        int rb = 1;
+        for (StavkaDokumenta s : stavke) {
+            VarijantaArtikla v = varijanteMap.get(s.getIdVarijante());
+
+            String artikalNaziv  = "";
+            String varijantaLabel = "";
+            if (v != null) {
+                if (v.getArtikalKompanija() != null) artikalNaziv = v.getArtikalKompanija().getNaziv();
+                String vel = v.getVelicina() != null ? v.getVelicina().getOznaka() : null;
+                String boja = v.getBoja()    != null ? v.getBoja().getNaziv()      : null;
+                if (vel != null && boja != null)     varijantaLabel = vel + " / " + boja;
+                else if (vel != null)                varijantaLabel = vel;
+                else if (boja != null)               varijantaLabel = boja;
+            }
+
+            redovi.add(new FakturaStavkaRedDTO(
+                    rb++,
+                    artikalNaziv,
+                    varijantaLabel,
+                    s.getKolicina().abs(),
+                    s.getVpc(),
+                    s.getPopustProcenat(),
+                    s.getIznosPopusta().abs(),
+                    s.getPdvProcenat(),
+                    s.getIznosPdv().abs(),
+                    s.getMarzaProcenat(),
+                    s.getMpc(),
+                    s.getIznosMpc().abs()
+            ));
+        }
+        return redovi;
+    }
+
     public byte[] prometDokumentPdf(Long id, Long idKompanije) {
         Dokument dokument = dokumentRepository.findById(id)
                 .filter(d -> d.getIdKompanije().equals(idKompanije))
@@ -266,6 +347,23 @@ public class DokumentiPdfService {
         private BigDecimal mpcStara;
         private BigDecimal mpcNova;
         private BigDecimal iznosNivelacije;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class FakturaStavkaRedDTO {
+        private int        rb;
+        private String     artikal;
+        private String     varijanta;
+        private BigDecimal kolicina;
+        private BigDecimal vpc;
+        private BigDecimal popustProcenat;
+        private BigDecimal iznosPopusta;
+        private BigDecimal pdvProcenat;
+        private BigDecimal iznosPdv;
+        private BigDecimal marzaProcenat;
+        private BigDecimal mpc;
+        private BigDecimal iznosMpc;
     }
 
     /**

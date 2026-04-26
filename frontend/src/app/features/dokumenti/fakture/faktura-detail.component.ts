@@ -36,7 +36,7 @@ import { AuthService } from '../../../core/auth/services/auth.service';
 import { PrometService } from '../services/promet.service';
 import { CreateStavkaDTO, DokumentDetail } from '../models/promet.models';
 import { ArtikliService } from '../../sifarnici/artikli/artikli.service';
-import { ArtikalKompanija, ArtikalVarijanta } from '../../sifarnici/artikli/artikli.models';
+import { ArtikalKompanija, ArtikalPoslovnica, ArtikalVarijanta } from '../../sifarnici/artikli/artikli.models';
 
 @Component({
   selector: 'app-faktura-detail',
@@ -81,10 +81,20 @@ export class FakturaDetailComponent implements OnInit {
   readonly isSavingStavka = signal(false);
 
   readonly artikliKompanija = signal<ArtikalKompanija[]>([]);
+  readonly artikliPoslovnica = signal<ArtikalPoslovnica[]>([]);
   readonly varijante = signal<ArtikalVarijanta[]>([]);
 
-  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'popustProcenat', 'iznosPopusta', 'iznosMpc'];
-  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'popustProcenat', 'iznosPopusta', 'iznosMpc', 'ukloni'];
+  private readonly baseStavkeColumns = [
+    'redniBroj', 'naziv', 'velicina', 'boja', 'kolicina',
+    'vpc', 'popustProcenat', 'iznosPopusta', 'pdvProcenat', 'iznosPdv', 'marzaProcenat',
+    'mpc', 'iznosMpc',
+  ];
+
+  readonly aktiveStavkeColumns = computed(() =>
+    this.dokument()?.status === 'NACRT'
+      ? [...this.baseStavkeColumns, 'ukloni']
+      : this.baseStavkeColumns
+  );
 
   readonly novStavkaForm = this.fb.group({
     idArtikla: this.fb.control<number | null>(null, Validators.required),
@@ -106,12 +116,28 @@ export class FakturaDetailComponent implements OnInit {
     { initialValue: this.novStavkaForm.getRawValue() }
   );
 
-  readonly iznosPopustaPreview = computed(() => {
+  readonly stavkaPreview = computed(() => {
     const val = this.formValue();
-    const mpc = val.vpc ?? 0;
+    const vpc    = val.vpc ?? 0;
+    const marza  = val.marzaProcenat ?? 0;
+    const pdv    = val.pdvProcenat ?? 0;
     const popust = val.popustProcenat ?? 0;
-    return Math.round(mpc * popust) / 100;
+
+    const popustPerUnit = this.round4(vpc * popust / 100);
+    const vpcNeto       = vpc - popustPerUnit;                        // bruto VPC (sadrži PDV)
+    const vpcBezPdv     = this.round4(vpcNeto * 100 / (100 + pdv));  // za prikaz iznosPdv
+    const pdvPerUnit    = this.round4(vpcNeto - vpcBezPdv);          // izvučeni PDV iz VPC
+    const marzaPerUnit  = this.round4(vpcNeto * marza / 100);        // marža na bruto VPC
+    const ukupnaCijena  = vpcNeto + marzaPerUnit;
+    const mpcRaw        = ukupnaCijena * (1 + pdv / 100);            // PDV na ukupnu cijenu
+    const mpc           = Math.round(mpcRaw * 100) / 100;
+
+    return { iznosPopusta: popustPerUnit, iznosMarze: marzaPerUnit, iznosPdv: pdvPerUnit, mpc };
   });
+
+  private round4(n: number): number {
+    return Math.round(n * 10000) / 10000;
+  }
 
   readonly artikalPretragaTekst = signal('');
 
@@ -124,10 +150,15 @@ export class FakturaDetailComponent implements OnInit {
     );
   });
 
+  private readonly dodaneVarijanteIds = computed(() =>
+    new Set((this.dokument()?.stavke ?? []).map(s => s.idVarijante))
+  );
+
   readonly varijanteDrugogArtikla = computed(() => {
     const idArtikla = this.idArtiklaSignal();
     if (!idArtikla) return [];
-    return this.varijante().filter(v => v.idArtikla === idArtikla && v.aktivan);
+    const dodane = this.dodaneVarijanteIds();
+    return this.varijante().filter(v => v.idArtikla === idArtikla && v.aktivan && !dodane.has(v.id));
   });
 
   readonly ukupnoStavki = computed(() => {
@@ -153,6 +184,14 @@ export class FakturaDetailComponent implements OnInit {
         this.varijante.set([]);
         if (idArtikla != null) {
           this.ucitajVarijante(idArtikla);
+          const artikal = this.artikliKompanija().find(a => a.id === idArtikla);
+          if (artikal) {
+            this.novStavkaForm.controls.pdvProcenat.setValue(artikal.pdv ?? 0);
+          }
+          const artPoslovnica = this.artikliPoslovnica().find(a => a.idArtikla === idArtikla);
+          if (artPoslovnica?.marza != null) {
+            this.novStavkaForm.controls.marzaProcenat.setValue(artPoslovnica.marza);
+          }
         }
         this.cdr.markForCheck();
       });
@@ -177,22 +216,24 @@ export class FakturaDetailComponent implements OnInit {
       .subscribe(data => {
         this.dokument.set(data);
         if (data.status === 'NACRT') {
-          this.ucitajArtikle();
+          this.ucitajArtikle(data.idPoslovnice);
         }
         this.cdr.markForCheck();
       });
   }
 
-  private ucitajArtikle(): void {
+  private ucitajArtikle(idPoslovnice: number): void {
     this.artikliService.getAll()
-      .pipe(
-        catchError(() => []),
-        takeUntilDestroyed(this.destroyRef)
-      )
+      .pipe(catchError(() => []), takeUntilDestroyed(this.destroyRef))
       .subscribe(artikli => {
-        this.artikliKompanija.set(
-          (artikli as ArtikalKompanija[]).filter(a => a.aktivan)
-        );
+        this.artikliKompanija.set((artikli as ArtikalKompanija[]).filter(a => a.aktivan));
+        this.cdr.markForCheck();
+      });
+
+    this.artikliService.getAllByPoslovnica(idPoslovnice)
+      .pipe(catchError(() => []), takeUntilDestroyed(this.destroyRef))
+      .subscribe(ap => {
+        this.artikliPoslovnica.set(ap as ArtikalPoslovnica[]);
         this.cdr.markForCheck();
       });
   }
@@ -205,6 +246,10 @@ export class FakturaDetailComponent implements OnInit {
       )
       .subscribe(varijante => {
         this.varijante.set(varijante as ArtikalVarijanta[]);
+        const dostupne = this.varijanteDrugogArtikla();
+        if (dostupne.length === 1) {
+          this.novStavkaForm.controls.idVarijante.setValue(dostupne[0].id);
+        }
         this.cdr.markForCheck();
       });
   }
@@ -359,7 +404,7 @@ export class FakturaDetailComponent implements OnInit {
     const d = this.dokument();
     if (!d) return;
 
-    this.prometService.downloadPdf(d.id)
+    this.prometService.downloadFakturaPdf(d.id)
       .pipe(
         catchError(err => {
           this.snackBar.open('Greška pri preuzimanju PDF-a.', 'Zatvori', { duration: 3000 });
@@ -412,5 +457,23 @@ export class FakturaDetailComponent implements OnInit {
 
   absKolicina(kolicina: number): number {
     return Math.abs(kolicina);
+  }
+
+  onMpcChange(value: string): void {
+    const mpcValue = parseFloat(value);
+    if (isNaN(mpcValue) || mpcValue <= 0) return;
+
+    const val = this.novStavkaForm.getRawValue();
+    const vpc    = val.vpc ?? 0;
+    const pdv    = val.pdvProcenat ?? 0;
+    const popust = val.popustProcenat ?? 0;
+    const vpcNeto = vpc * (1 - popust / 100);  // bruto nakon popusta (sadrži PDV)
+
+    if (vpcNeto <= 0) return;
+
+    // mpc = vpcNeto × (1 + marza/100) × (1 + pdv/100)  →  isolate marza
+    const marza = (mpcValue / (vpcNeto * (1 + pdv / 100)) - 1) * 100;
+    this.novStavkaForm.controls.marzaProcenat.setValue(this.round4(marza));
+    this.cdr.markForCheck();
   }
 }

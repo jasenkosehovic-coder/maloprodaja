@@ -20,8 +20,10 @@ export interface DokumentListItem {
   kupacNaziv: string | null;
   status: DokumentStatus;
   brojDokumenta: string | null;
+  brojFakture: string | null;
   datum: string;
   iznosMpc: number;
+  iznosVpc: number;
   sysCreatedDate: string;
 }
 
@@ -68,6 +70,7 @@ export interface DokumentDetail {
   kupacNaziv: string | null;
   status: DokumentStatus;
   brojDokumenta: string | null;
+  brojFakture: string | null;
   datum: string;
   napomena: string | null;
   iznosMpc: number;
@@ -86,6 +89,7 @@ export interface CreateDokumentDTO {
   idPoslovnice: number;
   idDobavljaca?: number;
   idKupca?: number;
+  brojFakture?: string;
   datum: string;
   napomena?: string;
   stavke?: CreateStavkaDTO[];

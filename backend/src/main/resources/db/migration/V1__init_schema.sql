@@ -481,6 +481,7 @@ CREATE TABLE IF NOT EXISTS dokumenti
     id_kupca          BIGINT         REFERENCES kupci(id),
     status            VARCHAR(20)    NOT NULL DEFAULT 'NACRT',
     broj_dokumenta    VARCHAR(30),
+    broj_fakture      VARCHAR(50),
     datum             DATE           NOT NULL,
     napomena          TEXT,
     iznos_mpc         NUMERIC(14, 4) NOT NULL DEFAULT 0,

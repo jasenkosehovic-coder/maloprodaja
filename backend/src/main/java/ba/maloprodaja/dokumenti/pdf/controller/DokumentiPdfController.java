@@ -26,7 +26,7 @@ public class DokumentiPdfController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
     public ResponseEntity<byte[]> fakturaPdf(@PathVariable Long id, Authentication auth) {
         Korisnik korisnik = (Korisnik) auth.getPrincipal();
-        byte[] pdf = pdfService.prometDokumentPdf(id, korisnik.getIdKompanije());
+        byte[] pdf = pdfService.ulaznaFakturaPdf(id, korisnik.getIdKompanije());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"faktura-" + id + ".pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)

@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
-	"BASH_MAX_OUTPUT_LENGTH": "150000"
+    "BASH_MAX_OUTPUT_LENGTH": "150000"
   },
   "permissions": {
     "allow": [
@@ -64,18 +64,25 @@
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_evaluate",
       "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d maloprodaja -c \"SELECT id, id_artikla, id_kompanije, aktivan FROM varijante_artikla WHERE id=1;\")",
-      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d maloprodaja -c \"SELECT k.id, k.username, k.id_kompanije FROM korisnici k WHERE k.username='admin';\")"
+      "Bash(PGPASSWORD=postgres psql -h localhost -U postgres -d maloprodaja -c \"SELECT k.id, k.username, k.id_kompanije FROM korisnici k WHERE k.username='admin';\")",
+      "Bash(git *)",
+      "WebSearch",
+      "mcp__plugin_playwright_playwright__browser_navigate"
     ],
-	"deny": [
-		"Read(node_modules/**)",
-		"Read(dist/**)",
-		"Read(build/**)",
-		"Read(coverage/**)",
-		"Read(*.lock)",
-		"Glob(node_modules/**)",
-		"Glob(dist/**)",
-		"Glob(build/**)",
-		"Glob(coverage/**)"
-	]
+    "deny": [
+      "Read(node_modules/**)",
+      "Read(dist/**)",
+      "Read(build/**)",
+      "Read(coverage/**)",
+      "Read(*.lock)",
+      "Glob(node_modules/**)",
+      "Glob(dist/**)",
+      "Glob(build/**)",
+      "Glob(coverage/**)",
+      "Grep(node_modules/**)",
+      "Grep(dist/**)",
+      "Grep(build/**)",
+      "Grep(coverage/**)"
+    ]
   }
 }

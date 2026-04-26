@@ -28,7 +28,7 @@ import { NotificationService } from '../../../core/services/notification.service
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { CrudPdfHeader } from '../../../shared/components/crud-table/crud-field-config';
 import { PrometService } from '../services/promet.service';
-import { DokumentListItem, DokumentStatus } from '../models/promet.models';
+import { DokumentListItem } from '../models/promet.models';
 import { FakturaFormComponent } from './faktura-form.component';
 
 @Component({
@@ -74,19 +74,30 @@ export class FaktureListComponent implements OnInit {
   readonly dokumenti = signal<DokumentListItem[]>([]);
   readonly isLoading = signal(false);
 
-  readonly filterStatus = signal<DokumentStatus | null>(null);
+  readonly filterGodina = signal<number>(new Date().getFullYear());
   readonly filterOd = signal<Date | null>(null);
   readonly filterDo = signal<Date | null>(null);
 
-  readonly statusOptions: { value: DokumentStatus | null; label: string }[] = [
-    { value: null, label: 'Svi statusi' },
-    { value: 'NACRT', label: 'Nacrt' },
-    { value: 'POTVRĐEN', label: 'Potvrđen' },
-    { value: 'STORNIRAN', label: 'Storniran' },
-  ];
+  readonly godineOptions = computed<number[]>(() => {
+    const docs = this.dokumenti();
+    const current = new Date().getFullYear();
+    const years = new Set<number>();
+    for (let y = current - 2; y <= current + 2; y++) years.add(y);
+    docs.forEach(d => {
+      const dt = this.parseDate(d.datum);
+      if (dt !== null) years.add(new Date(dt).getFullYear());
+    });
+    return [...years].sort((a, b) => b - a);
+  });
 
   readonly filtrirani = computed(() => {
     let result = this.dokumenti();
+
+    const godina = this.filterGodina();
+    result = result.filter(d => {
+      const dt = this.parseDate(d.datum);
+      return dt !== null && new Date(dt).getFullYear() === godina;
+    });
 
     const od = this.filterOd();
     const do_ = this.filterDo();
@@ -104,8 +115,8 @@ export class FaktureListComponent implements OnInit {
   });
 
   readonly fields: CrudFieldConfig[] = [
-    { key: 'id', label: 'R.br.', type: 'number', visible: false },
     { key: 'brojDokumenta', label: 'Broj', type: 'text', readOnly: true },
+    { key: 'brojFakture', label: 'Br. fakture', type: 'text', readOnly: true },
     { key: 'datum', label: 'Datum', type: 'date', readOnly: true },
     { key: 'dobavljacNaziv', label: 'Dobavljač', type: 'text', readOnly: true },
     { key: 'poslovnicaNaziv', label: 'Poslovnica', type: 'text', readOnly: true },
@@ -117,12 +128,12 @@ export class FaktureListComponent implements OnInit {
         { value: 'STORNIRAN', label: 'Storniran' },
       ],
     },
-    { key: 'ukupno', label: 'Ukupno (KM)', type: 'number', readOnly: true },
+    { key: 'iznosVpc', label: 'Ukupno VPC (KM)', type: 'number', readOnly: true },
   ];
 
   readonly actions: CrudActionsConfig = { add: true, edit: true, delete: false, export: true };
 
-  readonly filterableColumns = ['status', 'dobavljacNaziv', 'datum', 'brojDokumenta', 'poslovnicaNaziv'];
+  readonly filterableColumns = ['status', 'dobavljacNaziv', 'datum', 'brojDokumenta', 'brojFakture', 'poslovnicaNaziv'];
 
   readonly rowStyleClass = (row: DokumentListItem) => ({
     'row-potvrdjeno': row.status === 'POTVRĐEN',
@@ -154,10 +165,6 @@ export class FaktureListComponent implements OnInit {
       });
   }
 
-  onStatusChange(status: DokumentStatus | null): void {
-    this.filterStatus.set(status);
-  }
-
   onOdChange(date: Date | null): void {
     this.filterOd.set(date);
     if (date && this.filterDo() && this.filterDo()! < date) {
@@ -166,7 +173,7 @@ export class FaktureListComponent implements OnInit {
   }
 
   resetFilters(): void {
-    this.filterStatus.set(null);
+    this.filterGodina.set(new Date().getFullYear());
     this.filterOd.set(null);
     this.filterDo.set(null);
   }

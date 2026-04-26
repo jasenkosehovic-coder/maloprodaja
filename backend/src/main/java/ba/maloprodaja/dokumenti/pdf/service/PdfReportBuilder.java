@@ -280,6 +280,202 @@ final class PdfReportBuilder {
         }
     }
 
+    // --------------------------------------------------------- ulazna faktura (landscape, all columns)
+
+    /**
+     * A4 Landscape PDF for ulazne fakture — matches the UI table columns exactly:
+     * rb, artikal, varijanta, kolicina, vpc, marzaProcenat, iznosMarze,
+     * pdvProcenat, iznosPdv, popustProcenat, iznosPopusta, mpc, iznosMpc.
+     *
+     * Usable width: 802pt.
+     * Column widths sum: 25+175+75+45+55+42+62+38+62+42+62+55+64 = 802.
+     */
+    static JasperReport buildUlaznaFakturaReport() {
+        try {
+            JasperDesign design = baseDesign("ulazna-faktura");
+
+            addParameter(design, "KOMPANIJA_NAZIV",   String.class);
+            addParameter(design, "KOMPANIJA_ADRESA",  String.class);
+            addParameter(design, "KOMPANIJA_GRAD",    String.class);
+            addParameter(design, "POSLOVNICA_NAZIV",  String.class);
+            addParameter(design, "TIP_NAZIV",         String.class);
+            addParameter(design, "BROJ_DOKUMENTA",    String.class);
+            addParameter(design, "DATUM",             String.class);
+            addParameter(design, "PARTNER",           String.class);
+            addParameter(design, "NAPOMENA",          String.class);
+            addParameter(design, "BROJ_FAKTURE",      String.class);
+            addParameter(design, "LOGO_IMAGE",        BufferedImage.class);
+            addParameter(design, "UKUPNO_VPC",        BigDecimal.class);
+            addParameter(design, "UKUPNO_POPUSTA",    BigDecimal.class);
+            addParameter(design, "UKUPNO_MARZE",      BigDecimal.class);
+            addParameter(design, "UKUPNO_PDV",        BigDecimal.class);
+            addParameter(design, "UKUPNO_MPC",        BigDecimal.class);
+
+            addField(design, "rb",             Integer.class);
+            addField(design, "artikal",        String.class);
+            addField(design, "varijanta",      String.class);
+            addField(design, "kolicina",       BigDecimal.class);
+            addField(design, "vpc",            BigDecimal.class);
+            addField(design, "popustProcenat", BigDecimal.class);
+            addField(design, "iznosPopusta",   BigDecimal.class);
+            addField(design, "pdvProcenat",    BigDecimal.class);
+            addField(design, "iznosPdv",       BigDecimal.class);
+            addField(design, "marzaProcenat",  BigDecimal.class);
+            addField(design, "mpc",            BigDecimal.class);
+            addField(design, "iznosMpc",       BigDecimal.class);
+
+            design.setTitle(buildUlaznaFakturaTitleBand());
+            design.setColumnHeader(buildUlaznaFakturaColumnHeader());
+
+            JRDesignBand detail = buildUlaznaFakturaDetailBand();
+            ((JRDesignSection) design.getDetailSection()).addBand(detail);
+
+            design.setSummary(buildUlaznaFakturaSummary(CONTENT_WIDTH));
+            design.setPageFooter(buildUlaznaFakturaPageFooter(CONTENT_WIDTH));
+
+            return JasperCompileManager.compileReport(design);
+
+        } catch (JRException e) {
+            throw new BusinessException("Greška pri inicijalizaciji ulazna faktura PDF predloška");
+        }
+    }
+
+    private static JRDesignBand buildUlaznaFakturaDetailBand() {
+        JRDesignBand detail = new JRDesignBand();
+        detail.setHeight(DETAIL_HEIGHT);
+        // Widths sum: 180+140+45+55+42+62+38+62+42+72+54=792 (10pt right gap)
+        int[]     wU   = {180, 140, 45, 55, 42, 62, 38, 62, 42, 72, 54};
+        String[]  exps = {
+            "String.valueOf($F{rb}) + \" \" + $F{artikal}",
+            "$F{varijanta}",
+            "$F{kolicina}",
+            "$F{vpc}",
+            "$F{popustProcenat}",
+            "$F{iznosPopusta}",
+            "$F{pdvProcenat}",
+            "$F{iznosPdv}",
+            "$F{marzaProcenat}",
+            "$F{mpc}",
+            "$F{iznosMpc}"
+        };
+        String[]  pU  = {null, null, "#,##0.###",
+                         "#,##0.00", "#,##0.##", "#,##0.00",
+                         "#,##0.##", "#,##0.00", "#,##0.##",
+                         "#,##0.00", "#,##0.00"};
+        boolean[] rU  = {false, false, true,
+                         true, true, true,
+                         true, true, true,
+                         true, true};
+        buildDetailBandWithExpressions(detail, wU, exps, pU, rU);
+        addHorizontalLine(detail, MARGIN, DETAIL_HEIGHT - 1, CONTENT_WIDTH, new Color(230, 230, 230));
+        return detail;
+    }
+
+    private static void buildDetailBandWithExpressions(JRDesignBand band, int[] widths,
+                                                        String[] expressions,
+                                                        String[] patterns, boolean[] rightAlign) {
+        int x = MARGIN;
+        for (int i = 0; i < widths.length; i++) {
+            JRDesignTextField tf = new JRDesignTextField();
+            tf.setX(x); tf.setY(0); tf.setWidth(widths[i]); tf.setHeight(DETAIL_HEIGHT);
+            tf.setFontSize(8f); tf.setBlankWhenNull(true);
+            if (patterns[i] != null) tf.setPattern(patterns[i]);
+            tf.setHorizontalTextAlign(rightAlign[i] ? HorizontalTextAlignEnum.RIGHT : HorizontalTextAlignEnum.LEFT);
+            JRDesignExpression expr = new JRDesignExpression();
+            expr.setText(expressions[i]);
+            tf.setExpression(expr);
+            band.addElement(tf);
+            x += widths[i];
+        }
+    }
+
+    private static JRDesignBand buildUlaznaFakturaTitleBand() {
+        final int DOC_W = CONTENT_WIDTH;
+
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(129);
+
+        addParamTextAligned(band, "KOMPANIJA_NAZIV",  MARGIN, 4,  DOC_W, 16, 12, true,  HorizontalTextAlignEnum.LEFT);
+        addParamTextAligned(band, "KOMPANIJA_ADRESA", MARGIN, 21, DOC_W, 12, 9,  false, HorizontalTextAlignEnum.LEFT);
+        addParamTextAligned(band, "KOMPANIJA_GRAD",   MARGIN, 33, DOC_W, 12, 9,  false, HorizontalTextAlignEnum.LEFT);
+        addLabeledParamText(band, "Poslovnica: ", "POSLOVNICA_NAZIV", MARGIN, 45, DOC_W, 12, 9, false);
+
+        addHorizontalLine(band, MARGIN, 60, DOC_W, Color.BLACK);
+
+        // Title + document number on one left-aligned line
+        JRDesignTextField titleLine = new JRDesignTextField();
+        titleLine.setX(MARGIN); titleLine.setY(63);
+        titleLine.setWidth(DOC_W); titleLine.setHeight(13);
+        titleLine.setFontSize(11f); titleLine.setBold(true); titleLine.setBlankWhenNull(true);
+        titleLine.setHorizontalTextAlign(HorizontalTextAlignEnum.LEFT);
+        JRDesignExpression titleExpr = new JRDesignExpression();
+        titleExpr.setText("$P{TIP_NAZIV} + ($P{BROJ_DOKUMENTA} != null && !$P{BROJ_DOKUMENTA}.isEmpty() ? \"  br. \" + $P{BROJ_DOKUMENTA} : \"\")");
+        titleLine.setExpression(titleExpr);
+        band.addElement(titleLine);
+
+        addLabeledParamText(band, "Partner: ",    "PARTNER",      MARGIN, 77,  DOC_W, 12, 9, false);
+        addLabeledParamText(band, "Br. fakture: ","BROJ_FAKTURE", MARGIN, 90,  DOC_W, 12, 9, false);
+        addLabeledParamText(band, "Datum: ",      "DATUM",        MARGIN, 103, 220,   12, 9, false);
+        addLabeledParamText(band, "Napomena: ",   "NAPOMENA",     MARGIN, 116, DOC_W, 12, 9, false);
+
+        return band;
+    }
+
+    private static JRDesignBand buildUlaznaFakturaColumnHeader() {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(COL_HEADER_HEIGHT);
+        // Widths sum: 180+140+45+55+42+62+38+62+42+72+54=792 (10pt right gap)
+        int[]     wU    = {180, 140, 45, 55, 42, 62, 38, 62, 42, 72, 54};
+        String[]  hdrs  = {"#Artikal", "Varijanta", "Kol.",
+                           "Fakt.VPC", "Pop.%", "Iznos pop.",
+                           "PDV%", "Iznos PDV", "Marža%",
+                           "MPC", "Ukupno"};
+        boolean[] right = {false, false, true,
+                           true, true, true,
+                           true, true, true,
+                           true, true};
+        buildColumnHeaderAligned(band, wU, hdrs, right);
+        return band;
+    }
+
+    private static JRDesignBand buildUlaznaFakturaSummary(int contentWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(96);
+        addHorizontalLine(band, MARGIN, 2, contentWidth, Color.BLACK);
+        addSummaryRow(band, "Ukupno VPC neto:",  "$P{UKUPNO_VPC}",     8,  contentWidth);
+        addSummaryRow(band, "Ukupno popust:",     "$P{UKUPNO_POPUSTA}", 26, contentWidth);
+        addSummaryRow(band, "Ukupno marža:",      "$P{UKUPNO_MARZE}",   44, contentWidth);
+        addSummaryRow(band, "Ukupno PDV:",        "$P{UKUPNO_PDV}",     62, contentWidth);
+        addSummaryRow(band, "UKUPNO MPC:",        "$P{UKUPNO_MPC}",     80, contentWidth);
+        return band;
+    }
+
+    private static JRDesignBand buildUlaznaFakturaPageFooter(int contentWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(18);
+
+        JRDesignTextField genDate = new JRDesignTextField();
+        genDate.setX(MARGIN); genDate.setY(2);
+        genDate.setWidth(200); genDate.setHeight(14);
+        genDate.setFontSize(8f); genDate.setBlankWhenNull(true);
+        JRDesignExpression genExpr = new JRDesignExpression();
+        genExpr.setText("\"Generirano: \" + new java.text.SimpleDateFormat(\"dd.MM.yyyy\").format(new java.util.Date())");
+        genDate.setExpression(genExpr);
+        band.addElement(genDate);
+
+        JRDesignTextField pageInfo = new JRDesignTextField();
+        pageInfo.setX(contentWidth - 110); pageInfo.setY(2);
+        pageInfo.setWidth(110); pageInfo.setHeight(14);
+        pageInfo.setFontSize(8f);
+        pageInfo.setHorizontalTextAlign(HorizontalTextAlignEnum.RIGHT);
+        JRDesignExpression pageExpr = new JRDesignExpression();
+        pageExpr.setText("\"Stranica \" + $V{PAGE_NUMBER} + \"/\" + $V{PAGE_NUMBER}");
+        pageInfo.setExpression(pageExpr);
+        band.addElement(pageInfo);
+
+        return band;
+    }
+
     private static JRDesignBand buildPrometTitleBand() {
         // Logo area: x=MARGIN, y=4, 60x52
         // Company info starts at x=MARGIN+66 (to the right of logo)

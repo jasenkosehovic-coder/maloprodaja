@@ -165,26 +165,26 @@
                 }
               </mat-form-field>
 
-              <!-- MPC -->
+              <!-- Fakturna VPC -->
               <mat-form-field appearance="outline" class="field-number">
-                <mat-label>MPC (KM)</mat-label>
+                <mat-label>Fakturna VPC (KM)</mat-label>
                 <input
                   matInput
                   type="number"
                   formControlName="vpc"
-                  id="stavka-mpc"
+                  id="stavka-vpc"
                   min="0"
                   step="0.01"
-                  aria-label="Maloprodajna cijena"
+                  aria-label="Fakturna nabavna cijena"
                 />
                 @if (novStavkaForm.controls.vpc.invalid && novStavkaForm.controls.vpc.touched) {
-                  <mat-error role="alert" aria-live="polite">MPC je obavezan.</mat-error>
+                  <mat-error role="alert" aria-live="polite">Fakturna VPC je obavezna.</mat-error>
                 }
               </mat-form-field>
 
               <!-- Popust % -->
               <mat-form-field appearance="outline" class="field-number">
-                <mat-label>Popust (%)</mat-label>
+                <mat-label>Popust %</mat-label>
                 <input
                   matInput
                   type="number"
@@ -193,26 +193,71 @@
                   min="0"
                   max="100"
                   step="0.01"
-                  aria-label="Popust u procentima"
+                  aria-label="Popust dobavljača u procentima"
                 />
                 @if (novStavkaForm.controls.popustProcenat.invalid && novStavkaForm.controls.popustProcenat.touched) {
                   <mat-error role="alert" aria-live="polite">Popust mora biti između 0 i 100.</mat-error>
                 }
               </mat-form-field>
 
-              <!-- Iznos popusta (auto-calc) -->
+              <!-- Marža % (auto s artikla, mjenja se i unosom MPC) -->
               <mat-form-field appearance="outline" class="field-number">
-                <mat-label>Iznos popusta (KM)</mat-label>
+                <mat-label>Marža %</mat-label>
                 <input
                   matInput
                   type="number"
-                  [value]="iznosPopustaPreview()"
-                  id="stavka-iznos-popusta"
-                  readonly
-                  aria-label="Izračunati iznos popusta"
+                  formControlName="marzaProcenat"
+                  id="stavka-marza"
+                  step="0.01"
+                  aria-label="Marža u procentima"
                 />
               </mat-form-field>
 
+              <!-- PDV % (readonly, s artikla) -->
+              <mat-form-field appearance="outline" class="field-number">
+                <mat-label>PDV %</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="pdvProcenat"
+                  id="stavka-pdv"
+                  readonly
+                  aria-label="PDV u procentima"
+                  aria-readonly="true"
+                />
+              </mat-form-field>
+
+              <!-- MPC (editable — mijenja marža %) -->
+              <mat-form-field appearance="outline" class="field-number">
+                <mat-label>MPC (KM)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [value]="stavkaPreview().mpc ? stavkaPreview().mpc.toFixed(2) : ''"
+                  (change)="onMpcChange($any($event.target).value)"
+                  id="stavka-mpc"
+                  min="0"
+                  step="0.01"
+                  aria-label="Maloprodajna cijena — mijenja maržu"
+                />
+              </mat-form-field>
+
+            </div>
+
+            <!-- Kalkulacija preview -->
+            <div class="kalkulacija" aria-label="Kalkulacija stavke">
+              <span class="kalkulacija-item">
+                <span class="kalkulacija-label">Iznos popusta:</span>
+                <strong>{{ stavkaPreview().iznosPopusta | currencyBam }}</strong>
+              </span>
+              <span class="kalkulacija-item">
+                <span class="kalkulacija-label">Iznos marže:</span>
+                <strong>{{ stavkaPreview().iznosMarze | currencyBam }}</strong>
+              </span>
+              <span class="kalkulacija-item">
+                <span class="kalkulacija-label">Iznos PDV:</span>
+                <strong>{{ stavkaPreview().iznosPdv | currencyBam }}</strong>
+              </span>
             </div>
 
             <div class="stavka-form-actions">
@@ -248,132 +293,99 @@
 
         <!-- Tabela stavki -->
         <div class="table-wrapper">
-          @if (dokument()!.status === 'NACRT') {
-            <table mat-table [dataSource]="dokument()!.stavke" aria-label="Stavke ulazne fakture">
+          <table mat-table [dataSource]="dokument()!.stavke" aria-label="Stavke ulazne fakture">
 
-              <ng-container matColumnDef="redniBroj">
-                <th mat-header-cell *matHeaderCellDef>#</th>
-                <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
-              </ng-container>
+            <ng-container matColumnDef="redniBroj">
+              <th mat-header-cell *matHeaderCellDef>#</th>
+              <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="naziv">
-                <th mat-header-cell *matHeaderCellDef>Naziv artikla</th>
-                <td mat-cell *matCellDef="let row">{{ row.artikalNaziv }}</td>
-              </ng-container>
+            <ng-container matColumnDef="naziv">
+              <th mat-header-cell *matHeaderCellDef>Naziv artikla</th>
+              <td mat-cell *matCellDef="let row">{{ row.artikalNaziv }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="velicina">
-                <th mat-header-cell *matHeaderCellDef>Veličina</th>
-                <td mat-cell *matCellDef="let row">{{ row.velicinaOznaka ?? '—' }}</td>
-              </ng-container>
+            <ng-container matColumnDef="velicina">
+              <th mat-header-cell *matHeaderCellDef>Veličina</th>
+              <td mat-cell *matCellDef="let row">{{ row.velicinaOznaka ?? '—' }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="boja">
-                <th mat-header-cell *matHeaderCellDef>Boja</th>
-                <td mat-cell *matCellDef="let row">{{ row.bojaNaziv ?? '—' }}</td>
-              </ng-container>
+            <ng-container matColumnDef="boja">
+              <th mat-header-cell *matHeaderCellDef>Boja</th>
+              <td mat-cell *matCellDef="let row">{{ row.bojaNaziv ?? '—' }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="kolicina">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ absKolicina(row.kolicina) }}</td>
-              </ng-container>
+            <ng-container matColumnDef="kolicina">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ absKolicina(row.kolicina) }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="vpc">
-                <th mat-header-cell *matHeaderCellDef class="col-right">MPC</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
-              </ng-container>
+            <ng-container matColumnDef="vpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Fakt. VPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="popustProcenat">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Popust%</th>
-                <td mat-cell *matCellDef="let row" class="col-right">
-                  {{ row.popustProcenat ? (row.popustProcenat + '%') : '—' }}
-                </td>
-              </ng-container>
+            <ng-container matColumnDef="marzaProcenat">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Marža %</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                {{ row.marzaProcenat ? (row.marzaProcenat + ' %') : '—' }}
+              </td>
+            </ng-container>
 
-              <ng-container matColumnDef="iznosPopusta">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Iznos popusta</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.iznosPopusta | currencyBam }}</td>
-              </ng-container>
+            <ng-container matColumnDef="pdvProcenat">
+              <th mat-header-cell *matHeaderCellDef class="col-right">PDV %</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                {{ row.pdvProcenat ? (row.pdvProcenat + ' %') : '—' }}
+              </td>
+            </ng-container>
 
-              <ng-container matColumnDef="iznosMpc">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Ukupno</th>
-                <td mat-cell *matCellDef="let row" class="col-right">
-                  <strong>{{ row.iznosMpc | currencyBam }}</strong>
-                </td>
-              </ng-container>
+            <ng-container matColumnDef="iznosPdv">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Iznos PDV</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.iznosPdv | currencyBam }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="ukloni">
-                <th mat-header-cell *matHeaderCellDef class="col-akcije">Ukloni</th>
-                <td mat-cell *matCellDef="let row" class="col-akcije">
-                  <button
-                    mat-icon-button
-                    color="warn"
-                    (click)="ukloniStavku(row.id)"
-                    [attr.aria-label]="'Ukloni stavku ' + row.artikalNaziv"
-                    matTooltip="Ukloni stavku"
-                  >
-                    <mat-icon>delete</mat-icon>
-                  </button>
-                </td>
-              </ng-container>
+            <ng-container matColumnDef="popustProcenat">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Popust %</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                {{ row.popustProcenat ? (row.popustProcenat + ' %') : '—' }}
+              </td>
+            </ng-container>
 
-              <tr mat-header-row *matHeaderRowDef="stavkeNacrtColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: stavkeNacrtColumns;"></tr>
-            </table>
-          } @else {
-            <table mat-table [dataSource]="dokument()!.stavke" aria-label="Stavke ulazne fakture">
+            <ng-container matColumnDef="iznosPopusta">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Iznos popusta</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.iznosPopusta | currencyBam }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="redniBroj">
-                <th mat-header-cell *matHeaderCellDef>#</th>
-                <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
-              </ng-container>
+            <ng-container matColumnDef="mpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">MPC</th>
+              <td mat-cell *matCellDef="let row" class="col-right">{{ row.mpc | currencyBam }}</td>
+            </ng-container>
 
-              <ng-container matColumnDef="naziv">
-                <th mat-header-cell *matHeaderCellDef>Naziv artikla</th>
-                <td mat-cell *matCellDef="let row">{{ row.artikalNaziv }}</td>
-              </ng-container>
+            <ng-container matColumnDef="iznosMpc">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Ukupno</th>
+              <td mat-cell *matCellDef="let row" class="col-right">
+                <strong>{{ row.iznosMpc | currencyBam }}</strong>
+              </td>
+            </ng-container>
 
-              <ng-container matColumnDef="velicina">
-                <th mat-header-cell *matHeaderCellDef>Veličina</th>
-                <td mat-cell *matCellDef="let row">{{ row.velicinaOznaka ?? '—' }}</td>
-              </ng-container>
+            <ng-container matColumnDef="ukloni">
+              <th mat-header-cell *matHeaderCellDef class="col-akcije">Ukloni</th>
+              <td mat-cell *matCellDef="let row" class="col-akcije">
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="ukloniStavku(row.id)"
+                  [attr.aria-label]="'Ukloni stavku ' + row.artikalNaziv"
+                  matTooltip="Ukloni stavku"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
 
-              <ng-container matColumnDef="boja">
-                <th mat-header-cell *matHeaderCellDef>Boja</th>
-                <td mat-cell *matCellDef="let row">{{ row.bojaNaziv ?? '—' }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="kolicina">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Količina</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ absKolicina(row.kolicina) }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="vpc">
-                <th mat-header-cell *matHeaderCellDef class="col-right">MPC</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.vpc | currencyBam }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="popustProcenat">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Popust%</th>
-                <td mat-cell *matCellDef="let row" class="col-right">
-                  {{ row.popustProcenat ? (row.popustProcenat + '%') : '—' }}
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="iznosPopusta">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Iznos popusta</th>
-                <td mat-cell *matCellDef="let row" class="col-right">{{ row.iznosPopusta | currencyBam }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="iznosMpc">
-                <th mat-header-cell *matHeaderCellDef class="col-right">Ukupno</th>
-                <td mat-cell *matCellDef="let row" class="col-right">
-                  <strong>{{ row.iznosMpc | currencyBam }}</strong>
-                </td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="stavkeColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: stavkeColumns;"></tr>
-            </table>
-          }
+            <tr mat-header-row *matHeaderRowDef="aktiveStavkeColumns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: aktiveStavkeColumns();"></tr>
+          </table>
         </div>
 
         @if (dokument()!.stavke.length === 0) {

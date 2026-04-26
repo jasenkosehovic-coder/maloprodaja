@@ -10,4 +10,6 @@ import java.util.List;
 public interface StavkaRepository extends JpaRepository<StavkaDokumenta, Long> {
 
     List<StavkaDokumenta> findByDokumentId(Long dokumentId);
+
+    boolean existsByDokumentIdAndIdVarijante(Long dokumentId, Long idVarijante);
 }

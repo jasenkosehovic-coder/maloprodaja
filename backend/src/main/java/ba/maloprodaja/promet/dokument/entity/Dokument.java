@@ -40,6 +40,9 @@ public class Dokument extends KompanijaBaseEntity {
     @Column(name = "broj_dokumenta", length = 30)
     private String brojDokumenta;
 
+    @Column(name = "broj_fakture", length = 50)
+    private String brojFakture;
+
     @Column(name = "datum", nullable = false)
     private LocalDate datum;
 

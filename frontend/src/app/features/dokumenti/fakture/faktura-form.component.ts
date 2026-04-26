@@ -87,6 +87,7 @@ export class FakturaFormComponent implements OnInit {
 
   readonly form = this.fb.group({
     idDobavljaca: this.fb.control<number | null>(null, Validators.required),
+    brojFakture: [''],
     datum: [new Date(), Validators.required],
     napomena: [''],
   });
@@ -157,6 +158,7 @@ export class FakturaFormComponent implements OnInit {
       idPoslovnice: poslovnicaId,
       idDobavljaca: formValue.idDobavljaca as number,
       datum: this.formatDateToIso(formValue.datum),
+      brojFakture: formValue.brojFakture || undefined,
       napomena: formValue.napomena || undefined,
     };
 
