@@ -96,6 +96,7 @@ public class DokumentDTO {
             LocalDate datum,
             BigDecimal iznosMpc,
             BigDecimal iznosVpc,
+            BigDecimal iznosPdv,
             LocalDateTime sysCreatedDate
     ) {}
 }

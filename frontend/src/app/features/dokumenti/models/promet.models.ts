@@ -24,6 +24,7 @@ export interface DokumentListItem {
   datum: string;
   iznosMpc: number;
   iznosVpc: number;
+  iznosPdv: number;
   sysCreatedDate: string;
 }
 

@@ -279,6 +279,85 @@ public class DokumentiPdfService {
         return redovi;
     }
 
+    public byte[] povratDobavljacuPdf(Long id, Long idKompanije) {
+        Dokument dokument = dokumentRepository.findById(id)
+                .filter(d -> d.getIdKompanije().equals(idKompanije))
+                .orElseThrow(() -> new ResourceNotFoundException("Dokument", id));
+
+        List<StavkaDokumenta> stavke = stavkaRepository.findByDokumentId(id);
+
+        Map<Long, VarijantaArtikla> varijanteMap = varijantaArtiklaRepository
+                .findAllById(stavke.stream().map(StavkaDokumenta::getIdVarijante).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
+
+        Kompanija kompanija = kompanijaRepository.findById(idKompanije)
+                .orElseThrow(() -> new ResourceNotFoundException("Kompanija", idKompanije));
+
+        Poslovnica poslovnica = poslovnicaRepository.findById(dokument.getIdPoslovnice())
+                .orElseThrow(() -> new ResourceNotFoundException("Poslovnica", dokument.getIdPoslovnice()));
+
+        BufferedImage logoImage = resolveLogoImage(kompanija.getLogo());
+        String partner = resolvePartner(dokument);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("KOMPANIJA_NAZIV",  kompanija.getNaziv());
+        params.put("KOMPANIJA_ADRESA", kompanija.getAdresa()  != null ? kompanija.getAdresa()  : "");
+        params.put("KOMPANIJA_GRAD",   kompanija.getGrad()    != null ? kompanija.getGrad()    : "");
+        params.put("POSLOVNICA_NAZIV", poslovnica.getNaziv());
+        params.put("TIP_NAZIV",        dokument.getTipDokumenta().getNaziv());
+        params.put("BROJ_DOKUMENTA",   dokument.getBrojDokumenta() != null ? dokument.getBrojDokumenta() : "");
+        params.put("DATUM",            dokument.getDatum() != null ? dokument.getDatum().format(DATE_FORMAT) : "");
+        params.put("PARTNER",          partner);
+        params.put("NAPOMENA",         dokument.getNapomena() != null ? dokument.getNapomena() : "");
+        params.put("LOGO_IMAGE",       logoImage);
+        BigDecimal ukupnoVpc = dokument.getIznosVpc().abs();
+        BigDecimal ukupnoPdv = dokument.getIznosPdv().abs();
+        params.put("UKUPNO_VPC", ukupnoVpc);
+        params.put("UKUPNO_PDV", ukupnoPdv);
+        params.put("UKUPNO",     ukupnoVpc.add(ukupnoPdv));
+
+        List<PovratStavkaRedDTO> redovi = buildPovratRedovi(stavke, varijanteMap);
+
+        JasperReport report = PdfReportBuilder.buildPovratDobavljacuReport();
+        return generisiPdf(report, params, redovi);
+    }
+
+    private List<PovratStavkaRedDTO> buildPovratRedovi(List<StavkaDokumenta> stavke,
+                                                        Map<Long, VarijantaArtikla> varijanteMap) {
+        List<PovratStavkaRedDTO> redovi = new ArrayList<>(stavke.size());
+        int rb = 1;
+        for (StavkaDokumenta s : stavke) {
+            VarijantaArtikla v = varijanteMap.get(s.getIdVarijante());
+
+            String artikalNaziv = "";
+            String varijantaLabel = "";
+            if (v != null) {
+                if (v.getArtikalKompanija() != null) artikalNaziv = v.getArtikalKompanija().getNaziv();
+                String vel  = v.getVelicina() != null ? v.getVelicina().getOznaka() : null;
+                String boja = v.getBoja()     != null ? v.getBoja().getNaziv()      : null;
+                if (vel != null && boja != null)     varijantaLabel = vel + " / " + boja;
+                else if (vel != null)                varijantaLabel = vel;
+                else if (boja != null)               varijantaLabel = boja;
+            }
+
+            BigDecimal netVpc   = s.getIznosVpc().abs();
+            BigDecimal netPdv   = s.getIznosPdv().abs();
+            redovi.add(new PovratStavkaRedDTO(
+                    rb++,
+                    artikalNaziv,
+                    varijantaLabel,
+                    s.getKolicina().abs(),
+                    s.getVpc(),
+                    s.getPdvProcenat(),
+                    netPdv,
+                    netVpc,
+                    netVpc.add(netPdv)
+            ));
+        }
+        return redovi;
+    }
+
     private String resolvePartner(Dokument dokument) {
         if (dokument.getIdDobavljaca() != null) {
             return dobavljacRepository.findById(dokument.getIdDobavljaca())
@@ -364,6 +443,20 @@ public class DokumentiPdfService {
         private BigDecimal marzaProcenat;
         private BigDecimal mpc;
         private BigDecimal iznosMpc;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class PovratStavkaRedDTO {
+        private int        rb;
+        private String     artikal;
+        private String     varijanta;
+        private BigDecimal kolicina;
+        private BigDecimal vpc;
+        private BigDecimal pdvProcenat;
+        private BigDecimal iznosPdv;
+        private BigDecimal iznosVpc;
+        private BigDecimal ukupno;
     }
 
     /**

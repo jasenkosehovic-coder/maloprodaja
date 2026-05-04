@@ -575,6 +575,156 @@ final class PdfReportBuilder {
         return band;
     }
 
+    // --------------------------------------------------------- povrat dobavljacu
+
+    /**
+     * A4 Portrait PDF for povrat dobavljacu.
+     * Columns: rb, artikal, varijanta, kolicina, vpc, pdvProcenat, iznosPdv
+     * Usable width: 535pt (PORTRAIT_CONTENT_WIDTH - MARGIN).
+     * Column widths: 25+180+115+50+70+45+50 = 535.
+     */
+    static JasperReport buildPovratDobavljacuReport() {
+        try {
+            JasperDesign design = portraitDesign("povrat-dobavljacu");
+
+            addParameter(design, "KOMPANIJA_NAZIV",  String.class);
+            addParameter(design, "KOMPANIJA_ADRESA", String.class);
+            addParameter(design, "KOMPANIJA_GRAD",   String.class);
+            addParameter(design, "POSLOVNICA_NAZIV", String.class);
+            addParameter(design, "TIP_NAZIV",        String.class);
+            addParameter(design, "BROJ_DOKUMENTA",   String.class);
+            addParameter(design, "DATUM",            String.class);
+            addParameter(design, "PARTNER",          String.class);
+            addParameter(design, "NAPOMENA",         String.class);
+            addParameter(design, "LOGO_IMAGE",       BufferedImage.class);
+            addParameter(design, "UKUPNO_VPC",       BigDecimal.class);
+            addParameter(design, "UKUPNO_PDV",       BigDecimal.class);
+            addParameter(design, "UKUPNO",           BigDecimal.class);
+
+            addField(design, "rb",          Integer.class);
+            addField(design, "artikal",     String.class);
+            addField(design, "varijanta",   String.class);
+            addField(design, "kolicina",    BigDecimal.class);
+            addField(design, "vpc",         BigDecimal.class);
+            addField(design, "pdvProcenat", BigDecimal.class);
+            addField(design, "iznosPdv",    BigDecimal.class);
+            addField(design, "iznosVpc",    BigDecimal.class);
+            addField(design, "ukupno",      BigDecimal.class);
+
+            design.setTitle(buildPovratTitleBand());
+            design.setColumnHeader(buildPovratColumnHeader());
+
+            JRDesignBand detail = new JRDesignBand();
+            detail.setHeight(DETAIL_HEIGHT);
+            // Combined #Artikal=175, Varijanta=85, Kol.=40, Nab.VPC=60, PDV%=35, Iznos PDV=50, Uk.VPC=45, Ukupno=45 => 535
+            int[]     wPov  = {175, 85, 40, 60, 35, 50, 45, 45};
+            String[]  exps  = {
+                "String.valueOf($F{rb}) + \" \" + $F{artikal}",
+                "$F{varijanta}",
+                "$F{kolicina}",
+                "$F{vpc}",
+                "$F{pdvProcenat}",
+                "$F{iznosPdv}",
+                "$F{iznosVpc}",
+                "$F{ukupno}"
+            };
+            String[]  pPov  = {null, null, "#,##0.###", "#,##0.00", "#,##0.##", "#,##0.00", "#,##0.00", "#,##0.00"};
+            boolean[] rPov  = {false, false, true, true, true, true, true, true};
+            buildDetailBandWithExpressions(detail, wPov, exps, pPov, rPov);
+            addHorizontalLine(detail, MARGIN, DETAIL_HEIGHT - 1, PORTRAIT_CONTENT_WIDTH - MARGIN, new Color(230, 230, 230));
+            ((JRDesignSection) design.getDetailSection()).addBand(detail);
+
+            design.setSummary(buildPovratSummary(PORTRAIT_CONTENT_WIDTH));
+            design.setPageFooter(buildPovratPageFooter(PORTRAIT_CONTENT_WIDTH));
+
+            return JasperCompileManager.compileReport(design);
+
+        } catch (JRException e) {
+            throw new BusinessException("Greška pri inicijalizaciji povrat dobavljacu PDF predloška");
+        }
+    }
+
+    private static JRDesignBand buildPovratTitleBand() {
+        final int DOC_W = PORTRAIT_CONTENT_WIDTH - MARGIN;
+
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(128);
+
+        // Company block — all at x=MARGIN, same alignment as doc info below
+        addParamTextAligned(band, "KOMPANIJA_NAZIV",  MARGIN, 4,  DOC_W, 16, 12, true,  HorizontalTextAlignEnum.LEFT);
+        addParamTextAligned(band, "KOMPANIJA_ADRESA", MARGIN, 21, DOC_W, 13, 9,  false, HorizontalTextAlignEnum.LEFT);
+        addParamTextAligned(band, "KOMPANIJA_GRAD",   MARGIN, 34, DOC_W, 13, 9,  false, HorizontalTextAlignEnum.LEFT);
+        addLabeledParamText(band, "Poslovnica: ", "POSLOVNICA_NAZIV", MARGIN, 47, DOC_W, 13, 9, false);
+
+        addHorizontalLine(band, MARGIN, 62, DOC_W, Color.BLACK);
+
+        // Document info — same x=MARGIN as company block above
+        JRDesignTextField titleLine = new JRDesignTextField();
+        titleLine.setX(MARGIN); titleLine.setY(66);
+        titleLine.setWidth(DOC_W); titleLine.setHeight(14);
+        titleLine.setFontSize(11f); titleLine.setBold(true); titleLine.setBlankWhenNull(true);
+        titleLine.setHorizontalTextAlign(HorizontalTextAlignEnum.LEFT);
+        JRDesignExpression titleExpr = new JRDesignExpression();
+        titleExpr.setText("$P{TIP_NAZIV} + ($P{BROJ_DOKUMENTA} != null && !$P{BROJ_DOKUMENTA}.isEmpty() ? \"  br. \" + $P{BROJ_DOKUMENTA} : \"\")");
+        titleLine.setExpression(titleExpr);
+        band.addElement(titleLine);
+
+        addLabeledParamText(band, "Datum: ",    "DATUM",    MARGIN, 82,  DOC_W, 13, 9, false);
+        addLabeledParamText(band, "Partner: ",  "PARTNER",  MARGIN, 95,  DOC_W, 13, 9, false);
+        addLabeledParamText(band, "Napomena: ", "NAPOMENA", MARGIN, 108, DOC_W, 13, 9, false);
+
+        addHorizontalLine(band, MARGIN, 122, DOC_W, Color.BLACK);
+
+        return band;
+    }
+
+    private static JRDesignBand buildPovratColumnHeader() {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(COL_HEADER_HEIGHT);
+        // Combined #Artikal=175, Varijanta=85, Kol.=40, Nab.VPC=60, PDV%=35, Iznos PDV=50, Uk.VPC=45, Ukupno=45 => 535
+        int[]     wPov  = {175, 85, 40, 60, 35, 50, 45, 45};
+        String[]  hdrs  = {"#Artikal", "Varijanta", "Kol.", "Nab.VPC", "PDV%", "Iznos PDV", "Uk.VPC", "Ukupno"};
+        boolean[] right = {false, false, true, true, true, true, true, true};
+        buildColumnHeaderAligned(band, wPov, hdrs, right);
+        return band;
+    }
+
+    private static JRDesignBand buildPovratSummary(int contentWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(62);
+        addHorizontalLine(band, MARGIN, 2, contentWidth - MARGIN, Color.BLACK);
+        addSummaryRow(band, "Ukupno VPC neto:", "$P{UKUPNO_VPC}", 8,  contentWidth);
+        addSummaryRow(band, "Ukupno PDV:",      "$P{UKUPNO_PDV}", 26, contentWidth);
+        addSummaryRow(band, "UKUPNO:",          "$P{UKUPNO}",     44, contentWidth);
+        return band;
+    }
+
+    private static JRDesignBand buildPovratPageFooter(int contentWidth) {
+        JRDesignBand band = new JRDesignBand();
+        band.setHeight(18);
+
+        JRDesignTextField genDate = new JRDesignTextField();
+        genDate.setX(MARGIN); genDate.setY(2);
+        genDate.setWidth(200); genDate.setHeight(14);
+        genDate.setFontSize(8f); genDate.setBlankWhenNull(true);
+        JRDesignExpression genExpr = new JRDesignExpression();
+        genExpr.setText("\"Generirano: \" + new java.text.SimpleDateFormat(\"dd.MM.yyyy\").format(new java.util.Date())");
+        genDate.setExpression(genExpr);
+        band.addElement(genDate);
+
+        JRDesignTextField pageInfo = new JRDesignTextField();
+        pageInfo.setX(contentWidth - 110); pageInfo.setY(2);
+        pageInfo.setWidth(110); pageInfo.setHeight(14);
+        pageInfo.setFontSize(8f);
+        pageInfo.setHorizontalTextAlign(HorizontalTextAlignEnum.RIGHT);
+        JRDesignExpression pageExpr = new JRDesignExpression();
+        pageExpr.setText("\"Stranica \" + $V{PAGE_NUMBER} + \"/\" + $V{PAGE_COUNT}");
+        pageInfo.setExpression(pageExpr);
+        band.addElement(pageInfo);
+
+        return band;
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static JasperDesign baseDesign(String name) throws JRException {

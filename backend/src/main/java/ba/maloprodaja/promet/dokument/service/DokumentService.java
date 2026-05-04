@@ -689,6 +689,7 @@ public class DokumentService implements IDokumentService {
                 d.getDatum(),
                 d.getIznosMpc(),
                 d.getIznosVpc(),
+                d.getIznosPdv(),
                 d.getSysCreatedDate()
         );
     }

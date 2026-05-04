@@ -68,4 +68,15 @@ public class DokumentiPdfController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }
+
+    @GetMapping("/povrat-dobavljacu/{id}/pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'MENADZER', 'KNJIGOVODJA')")
+    public ResponseEntity<byte[]> povratDobavljacuPdf(@PathVariable Long id, Authentication auth) {
+        Korisnik korisnik = (Korisnik) auth.getPrincipal();
+        byte[] pdf = pdfService.povratDobavljacuPdf(id, korisnik.getIdKompanije());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"povrat-" + id + ".pdf\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
 }
