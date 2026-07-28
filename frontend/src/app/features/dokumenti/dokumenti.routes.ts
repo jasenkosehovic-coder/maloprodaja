@@ -44,24 +44,6 @@ export const DOKUMENTI_ROUTES: Routes = [
         title: 'Povrat dobavljaču — Dokumenti',
       },
 
-      // ===== Izlazne fakture / Veleprodaja (IF) =====
-      {
-        path: 'izlazne-fakture',
-        loadComponent: () =>
-          import('./izlazne-fakture/izlazne-fakture-list.component').then(
-            (m) => m.IzlazneFaktureListComponent
-          ),
-        title: 'Izlazne fakture — Dokumenti',
-      },
-      {
-        path: 'izlazne-fakture/:id',
-        loadComponent: () =>
-          import('./izlazne-fakture/izlazna-faktura-detail.component').then(
-            (m) => m.IzlaznaFakturaDetailComponent
-          ),
-        title: 'Izlazna faktura — Dokumenti',
-      },
-
       // ===== Međuskladišnica (MSI/MSU) =====
       {
         path: 'medjuskladisnica',

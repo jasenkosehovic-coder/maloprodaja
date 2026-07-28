@@ -121,6 +121,7 @@ public class DokumentService implements IDokumentService {
         dokument.setIdDobavljaca(dto.idDobavljaca());
         dokument.setDatum(dto.datum());
         dokument.setNapomena(dto.napomena());
+        dokument.setBrojFakture(dto.brojFakture());
         dokument.setStatus(StatusDokumenta.NACRT);
         dokument.setIdKompanije(idKompanije);
 
@@ -130,6 +131,7 @@ public class DokumentService implements IDokumentService {
             for (StavkaDTO.CreateStavkaDTO stavkaDto : dto.stavke()) {
                 addStavkaToDocument(saved, stavkaDto, idKompanije);
             }
+            refreshDokumentIznosi(saved);
         }
 
         log.info("Kreiran dokument id={}, tip={}, kompanija={}", saved.getId(), tip.getKod(), idKompanije);
@@ -151,6 +153,7 @@ public class DokumentService implements IDokumentService {
         dokument.setIdDobavljaca(dto.idDobavljaca());
         dokument.setDatum(dto.datum());
         dokument.setNapomena(dto.napomena());
+        dokument.setBrojFakture(dto.brojFakture());
 
         return toDokumentResponse(dokumentRepository.save(dokument));
     }
@@ -211,13 +214,21 @@ public class DokumentService implements IDokumentService {
             stavka.setDokument(savedStorno);
             stavka.setIdVarijante(orig.getIdVarijante());
             stavka.setKolicina(orig.getKolicina().negate());
-            stavka.setCijena(orig.getCijena());
-            stavka.setPopust(orig.getPopust());
-            stavka.setUkupno(orig.getUkupno().negate());
+            stavka.setVpc(orig.getVpc());
+            stavka.setMpc(orig.getMpc());
+            stavka.setPdvProcenat(orig.getPdvProcenat());
+            stavka.setMarzaProcenat(orig.getMarzaProcenat());
+            stavka.setPopustProcenat(orig.getPopustProcenat());
+            stavka.setIznosVpc(orig.getIznosVpc().negate());
+            stavka.setIznosMpc(orig.getIznosMpc().negate());
+            stavka.setIznosMarze(orig.getIznosMarze().negate());
+            stavka.setIznosPopusta(orig.getIznosPopusta().negate());
+            stavka.setIznosPdv(orig.getIznosPdv().negate());
             stavka.setIdKompanije(idKompanije);
             savedStorno.getStavke().add(stavka);
         }
 
+        refreshDokumentIznosi(savedStorno);
         dokumentRepository.save(savedStorno);
         return potvrdi(savedStorno.getId(), idKompanije);
     }
@@ -229,6 +240,7 @@ public class DokumentService implements IDokumentService {
         requireStatus(dokument, StatusDokumenta.NACRT, "dodati stavku u");
 
         addStavkaToDocument(dokument, dto, idKompanije);
+        refreshDokumentIznosi(dokument);
         return toDokumentResponse(dokumentRepository.save(dokument));
     }
 
@@ -244,13 +256,26 @@ public class DokumentService implements IDokumentService {
         int smjer = stavka.getDokument().getTipDokumenta().getSmjerKolicine();
         BigDecimal potpisanaKolicina = dto.kolicina().multiply(BigDecimal.valueOf(smjer));
 
+        StavkaIznosi iznosi = calculateStavkaIznosi(dto.vpc(), dto.marzaProcenat(), dto.popustProcenat(), dto.pdvProcenat(), potpisanaKolicina);
+
         stavka.setKolicina(potpisanaKolicina);
-        stavka.setCijena(dto.cijena());
-        stavka.setPopust(dto.popust());
-        stavka.setUkupno(calculateUkupno(dto.cijena(), dto.popust(), potpisanaKolicina));
+        stavka.setVpc(dto.vpc());
+        stavka.setMarzaProcenat(dto.marzaProcenat());
+        stavka.setPopustProcenat(dto.popustProcenat());
+        stavka.setPdvProcenat(dto.pdvProcenat());
+        stavka.setMpc(iznosi.mpc());
+        stavka.setIznosVpc(iznosi.iznosVpc());
+        stavka.setIznosMpc(iznosi.iznosMpc());
+        stavka.setIznosMarze(iznosi.iznosMarze());
+        stavka.setIznosPopusta(iznosi.iznosPopusta());
+        stavka.setIznosPdv(iznosi.iznosPdv());
         stavkaRepository.save(stavka);
 
-        return toDokumentResponse(loadDokument(stavka.getDokument().getId(), idKompanije));
+        Dokument dokument = loadDokumentWithStavke(stavka.getDokument().getId(), idKompanije);
+        refreshDokumentIznosi(dokument);
+        dokumentRepository.save(dokument);
+
+        return toDokumentResponse(dokument);
     }
 
     @Override
@@ -261,7 +286,13 @@ public class DokumentService implements IDokumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("StavkaDokumenta", stavkaId));
 
         requireStatus(stavka.getDokument(), StatusDokumenta.NACRT, "brisati stavku iz");
+        Long dokumentId = stavka.getDokument().getId();
         stavkaRepository.delete(stavka);
+        stavkaRepository.flush();
+
+        Dokument dokument = loadDokumentWithStavke(dokumentId, idKompanije);
+        refreshDokumentIznosi(dokument);
+        dokumentRepository.save(dokument);
     }
 
     @Override
@@ -292,6 +323,7 @@ public class DokumentService implements IDokumentService {
         for (StavkaDTO.CreateStavkaDTO stavkaDto : dto.stavke()) {
             addStavkaToDocument(savedIzlaz, stavkaDto, idKompanije);
         }
+        refreshDokumentIznosi(savedIzlaz);
 
         // Create inbound document (MSU) for destination branch
         Dokument ulaz = new Dokument();
@@ -306,6 +338,7 @@ public class DokumentService implements IDokumentService {
         for (StavkaDTO.CreateStavkaDTO stavkaDto : dto.stavke()) {
             addStavkaToDocument(savedUlaz, stavkaDto, idKompanije);
         }
+        refreshDokumentIznosi(savedUlaz);
 
         // Confirm both atomically — either both succeed or transaction rolls back
         potvrdi(savedIzlaz.getId(), idKompanije);
@@ -345,7 +378,7 @@ public class DokumentService implements IDokumentService {
                     .map(stavka -> new INivelacijaService.NivelacijaStavkaInfo(
                             varijantaToArtikla.get(stavka.getIdVarijante()),
                             stavka.getKolicina().abs(),
-                            stavka.getCijena()
+                            stavka.getVpc()
                     ))
                     .toList();
 
@@ -370,19 +403,131 @@ public class DokumentService implements IDokumentService {
                 .filter(v -> v.getIdKompanije().equals(idKompanije))
                 .orElseThrow(() -> new ResourceNotFoundException("VarijantaArtikla", dto.idVarijante()));
 
+        if (stavkaRepository.existsByDokumentIdAndIdVarijante(dokument.getId(), dto.idVarijante())) {
+            throw new BusinessException("Varijanta je već dodana u stavke ovog dokumenta.");
+        }
+
         // Korisnik uvijek unosi pozitivnu količinu; servis primjenjuje smjer tipa dokumenta
         BigDecimal potpisanaKolicina = dto.kolicina()
                 .multiply(BigDecimal.valueOf(dokument.getTipDokumenta().getSmjerKolicine()));
+
+        StavkaIznosi iznosi = calculateStavkaIznosi(dto.vpc(), dto.marzaProcenat(), dto.popustProcenat(), dto.pdvProcenat(), potpisanaKolicina);
 
         StavkaDokumenta stavka = new StavkaDokumenta();
         stavka.setDokument(dokument);
         stavka.setIdVarijante(dto.idVarijante());
         stavka.setKolicina(potpisanaKolicina);
-        stavka.setCijena(dto.cijena());
-        stavka.setPopust(dto.popust());
-        stavka.setUkupno(calculateUkupno(dto.cijena(), dto.popust(), potpisanaKolicina));
+        stavka.setVpc(dto.vpc());
+        stavka.setMarzaProcenat(dto.marzaProcenat());
+        stavka.setPopustProcenat(dto.popustProcenat());
+        stavka.setPdvProcenat(dto.pdvProcenat());
+        stavka.setMpc(iznosi.mpc());
+        stavka.setIznosVpc(iznosi.iznosVpc());
+        stavka.setIznosMpc(iznosi.iznosMpc());
+        stavka.setIznosMarze(iznosi.iznosMarze());
+        stavka.setIznosPopusta(iznosi.iznosPopusta());
+        stavka.setIznosPdv(iznosi.iznosPdv());
         stavka.setIdKompanije(idKompanije);
+        stavkaRepository.save(stavka);
         dokument.getStavke().add(stavka);
+    }
+
+    /**
+     * Calculates all financial amounts for a stavka based on the pricing formula.
+     *
+     * <pre>
+     * popust_per_unit = vpc × popust_procenat / 100                        (rabat dobavljača)
+     * vpc_neto        = vpc − popust_per_unit                              (bruto VPC sa PDV)
+     * vpc_bez_pdv     = vpc_neto × 100 / (100 + pdv_procenat)             (ekstrakcija PDV iz VPC)
+     * pdv_per_unit    = vpc_neto − vpc_bez_pdv                            (iznos PDV za prikaz)
+     * marza_per_unit  = vpc_neto × marza_procenat / 100                   (marža na bruto VPC)
+     * mpc             = (vpc_neto + marza_per_unit) × (1 + pdv/100)       (PDV na ukupnu cijenu)
+     * iznos_vpc       = vpc_bez_pdv × |kolicina|
+     * </pre>
+     */
+    private StavkaIznosi calculateStavkaIznosi(
+            BigDecimal vpc,
+            BigDecimal marzaProcenat,
+            BigDecimal popustProcenat,
+            BigDecimal pdvProcenat,
+            BigDecimal kolicina
+    ) {
+        BigDecimal sto = BigDecimal.valueOf(100);
+
+        BigDecimal popustPerUnit = vpc.multiply(popustProcenat)
+                .divide(sto, 4, RoundingMode.HALF_UP);
+
+        BigDecimal vpcNeto = vpc.subtract(popustPerUnit);  // bruto VPC nakon popusta (sadrži PDV)
+
+        BigDecimal stoPlusPdv = sto.add(pdvProcenat);
+        BigDecimal vpcBezPdv = vpcNeto.multiply(sto)
+                .divide(stoPlusPdv, 4, RoundingMode.HALF_UP);
+        BigDecimal pdvPerUnit = vpcNeto.subtract(vpcBezPdv);  // izvučeni PDV iz VPC (za prikaz)
+
+        BigDecimal marzaPerUnit = vpcNeto.multiply(marzaProcenat)
+                .divide(sto, 4, RoundingMode.HALF_UP);
+
+        BigDecimal ukupnaCijena = vpcNeto.add(marzaPerUnit);
+        BigDecimal mpc = ukupnaCijena.multiply(sto.add(pdvProcenat))
+                .divide(sto, 2, RoundingMode.HALF_UP);
+
+        BigDecimal apsKolicina = kolicina.abs();
+
+        BigDecimal iznosVpc     = vpcBezPdv.multiply(apsKolicina).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal iznosMarze   = marzaPerUnit.multiply(apsKolicina).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal iznosPopusta = popustPerUnit.multiply(apsKolicina).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal iznosPdv     = pdvPerUnit.multiply(apsKolicina).setScale(4, RoundingMode.HALF_UP);
+        BigDecimal iznosMpc     = mpc.multiply(apsKolicina).setScale(4, RoundingMode.HALF_UP);
+
+        if (kolicina.signum() < 0) {
+            iznosVpc     = iznosVpc.negate();
+            iznosMarze   = iznosMarze.negate();
+            iznosPopusta = iznosPopusta.negate();
+            iznosPdv     = iznosPdv.negate();
+            iznosMpc     = iznosMpc.negate();
+        }
+
+        return new StavkaIznosi(mpc, iznosVpc, iznosMpc, iznosMarze, iznosPopusta, iznosPdv);
+    }
+
+    private record StavkaIznosi(
+            BigDecimal mpc,
+            BigDecimal iznosVpc,
+            BigDecimal iznosMpc,
+            BigDecimal iznosMarze,
+            BigDecimal iznosPopusta,
+            BigDecimal iznosPdv
+    ) {}
+
+    private void refreshDokumentIznosi(Dokument d) {
+        if (d.getStavke().isEmpty()) {
+            d.setIznosMpc(BigDecimal.ZERO);
+            d.setIznosVpc(BigDecimal.ZERO);
+            d.setIznosPdv(BigDecimal.ZERO);
+            d.setIznosPopusta(BigDecimal.ZERO);
+            d.setIznosMarze(BigDecimal.ZERO);
+            return;
+        }
+
+        BigDecimal sumMpc     = BigDecimal.ZERO;
+        BigDecimal sumVpc     = BigDecimal.ZERO;
+        BigDecimal sumPdv     = BigDecimal.ZERO;
+        BigDecimal sumPopusta = BigDecimal.ZERO;
+        BigDecimal sumMarze   = BigDecimal.ZERO;
+
+        for (StavkaDokumenta s : d.getStavke()) {
+            sumMpc     = sumMpc.add(s.getIznosMpc());
+            sumVpc     = sumVpc.add(s.getIznosVpc());
+            sumPdv     = sumPdv.add(s.getIznosPdv());
+            sumPopusta = sumPopusta.add(s.getIznosPopusta());
+            sumMarze   = sumMarze.add(s.getIznosMarze());
+        }
+
+        d.setIznosMpc(sumMpc.setScale(4, RoundingMode.HALF_UP));
+        d.setIznosVpc(sumVpc.setScale(4, RoundingMode.HALF_UP));
+        d.setIznosPdv(sumPdv.setScale(4, RoundingMode.HALF_UP));
+        d.setIznosPopusta(sumPopusta.setScale(4, RoundingMode.HALF_UP));
+        d.setIznosMarze(sumMarze.setScale(4, RoundingMode.HALF_UP));
     }
 
     private void updateStock(Long idVarijante, Long idPoslovnice, Long idKompanije, BigDecimal kolicina) {
@@ -403,13 +548,6 @@ public class DokumentService implements IDokumentService {
 
         log.debug("Zaliha ažurirana: varijanta={}, poslovnica={}, delta={}, nova={}",
                 idVarijante, idPoslovnice, kolicina, zaliha.getKolicina());
-    }
-
-    private BigDecimal calculateUkupno(BigDecimal cijena, BigDecimal popust, BigDecimal kolicina) {
-        BigDecimal faktorPopusta = BigDecimal.ONE.subtract(
-                popust.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP));
-        return cijena.multiply(faktorPopusta).multiply(kolicina)
-                .setScale(4, RoundingMode.HALF_UP);
     }
 
     private Dokument loadDokument(Long id, Long idKompanije) {
@@ -456,12 +594,16 @@ public class DokumentService implements IDokumentService {
                 ? dobavljacRepository.findById(d.getIdDobavljaca()).map(Dobavljac::getNaziv).orElse(null)
                 : null;
 
-        BigDecimal ukupno = d.getStavke().stream()
-                .map(StavkaDokumenta::getUkupno)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Set<Long> varijantaIds = d.getStavke().stream()
+                .map(StavkaDokumenta::getIdVarijante)
+                .collect(Collectors.toSet());
+        Map<Long, VarijantaArtikla> varijanteMap = varijantaArtiklaRepository
+                .findAllWithDetailsByIdIn(varijantaIds)
+                .stream()
+                .collect(Collectors.toMap(VarijantaArtikla::getId, v -> v));
 
         List<StavkaDTO.StavkaResponseDTO> stavkeDto = d.getStavke().stream()
-                .map(this::toStavkaResponse)
+                .map(s -> toStavkaResponse(s, varijanteMap))
                 .toList();
 
         TipDokumenta tip = d.getTipDokumenta();
@@ -476,21 +618,26 @@ public class DokumentService implements IDokumentService {
                 d.getIdKupca(),
                 d.getStatus().name(),
                 d.getBrojDokumenta(),
+                d.getBrojFakture(),
                 d.getDatum(),
                 d.getNapomena(),
-                ukupno,
+                d.getIznosMpc(),
+                d.getIznosVpc(),
+                d.getIznosPdv(),
+                d.getIznosPopusta(),
+                d.getIznosMarze(),
                 stavkeDto,
                 d.getSysCreatedDate(),
                 d.getSysModifiedDate()
         );
     }
 
-    private StavkaDTO.StavkaResponseDTO toStavkaResponse(StavkaDokumenta s) {
+    private StavkaDTO.StavkaResponseDTO toStavkaResponse(StavkaDokumenta s, Map<Long, VarijantaArtikla> varijanteMap) {
         String artikalNaziv = null;
         String velicinaOznaka = null;
         String bojaNaziv = null;
 
-        VarijantaArtikla varijanta = varijantaArtiklaRepository.findById(s.getIdVarijante()).orElse(null);
+        VarijantaArtikla varijanta = varijanteMap.get(s.getIdVarijante());
         if (varijanta != null) {
             if (varijanta.getArtikalKompanija() != null) {
                 artikalNaziv = varijanta.getArtikalKompanija().getNaziv();
@@ -510,9 +657,16 @@ public class DokumentService implements IDokumentService {
                 velicinaOznaka,
                 bojaNaziv,
                 s.getKolicina(),
-                s.getCijena(),
-                s.getPopust(),
-                s.getUkupno(),
+                s.getVpc(),
+                s.getMpc(),
+                s.getPopustProcenat(),
+                s.getPdvProcenat(),
+                s.getMarzaProcenat(),
+                s.getIznosVpc(),
+                s.getIznosMpc(),
+                s.getIznosMarze(),
+                s.getIznosPopusta(),
+                s.getIznosPdv(),
                 s.getSysCreatedDate()
         );
     }
@@ -522,10 +676,6 @@ public class DokumentService implements IDokumentService {
             Map<Long, String> poslovniceNazivi,
             Map<Long, String> dobavljaciNazivi
     ) {
-        BigDecimal ukupno = d.getStavke().stream()
-                .map(StavkaDokumenta::getUkupno)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         return new DokumentDTO.DokumentListItemDTO(
                 d.getId(),
                 d.getTipDokumenta().getKod(),
@@ -535,8 +685,11 @@ public class DokumentService implements IDokumentService {
                 d.getIdDobavljaca() != null ? dobavljaciNazivi.getOrDefault(d.getIdDobavljaca(), "") : null,
                 d.getStatus().name(),
                 d.getBrojDokumenta(),
+                d.getBrojFakture(),
                 d.getDatum(),
-                ukupno,
+                d.getIznosMpc(),
+                d.getIznosVpc(),
+                d.getIznosPdv(),
                 d.getSysCreatedDate()
         );
     }

@@ -58,8 +58,7 @@ public class NivelacijaService implements INivelacijaService {
                         n.getBroj(),
                         n.getDatum(),
                         n.getVrsta().name(),
-                        n.getIdFakture(),
-                        n.getIdOtpremnice(),
+                        n.getIdDokumenta(),
                         brojStavkiMap.getOrDefault(n.getId(), 0L).intValue()
                 ))
                 .toList();
@@ -108,8 +107,7 @@ public class NivelacijaService implements INivelacijaService {
                 nivelacija.getBroj(),
                 nivelacija.getDatum(),
                 nivelacija.getVrsta().name(),
-                nivelacija.getIdFakture(),
-                nivelacija.getIdOtpremnice(),
+                nivelacija.getIdDokumenta(),
                 nivelacija.getNapomena(),
                 ukupnoNivelacije,
                 stavkeDtos
@@ -173,12 +171,7 @@ public class NivelacijaService implements INivelacijaService {
                 napomena
         );
 
-        // Čuvamo referencu na izvorni prometni dokument u odgovarajuće polje
-        if (vrsta == VrstaNivelacije.AUTOMATSKA_FAKTURA) {
-            nivelacija.setIdFakture(idDokumenta);
-        } else {
-            nivelacija.setIdOtpremnice(idDokumenta);
-        }
+        nivelacija.setIdDokumenta(idDokumenta);
 
         Nivelacija saved = nivelacijaRepository.save(nivelacija);
         nivelacijaStavke.forEach(s -> s.setNivelacija(saved));

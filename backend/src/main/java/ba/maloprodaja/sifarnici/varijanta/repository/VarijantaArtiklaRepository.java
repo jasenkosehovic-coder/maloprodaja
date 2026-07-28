@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,4 +39,7 @@ public interface VarijantaArtiklaRepository extends JpaRepository<VarijantaArtik
     boolean existsByIdBojeAndAktivanTrue(Long idBoje);
 
     long countByIdArtikla(Long idArtikla);
+
+    @Query("SELECT v FROM VarijantaArtikla v LEFT JOIN FETCH v.artikalKompanija LEFT JOIN FETCH v.velicina LEFT JOIN FETCH v.boja WHERE v.id IN :ids")
+    List<VarijantaArtikla> findAllWithDetailsByIdIn(@Param("ids") Collection<Long> ids);
 }

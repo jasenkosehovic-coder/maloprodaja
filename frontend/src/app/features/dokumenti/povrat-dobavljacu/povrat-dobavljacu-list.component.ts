@@ -149,7 +149,11 @@ export class PovratDobavljacuListComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(data => {
-        this.dokumenti.set([...data].sort((a, b) => b.id - a.id));
+        this.dokumenti.set(
+          [...data]
+            .sort((a, b) => b.id - a.id)
+            .map(d => ({ ...d, ukupno: d.iznosVpc + d.iznosPdv } as typeof d & { ukupno: number }))
+        );
         this.cdr.markForCheck();
       });
   }

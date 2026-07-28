@@ -8,7 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -35,7 +35,7 @@ import { CurrencyBamPipe } from '../../../shared/pipes/currency-bam.pipe';
 import { PrometService } from '../services/promet.service';
 import { CreateStavkaDTO, DokumentDetail } from '../models/promet.models';
 import { ArtikliService } from '../../sifarnici/artikli/artikli.service';
-import { ArtikalKompanija } from '../../sifarnici/artikli/artikli.models';
+import { ArtikalKompanija, ArtikalVarijanta } from '../../sifarnici/artikli/artikli.models';
 
 @Component({
   selector: 'app-povrat-dobavljacu-detail',
@@ -79,21 +79,63 @@ export class PovratDobavljacuDetailComponent implements OnInit {
   readonly isSavingStavka = signal(false);
 
   readonly artikliKompanija = signal<ArtikalKompanija[]>([]);
+  readonly varijante = signal<ArtikalVarijanta[]>([]);
+  readonly artikalPretragaTekst = signal('');
 
-  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno'];
-  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'cijena', 'popust', 'ukupno', 'ukloni'];
+  readonly stavkeColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'pdvProcenat', 'iznosPdv', 'iznosVpc', 'ukupno'];
+  readonly stavkeNacrtColumns = ['redniBroj', 'naziv', 'velicina', 'boja', 'kolicina', 'vpc', 'pdvProcenat', 'iznosPdv', 'iznosVpc', 'ukupno', 'ukloni'];
 
   readonly novStavkaForm = this.fb.group({
+    idArtikla: this.fb.control<number | null>(null, Validators.required),
     idVarijante: this.fb.control<number | null>(null, Validators.required),
     kolicina: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001)]),
-    cijena: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
-    popust: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100)]),
+    vpc: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+    pdvProcenat: this.fb.control<number>(0),
+  });
+
+  private readonly idArtiklaSignal = toSignal(
+    this.novStavkaForm.controls.idArtikla.valueChanges,
+    { initialValue: null }
+  );
+
+  private readonly formValue = toSignal(
+    this.novStavkaForm.valueChanges,
+    { initialValue: this.novStavkaForm.getRawValue() }
+  );
+
+  readonly stavkaPreview = computed(() => {
+    const val = this.formValue();
+    const vpc = val.vpc ?? 0;
+    const pdv = val.pdvProcenat ?? 0;
+    if (vpc <= 0 || pdv <= 0) return { iznosPdv: 0 };
+    const vpcBezPdv = Math.round(vpc * 100 / (100 + pdv) * 10000) / 10000;
+    return { iznosPdv: Math.round((vpc - vpcBezPdv) * 10000) / 10000 };
+  });
+
+  readonly filteredArtikliKompanija = computed(() => {
+    const tekst = this.artikalPretragaTekst().toLowerCase().trim();
+    const lista = this.artikliKompanija();
+    if (!tekst) return lista;
+    return lista.filter(a =>
+      a.naziv.toLowerCase().includes(tekst) || a.sifra.toLowerCase().includes(tekst)
+    );
+  });
+
+  private readonly dodaneVarijanteIds = computed(() =>
+    new Set((this.dokument()?.stavke ?? []).map(s => s.idVarijante))
+  );
+
+  readonly varijanteDrugogArtikla = computed(() => {
+    const idArtikla = this.idArtiklaSignal();
+    if (!idArtikla) return [];
+    const dodane = this.dodaneVarijanteIds();
+    return this.varijante().filter(v => v.idArtikla === idArtikla && v.aktivan && !dodane.has(v.id));
   });
 
   readonly ukupnoStavki = computed(() => {
     const d = this.dokument();
     if (!d) return 0;
-    return d.stavke.reduce((sum, s) => sum + s.ukupno, 0);
+    return d.stavke.reduce((sum, s) => sum + s.iznosVpc + s.iznosPdv, 0);
   });
 
   ngOnInit(): void {
@@ -105,6 +147,21 @@ export class PovratDobavljacuDetailComponent implements OnInit {
       return;
     }
     this.ucitajDokument(id);
+
+    this.novStavkaForm.controls.idArtikla.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(idArtikla => {
+        this.novStavkaForm.controls.idVarijante.setValue(null);
+        this.varijante.set([]);
+        if (idArtikla != null) {
+          this.ucitajVarijante(idArtikla);
+          const artikal = this.artikliKompanija().find(a => a.id === idArtikla);
+          if (artikal) {
+            this.novStavkaForm.controls.pdvProcenat.setValue(artikal.pdv ?? 0);
+          }
+        }
+        this.cdr.markForCheck();
+      });
   }
 
   private ucitajDokument(id: number): void {
@@ -146,6 +203,22 @@ export class PovratDobavljacuDetailComponent implements OnInit {
       });
   }
 
+  ucitajVarijante(idArtikla: number): void {
+    this.artikliService.getVarijante(idArtikla)
+      .pipe(
+        catchError(() => []),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(varijante => {
+        this.varijante.set(varijante as ArtikalVarijanta[]);
+        const dostupne = this.varijanteDrugogArtikla();
+        if (dostupne.length === 1) {
+          this.novStavkaForm.controls.idVarijante.setValue(dostupne[0].id);
+        }
+        this.cdr.markForCheck();
+      });
+  }
+
   dodajStavku(): void {
     if (this.novStavkaForm.invalid) {
       this.novStavkaForm.markAllAsTouched();
@@ -159,8 +232,10 @@ export class PovratDobavljacuDetailComponent implements OnInit {
     const dto: CreateStavkaDTO = {
       idVarijante: formValue.idVarijante as number,
       kolicina: formValue.kolicina as number,
-      cijena: formValue.cijena as number,
-      popust: formValue.popust ?? 0,
+      vpc: formValue.vpc as number,
+      pdvProcenat: formValue.pdvProcenat,
+      marzaProcenat: 0,
+      popustProcenat: 0,
     };
 
     this.isSavingStavka.set(true);
@@ -181,6 +256,7 @@ export class PovratDobavljacuDetailComponent implements OnInit {
       .subscribe(updated => {
         this.dokument.set(updated);
         this.novStavkaForm.reset();
+        this.artikalPretragaTekst.set('');
         this.isAddingStavka.set(false);
         this.snackBar.open('Stavka je uspješno dodana.', 'Zatvori', { duration: 2000 });
         this.cdr.markForCheck();
@@ -286,6 +362,29 @@ export class PovratDobavljacuDetailComponent implements OnInit {
       .subscribe(() => {
         this.snackBar.open('Povrat je uspješno storniran.', 'Zatvori', { duration: 3000 });
         this.ucitajDokument(d.id);
+      });
+  }
+
+  downloadPdf(): void {
+    const d = this.dokument();
+    if (!d) return;
+
+    this.prometService.downloadPovratPdf(d.id)
+      .pipe(
+        catchError(err => {
+          this.snackBar.open('Greška pri preuzimanju PDF-a.', 'Zatvori', { duration: 3000 });
+          console.error(err);
+          return EMPTY;
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Povrat_dobavljacu_${d.id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
       });
   }
 

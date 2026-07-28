@@ -39,7 +39,7 @@ import { CreateMedjuskladisnicaDTO, CreateStavkaDTO } from '../models/promet.mod
 interface StavkaFormValue {
   idVarijante: number | null;
   kolicina: number | null;
-  cijena: number | null;
+  vpc: number | null;
 }
 
 @Component({
@@ -76,7 +76,7 @@ export class MedjuskladisnicaFormComponent implements OnInit {
   readonly isSaving = signal(false);
   readonly poslovnice = signal<PoslovnicaOption[]>([]);
 
-  readonly stavkeColumns = ['idVarijante', 'kolicina', 'cijena', 'akcije'];
+  readonly stavkeColumns = ['idVarijante', 'kolicina', 'vpc', 'akcije'];
 
   readonly form = this.fb.group({
     izvorPoslovnicaId: this.fb.control<number | null>(null, Validators.required),
@@ -144,7 +144,7 @@ export class MedjuskladisnicaFormComponent implements OnInit {
     const stavke: CreateStavkaDTO[] = (formValue.stavke as StavkaFormValue[]).map(s => ({
       idVarijante: s.idVarijante as number,
       kolicina: s.kolicina as number,
-      cijena: s.cijena as number,
+      vpc: s.vpc as number,
     }));
 
     const dto: CreateMedjuskladisnicaDTO = {
@@ -184,7 +184,7 @@ export class MedjuskladisnicaFormComponent implements OnInit {
     return this.fb.group({
       idVarijante: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
       kolicina: this.fb.control<number | null>(1, [Validators.required, Validators.min(0.001)]),
-      cijena: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+      vpc: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     });
   }
 

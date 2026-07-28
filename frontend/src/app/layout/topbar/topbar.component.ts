@@ -52,7 +52,6 @@ const FISKALNI_ITEMS: NavItem[] = [
 const DOKUMENTI_ITEMS: NavItem[] = [
   { label: 'Ulazne fakture',     route: '/dokumenti/fakture',            roles: ADMIN_MEN },
   { label: 'Povrat dobavljaču',  route: '/dokumenti/povrat-dobavljacu',  roles: ADMIN_MEN },
-  { label: 'Izlazne fakture',    route: '/dokumenti/izlazne-fakture',    roles: ADMIN_MEN },
   { label: 'Međuskladišnica',    route: '/dokumenti/medjuskladisnica',   roles: ADMIN_MEN },
   { label: 'Nivelacije',         route: '/dokumenti/nivelacije',         roles: ADMIN_MEN },
 ];

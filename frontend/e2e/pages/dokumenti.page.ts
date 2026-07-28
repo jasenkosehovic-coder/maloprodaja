@@ -2,7 +2,7 @@ import { type Page, type Locator, expect } from '@playwright/test';
 
 /**
  * Page Object Model za Dokumenti feature.
- * Covers: Ulazne fakture, Povrat dobavljacu, Izlazne fakture, Medjuskladisnica
+ * Covers: Ulazne fakture, Povrat dobavljacu, Medjuskladisnica
  */
 export class DokumentiPage {
   readonly page: Page;
@@ -20,11 +20,6 @@ export class DokumentiPage {
 
   async navigateToPovratDobavljacu(): Promise<void> {
     await this.page.goto('/dokumenti/povrat-dobavljacu');
-    await this.page.waitForLoadState('networkidle');
-  }
-
-  async navigateToIzlazneFakture(): Promise<void> {
-    await this.page.goto('/dokumenti/izlazne-fakture');
     await this.page.waitForLoadState('networkidle');
   }
 

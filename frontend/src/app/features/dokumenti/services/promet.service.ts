@@ -136,4 +136,12 @@ export class PrometService {
   downloadPdf(id: number): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/dokumenti/${id}/pdf`, { responseType: 'blob' });
   }
+
+  downloadFakturaPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/dokumenti/fakture/${id}/pdf`, { responseType: 'blob' });
+  }
+
+  downloadPovratPdf(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/dokumenti/povrat-dobavljacu/${id}/pdf`, { responseType: 'blob' });
+  }
 }

@@ -401,19 +401,26 @@ class DokumentServiceTest {
         return d;
     }
 
-    private StavkaDokumenta buildStavka(Long idVarijante, BigDecimal kolicina, BigDecimal cijena) {
+    private StavkaDokumenta buildStavka(Long idVarijante, BigDecimal kolicina, BigDecimal vpc) {
         StavkaDokumenta s = new StavkaDokumenta();
         s.setIdVarijante(idVarijante);
         s.setKolicina(kolicina);
-        s.setCijena(cijena);
-        s.setPopust(BigDecimal.ZERO);
-        s.setUkupno(cijena.multiply(kolicina));
+        s.setVpc(vpc);
+        s.setPopustProcenat(BigDecimal.ZERO);
+        s.setMarzaProcenat(BigDecimal.ZERO);
+        s.setPdvProcenat(BigDecimal.ZERO);
+        s.setMpc(vpc);
+        s.setIznosVpc(vpc.multiply(kolicina));
+        s.setIznosMpc(vpc.multiply(kolicina));
+        s.setIznosMarze(BigDecimal.ZERO);
+        s.setIznosPopusta(BigDecimal.ZERO);
+        s.setIznosPdv(BigDecimal.ZERO);
         s.setIdKompanije(KOMPANIJA_ID);
         return s;
     }
 
     private StavkaDTO.CreateStavkaDTO buildCreateStavkaDTO() {
         return new StavkaDTO.CreateStavkaDTO(VARIJANTA_ID, new BigDecimal("5.000"),
-                new BigDecimal("20.00"), BigDecimal.ZERO);
+                new BigDecimal("20.00"), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }

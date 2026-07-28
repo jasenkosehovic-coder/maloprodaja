@@ -26,12 +26,33 @@ public class StavkaDokumenta extends KompanijaBaseEntity {
     @Column(name = "kolicina", nullable = false, precision = 12, scale = 3)
     private BigDecimal kolicina;
 
-    @Column(name = "cijena", nullable = false, precision = 12, scale = 4)
-    private BigDecimal cijena;
+    @Column(name = "vpc", nullable = false, precision = 12, scale = 4)
+    private BigDecimal vpc;
 
-    @Column(name = "popust", nullable = false, precision = 5, scale = 2)
-    private BigDecimal popust = BigDecimal.ZERO;
+    @Column(name = "mpc", nullable = false, precision = 12, scale = 4)
+    private BigDecimal mpc = BigDecimal.ZERO;
 
-    @Column(name = "ukupno", nullable = false, precision = 12, scale = 4)
-    private BigDecimal ukupno;
+    @Column(name = "pdv_procenat", nullable = false, precision = 5, scale = 2)
+    private BigDecimal pdvProcenat = BigDecimal.ZERO;
+
+    @Column(name = "marza_procenat", nullable = false, precision = 5, scale = 2)
+    private BigDecimal marzaProcenat = BigDecimal.ZERO;
+
+    @Column(name = "popust_procenat", nullable = false, precision = 5, scale = 2)
+    private BigDecimal popustProcenat = BigDecimal.ZERO;
+
+    @Column(name = "iznos_vpc", nullable = false, precision = 12, scale = 4)
+    private BigDecimal iznosVpc = BigDecimal.ZERO;
+
+    @Column(name = "iznos_mpc", nullable = false, precision = 12, scale = 4)
+    private BigDecimal iznosMpc = BigDecimal.ZERO;
+
+    @Column(name = "iznos_marze", nullable = false, precision = 12, scale = 4)
+    private BigDecimal iznosMarze = BigDecimal.ZERO;
+
+    @Column(name = "iznos_popusta", nullable = false, precision = 12, scale = 4)
+    private BigDecimal iznosPopusta = BigDecimal.ZERO;
+
+    @Column(name = "iznos_pdv", nullable = false, precision = 12, scale = 4)
+    private BigDecimal iznosPdv = BigDecimal.ZERO;
 }

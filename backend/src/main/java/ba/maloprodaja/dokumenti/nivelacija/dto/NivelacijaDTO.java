@@ -16,8 +16,7 @@ public class NivelacijaDTO {
             String broj,
             LocalDate datum,
             String vrsta,
-            Long idFakture,
-            Long idOtpremnice,
+            Long idDokumenta,
             int brojStavki
     ) {}
 
@@ -26,8 +25,7 @@ public class NivelacijaDTO {
             String broj,
             LocalDate datum,
             String vrsta,
-            Long idFakture,
-            Long idOtpremnice,
+            Long idDokumenta,
             String napomena,
             BigDecimal ukupnoNivelacije,
             List<StavkaDTO> stavke

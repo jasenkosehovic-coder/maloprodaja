@@ -26,6 +26,8 @@ public class DokumentDTO {
 
             String napomena,
 
+            String brojFakture,
+
             @Valid
             List<StavkaDTO.CreateStavkaDTO> stavke
     ) {}
@@ -36,7 +38,9 @@ public class DokumentDTO {
             @NotNull(message = "Datum je obavezan")
             LocalDate datum,
 
-            String napomena
+            String napomena,
+
+            String brojFakture
     ) {}
 
     public record CreateMedjuskladisnicaDTO(
@@ -66,9 +70,14 @@ public class DokumentDTO {
             Long idKupca,
             String status,
             String brojDokumenta,
+            String brojFakture,
             LocalDate datum,
             String napomena,
-            BigDecimal ukupno,
+            BigDecimal iznosMpc,
+            BigDecimal iznosVpc,
+            BigDecimal iznosPdv,
+            BigDecimal iznosPopusta,
+            BigDecimal iznosMarze,
             List<StavkaDTO.StavkaResponseDTO> stavke,
             LocalDateTime sysCreatedDate,
             LocalDateTime sysModifiedDate
@@ -83,8 +92,11 @@ public class DokumentDTO {
             String dobavljacNaziv,
             String status,
             String brojDokumenta,
+            String brojFakture,
             LocalDate datum,
-            BigDecimal ukupno,
+            BigDecimal iznosMpc,
+            BigDecimal iznosVpc,
+            BigDecimal iznosPdv,
             LocalDateTime sysCreatedDate
     ) {}
 }

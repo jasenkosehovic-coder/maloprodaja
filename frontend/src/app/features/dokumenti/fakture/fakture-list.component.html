@@ -3,15 +3,15 @@
 
   <!-- Filter bar -->
   <div class="filter-bar">
-    <mat-form-field appearance="outline" class="filter-status">
-      <mat-label>Status</mat-label>
+    <mat-form-field appearance="outline" class="filter-godina">
+      <mat-label>Godina</mat-label>
       <mat-select
-        [value]="filterStatus()"
-        (selectionChange)="onStatusChange($event.value)"
-        aria-label="Filtriraj po statusu"
+        [value]="filterGodina()"
+        (selectionChange)="filterGodina.set($event.value)"
+        aria-label="Filtriraj po godini"
       >
-        @for (s of statusOptions; track s.value) {
-          <mat-option [value]="s.value">{{ s.label }}</mat-option>
+        @for (g of godineOptions(); track g) {
+          <mat-option [value]="g">{{ g }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
@@ -53,7 +53,7 @@
 
   <app-crud-table
     [data]="filtrirani()"
-    [headers]="['id', 'brojDokumenta', 'datum', 'dobavljacNaziv', 'poslovnicaNaziv', 'status', 'ukupno']"
+    [headers]="['brojDokumenta', 'brojFakture', 'datum', 'dobavljacNaziv', 'poslovnicaNaziv', 'status', 'iznosVpc']"
     [fields]="fields"
     [actions]="actions"
     [filterableColumns]="filterableColumns"

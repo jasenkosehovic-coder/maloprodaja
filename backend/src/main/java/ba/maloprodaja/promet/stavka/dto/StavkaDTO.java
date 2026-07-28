@@ -17,17 +17,30 @@ public class StavkaDTO {
             @DecimalMin(value = "0.001", message = "Količina mora biti veća od 0")
             BigDecimal kolicina,
 
-            @NotNull(message = "Cijena je obavezna")
-            @DecimalMin(value = "0", message = "Cijena ne može biti negativna")
-            BigDecimal cijena,
+            @NotNull(message = "VPC je obavezna")
+            @DecimalMin(value = "0", message = "VPC ne može biti negativna")
+            BigDecimal vpc,
 
             @DecimalMin(value = "0", message = "Popust ne može biti negativan")
             @DecimalMax(value = "100", message = "Popust ne može biti veći od 100")
-            BigDecimal popust
+            BigDecimal popustProcenat,
+
+            @DecimalMin(value = "0", message = "PDV ne može biti negativan")
+            @DecimalMax(value = "100", message = "PDV ne može biti veći od 100")
+            BigDecimal pdvProcenat,
+
+            @DecimalMin(value = "0", message = "Marža ne može biti negativna")
+            BigDecimal marzaProcenat
     ) {
         public CreateStavkaDTO {
-            if (popust == null) {
-                popust = BigDecimal.ZERO;
+            if (popustProcenat == null) {
+                popustProcenat = BigDecimal.ZERO;
+            }
+            if (pdvProcenat == null) {
+                pdvProcenat = BigDecimal.ZERO;
+            }
+            if (marzaProcenat == null) {
+                marzaProcenat = BigDecimal.ZERO;
             }
         }
     }
@@ -37,17 +50,30 @@ public class StavkaDTO {
             @DecimalMin(value = "0.001", message = "Količina mora biti veća od 0")
             BigDecimal kolicina,
 
-            @NotNull(message = "Cijena je obavezna")
-            @DecimalMin(value = "0", message = "Cijena ne može biti negativna")
-            BigDecimal cijena,
+            @NotNull(message = "VPC je obavezna")
+            @DecimalMin(value = "0", message = "VPC ne može biti negativna")
+            BigDecimal vpc,
 
             @DecimalMin(value = "0", message = "Popust ne može biti negativan")
             @DecimalMax(value = "100", message = "Popust ne može biti veći od 100")
-            BigDecimal popust
+            BigDecimal popustProcenat,
+
+            @DecimalMin(value = "0", message = "PDV ne može biti negativan")
+            @DecimalMax(value = "100", message = "PDV ne može biti veći od 100")
+            BigDecimal pdvProcenat,
+
+            @DecimalMin(value = "0", message = "Marža ne može biti negativna")
+            BigDecimal marzaProcenat
     ) {
         public UpdateStavkaDTO {
-            if (popust == null) {
-                popust = BigDecimal.ZERO;
+            if (popustProcenat == null) {
+                popustProcenat = BigDecimal.ZERO;
+            }
+            if (pdvProcenat == null) {
+                pdvProcenat = BigDecimal.ZERO;
+            }
+            if (marzaProcenat == null) {
+                marzaProcenat = BigDecimal.ZERO;
             }
         }
     }
@@ -59,9 +85,16 @@ public class StavkaDTO {
             String velicinaOznaka,
             String bojaNaziv,
             BigDecimal kolicina,
-            BigDecimal cijena,
-            BigDecimal popust,
-            BigDecimal ukupno,
+            BigDecimal vpc,
+            BigDecimal mpc,
+            BigDecimal popustProcenat,
+            BigDecimal pdvProcenat,
+            BigDecimal marzaProcenat,
+            BigDecimal iznosVpc,
+            BigDecimal iznosMpc,
+            BigDecimal iznosMarze,
+            BigDecimal iznosPopusta,
+            BigDecimal iznosPdv,
             LocalDateTime sysCreatedDate
     ) {}
 }

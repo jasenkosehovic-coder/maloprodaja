@@ -20,8 +20,11 @@ export interface DokumentListItem {
   kupacNaziv: string | null;
   status: DokumentStatus;
   brojDokumenta: string | null;
+  brojFakture: string | null;
   datum: string;
-  ukupno: number;
+  iznosMpc: number;
+  iznosVpc: number;
+  iznosPdv: number;
   sysCreatedDate: string;
 }
 
@@ -44,9 +47,16 @@ export interface StavkaDokumenta {
   velicinaOznaka: string | null;
   bojaNaziv: string | null;
   kolicina: number;
-  cijena: number;
-  popust: number;
-  ukupno: number;
+  vpc: number;
+  mpc: number;
+  popustProcenat: number;
+  pdvProcenat: number;
+  marzaProcenat: number;
+  iznosVpc: number;
+  iznosMpc: number;
+  iznosMarze: number;
+  iznosPopusta: number;
+  iznosPdv: number;
   sysCreatedDate: string;
 }
 
@@ -61,9 +71,14 @@ export interface DokumentDetail {
   kupacNaziv: string | null;
   status: DokumentStatus;
   brojDokumenta: string | null;
+  brojFakture: string | null;
   datum: string;
   napomena: string | null;
-  ukupno: number;
+  iznosMpc: number;
+  iznosVpc: number;
+  iznosPdv: number;
+  iznosPopusta: number;
+  iznosMarze: number;
   stavke: StavkaDokumenta[];
   sysCreatedDate: string;
   sysModifiedDate: string;
@@ -75,6 +90,7 @@ export interface CreateDokumentDTO {
   idPoslovnice: number;
   idDobavljaca?: number;
   idKupca?: number;
+  brojFakture?: string;
   datum: string;
   napomena?: string;
   stavke?: CreateStavkaDTO[];
@@ -90,14 +106,18 @@ export interface UpdateDokumentDTO {
 export interface CreateStavkaDTO {
   idVarijante: number;
   kolicina: number;
-  cijena: number;
-  popust?: number;
+  vpc: number;
+  popustProcenat?: number;
+  pdvProcenat?: number;
+  marzaProcenat?: number;
 }
 
 export interface UpdateStavkaDTO {
   kolicina?: number;
-  cijena?: number;
-  popust?: number;
+  vpc?: number;
+  popustProcenat?: number;
+  pdvProcenat?: number;
+  marzaProcenat?: number;
 }
 
 // ===== Međuskladišnica =====
