@@ -3,6 +3,27 @@
 Web aplikacija za upravljanje maloprodajom, blagajnom, dokumentima i izvještajima.
 Multi-tenant SaaS arhitektura — jedna instalacija za više kompanija i poslovnica.
 
+> ## ⚠️ Status projekta: ~30% — RAZVOJ U TOKU, NIJE ZA PRODUKCIJU
+>
+> Verificirano 2026-09-17. Prije ovog datuma dokumentacija je navodila module
+> (Blagajna, Fiskalizacija, Izvještaji, Chat, Postavke) **za koje ne postoji kod**.
+>
+> **Trenutna ograničenja:**
+> - **Build pada na oba stack-a** — vidi [Pokretanje lokalno](#pokretanje-lokalno)
+> - **Produkcijski profil se ne može pokrenuti** (entity/DDL drift)
+> - **Nema POS/blagajne** — sistem trenutno ne može prodati artikal
+> - **Nema fiskalizacije** — zakonski blokator za rad u BiH
+> - **Nema izvještaja, export/import-a, chata, postavki**
+> - Dev seed korisnici i `SchemaFixer` se pokreću i u produkciji (nema `@Profile` guarda)
+>
+> **Šta radi:** autentifikacija/RBAC, šifarnici (artikli, varijante, boje, veličine,
+> atributi, barkodovi, kupci, dobavljači, proizvođači, grupe), Promet dokumenti
+> (ulazne fakture, povrat dobavljaču, međuskladišnica), nivelacije, PDF dokumenata.
+>
+> **Kompletna lista defekata i prioriteta:** [`TASKS.md`](TASKS.md)
+> **Arhitektura i stvarna struktura koda:** [`.claude/ARCHITECTURE.md`](.claude/ARCHITECTURE.md)
+> **Nastavak rada / onboarding:** [`.claude/docs/HANDOFF.md`](.claude/docs/HANDOFF.md)
+
 ---
 
 ## Sadržaj
@@ -29,15 +50,24 @@ Multi-tenant SaaS arhitektura — jedna instalacija za više kompanija i poslovn
 Maloprodaja je SaaS web aplikacija namijenjena maloprodajnim objektima u BiH.
 Podržava više kompanija i poslovnica na jednoj instalaciji.
 
-**Ključne funkcionalnosti:**
-- Šifrarnici (artikli, kupci, dobavljači, proizvođači)
-- Blagajna (prodaja, posudbe, ponude, veleprodaja, storno)
+**Funkcionalnosti — implementirano:**
+- Autentifikacija (JWT) i RBAC sa individualnim override izbornika
+- Šifrarnici: artikli, varijante (veličina × boja), boje, tipovi veličina, atributi,
+  barkodovi, grupe, kupci, dobavljači, proizvođači, popusti (CRUD samo)
+- Promet dokumenti: ulazne fakture (UF), povrat dobavljaču (PD),
+  međuskladišnica (MSI+MSU atomično) — nacrt / potvrda / storno
+- Nivelacije (izmjena MPC/VPC)
+- PDF dokumenata (JasperReports)
+
+**Funkcionalnosti — planirano, kod ne postoji:**
+- Blagajna / POS (prodaja, posudbe, ponude, veleprodaja, storno, zaključivanje dana)
 - Fiskalizacija (EPSON E-link, Tring fiskalni server)
-- Dokumenti (ulazne fakture, nivelacije, otpremnice)
-- Izvještaji (knjiga blagajni, lager lista, stanje zaliha...)
-- Realtime chat između poslovnica (WebSocket)
-- Export/Import (Excel, CSV, PDF)
-- Role-based access control (RBAC) sa individualnim override izbornika
+- Izlazne fakture — frontend (backend tip `IF` postoji)
+- Izvještaji (knjiga blagajni, lager lista, stanje zaliha, trgovačka knjiga...)
+- Export/Import (Excel, CSV)
+- Realtime chat između poslovnica
+- Postavke (programski parametri, postavke poslovnice)
+- Pravilo popusta (resolver po MAX pravilu — vidi `.claude/CLAUDE.md`)
 
 ---
 
@@ -50,16 +80,16 @@ Podržava više kompanija i poslovnica na jednoj instalaciji.
 | Spring Boot | 3.3.5 | Framework |
 | Spring Security | 6.x | Autentifikacija / Autorizacija |
 | Spring Data JPA | 3.x | ORM sloj |
-| Spring WebSocket | 6.x | Realtime chat (STOMP) |
+| Spring WebSocket | 6.x | Realtime chat (STOMP) — ⚠️ deklarirano, neiskorišteno |
 | Hibernate | 6.x | JPA implementacija |
 | PostgreSQL | 16 | Baza podataka |
 | Flyway | 10.x | Migracije baze |
 | JWT (jjwt) | 0.12.6 | Token autentifikacija |
-| MapStruct | 1.5.5 | DTO mapiranje |
+| MapStruct | 1.5.5 | DTO mapiranje — ⚠️ deklarirano, 0 mappera |
 | Lombok | 1.18.34 | Boilerplate redukcija |
-| Apache POI | 5.3.0 | Excel export/import |
-| JasperReports | 6.21.3 | PDF izvještaji |
-| OpenCSV | 5.9 | CSV export |
+| Apache POI | 5.3.0 | Excel export/import — ⚠️ deklarirano, neiskorišteno |
+| JasperReports | 6.21.3 | PDF (samo `dokumenti/pdf`) |
+| OpenCSV | 5.9 | CSV export — ⚠️ deklarirano, neiskorišteno |
 | SpringDoc OpenAPI | 2.6.0 | Swagger UI |
 | Maven | 3.9.x | Build alat |
 
@@ -70,7 +100,7 @@ Podržava više kompanija i poslovnica na jednoj instalaciji.
 | Angular Material | 18 | UI komponente |
 | TypeScript | 5.x | Programski jezik |
 | RxJS | 7.x | Reaktivno programiranje |
-| @stomp/stompjs | 7.x | WebSocket / STOMP klijent |
+| @stomp/stompjs | 7.x | WebSocket / STOMP klijent — koristi ga `chat-websocket.service.ts`, ali backend `chat` ne postoji |
 | SCSS | - | Stilizacija |
 
 ### Infrastruktura
@@ -158,12 +188,22 @@ psql -U postgres -c "CREATE DATABASE maloprodaja_dev;"
 
 ### 2. Backend
 
+> ⚠️ **Build pada sa Lombok 1.18.34 na JDK 24+** (`TypeTag :: UNKNOWN`).
+> Dok `pom.xml` ne bude ažuriran, koristi override:
+> `mvn -Dlombok.version=1.18.42 spring-boot:run -Dspring-boot.run.profiles=dev`
+
 ```bash
 cd backend
 
 # Pokretanje sa dev profilom
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+> ⚠️ **Dev profil ne koristi Flyway** (`ddl-auto: create`, `flyway.enabled: false`) —
+> shema se re-kreira iz entiteta pri svakom restartu. `V1__init_schema.sql` se
+> izvršava samo u prod profilu, gdje trenutno **ne prolazi validaciju**.
+>
+> ⚠️ `mvn test` **ne kompajlira se** — `DokumentServiceTest.java:90` je zaostao za DTO-om.
 
 Backend se pokreće na: **http://localhost:8080**
 
@@ -193,11 +233,20 @@ Frontend se pokreće na: **http://localhost:4200**
 
 > `proxy.conf.json` automatski preusmjerava `/api` i `/ws` pozive na backend `localhost:8080`.
 
+> ✅ `ng serve`, `ng lint` (0 errora) i `ng build --configuration production` rade.
+> `npm test` zahtijeva Chrome (`CHROME_BIN`) — izvršava se u CI-u.
+
+### Dev pristupni podaci
+
+Seedani od `DataInitializer` (dev-only namjena, ali **trenutno se pokreće i u produkciji**):
+`admin` / `superadmin1` / `superadmin2`, password `Admin123!`.
+
 ---
 
 ## Pokretanje sa Docker Compose
 
-> **Napomena:** Docker Compose fajl bit će dodan u Fazi 10.
+> ⚠️ **Ne postoji.** Nema `Dockerfile` ni `docker-compose.yml` u repozitoriju.
+> Komande ispod su ciljno stanje, ne trenutno. Vidi `TASKS.md` P2.6.
 
 ```bash
 # Pokretanje svih servisa (backend + frontend + baza)
@@ -295,10 +344,22 @@ Maloprodaja/
 │   ├── src/styles/                   # SCSS tema i varijable
 │   └── proxy.conf.json               # Dev proxy na backend
 │
-├── CLAUDE.md                         # Pravila za Claude Code agente
-├── TASKS.md                          # Lista taskova i napredak
+├── .claude/
+│   ├── CLAUDE.md                     # Pravila za Claude Code agente + poslovna pravila
+│   ├── ARCHITECTURE.md               # Stvarna struktura koda i poznata odstupanja
+│   └── docs/
+│       ├── HANDOFF.md                # Kontekst za nastavak rada u novoj sesiji
+│       ├── api-standard.md           # REST API konvencije
+│       ├── testing.md                # Test strategija
+│       └── deploy.md                 # Deployment i konfiguracija
+├── TASKS.md                          # Prioritizirana lista rada (P0/P1/P2)
+├── TEXTILE_ARCHITECTURE_PLAN.md      # Historijski dizajn dokument (Sprint 1-4)
 └── README.md                         # Ovaj fajl
 ```
+
+> ⚠️ Stablo `backend/src/main/java` iznad prikazuje **ciljnu** strukturu.
+> Paketi `blagajna/`, `fiskalizacija/`, `izvjestaji/`, `chat/`, `postavke/`, `korisnik/`
+> **ne postoje**. Za stvarnu strukturu vidi [`.claude/ARCHITECTURE.md`](.claude/ARCHITECTURE.md).
 
 ---
 
@@ -312,7 +373,7 @@ Maloprodaja/
 | `DB_USERNAME` | `postgres` | Korisničko ime baze |
 | `DB_PASSWORD` | `postgres` | Lozinka baze |
 | `DB_POOL_SIZE` | `10` | Max veličina connection pool-a |
-| `JWT_SECRET` | `changeme-...` | Tajni ključ za JWT (min 32 znaka) |
+| `JWT_SECRET` | `changeme-...` | Tajni ključ za JWT (min 32 znaka). ⚠️ **Default je u gitu i prod profil ga ne override-a — sigurnosni defekt, `TASKS.md` P0.3** |
 | `JWT_EXPIRATION_MS` | `3600000` | Trajanje JWT tokena (1h) |
 | `JWT_REFRESH_EXPIRATION_MS` | `86400000` | Trajanje refresh tokena (24h) |
 | `JWT_INACTIVITY_MS` | `3600000` | Logout pri neaktivnosti (1h) |
@@ -333,16 +394,20 @@ Maloprodaja/
 
 ## Moduli aplikacije
 
-| Modul | Opis |
-|---|---|
-| **Šifrarnici** | Artikli, grupe, barkodovi, proizvođači, dobavljači, kupci, popusti |
-| **Blagajna** | Prodaja, storno/reklamacija, posudbe, ponude, veleprodaja, zaključivanje dana |
-| **Fiskalizacija** | EPSON (E-link server), Tring (fiscal server) — extensible interface |
-| **Dokumenti** | Ulazne fakture + auto-nivelacija, otpremnice (međuposlovnični transfer), nivelacije |
-| **Izvještaji** | Knjiga blagajni, lager lista, stanje zaliha, trgovačka knjiga, promet artikala... |
-| **Chat** | Realtime WebSocket chat između poslovnica |
-| **Korisnici** | CRUD + RBAC (rola + individualni izbornici) |
-| **Postavke** | Programski parametri, postavke poslovnice, fiskalni printeri |
+| Modul | Status | Opis |
+|---|---|---|
+| **Šifrarnici** | ✅ | Artikli, varijante, boje, veličine, atributi, barkodovi, grupe, proizvođači, dobavljači, kupci, popusti (CRUD) |
+| **Korisnici** | ✅ | CRUD + RBAC (rola + individualni izbornici). Kod je u `auth/` paketu |
+| **Dokumenti (Promet)** | 🟡 | UF, PD, MSI/MSU + auto-nivelacija. Izlazne fakture (IF) nemaju frontend |
+| **Nivelacije** | 🟡 | Rade, ali `vpcStara == vpcNova` i ručna nivelacija ima `iznos = 0` |
+| **Blagajna** | ❌ | Nema koda. Frontend je stub od 25 linija |
+| **Fiskalizacija** | ❌ | Nema koda. Zakonski blokator za rad u BiH |
+| **Izvještaji** | ❌ | Nema koda |
+| **Export/Import** | ❌ | Nema koda (POI/OpenCSV su deklarirani neiskorišteno) |
+| **Chat** | ❌ | Nema koda |
+| **Postavke** | ❌ | Nema koda |
+
+> Detalji i prioriteti u [`TASKS.md`](TASKS.md).
 
 ---
 

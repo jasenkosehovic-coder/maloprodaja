@@ -3,6 +3,23 @@
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "250000",
     "BASH_MAX_OUTPUT_LENGTH": "150000"
   },
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": false,
+    "superpowers-chrome@superpowers-marketplace": false
+  },
+  "skillOverrides": {
+    "run": "user-invocable-only",
+    "verify": "user-invocable-only",
+    "code-review": "user-invocable-only",
+    "review": "user-invocable-only",
+    "security-review": "user-invocable-only",
+    "init": "user-invocable-only",
+    "loop": "user-invocable-only",
+    "claude-api": "user-invocable-only",
+    "update-config": "user-invocable-only",
+    "keybindings-help": "user-invocable-only",
+    "fewer-permission-prompts": "user-invocable-only"
+  },
   "permissions": {
     "allow": [
       "Bash(python3.exe --version)",

@@ -1,5 +1,15 @@
 # Plan refaktorisanja arhitekture artikala — Tekstilna industrija
 
+> **Status: historijski dizajn dokument.** Sprint 1-4 su odrađeni prema ovom planu.
+> Dokument je 2026-09-17 usklađen sa stvarnim kodom (predznak `kolicina`, status enum,
+> nedovršeni frontend ekrani). **Za aktualnu listu rada koristi `TASKS.md`**, ne ovaj fajl.
+>
+> Poznata odstupanja implementacije od ovog dizajna:
+> - `varijante_artikla` UNIQUE ne uključuje `id_boje` → 2D model (veličina × boja) ne radi
+> - Frontend "Izlazne fakture" (`tipKod=IF`) nije napravljen
+> - Frontend koristi `'POTVRĐEN'`, backend `POTVRDEN` → filtriranje po statusu ne radi
+> - `PrometStavkeComponent` nije napravljen → ~1100 LOC duplikacije u dokument ekranima
+
 ## Pregled
 
 Refaktorisanje sifarnika artikala kako bi sistem podržao prodaju u tekstilnoj industriji:
@@ -426,7 +436,7 @@ dokumenti
   id_poslovnice FK
   id_dobavljaca FK (nullable)   -- za ULAZNA_FAKTURA, POVRAT_DOBAVLJACU
   id_kupca      FK (nullable)   -- za IZLAZNA_FAKTURA (veleprodaja)
-  status        VARCHAR(20)     -- NACRT | POTVRĐEN | STORNIRAN
+  status        VARCHAR(20)     -- NACRT | POTVRDEN | STORNIRAN  (ASCII, bez Đ)
   broj_dokumenta VARCHAR(30)    -- auto: KOD-YYYY-NNNN, kreira se pri potvrdi
   datum DATE, napomena TEXT
   id_kompanije FK, sys_*
@@ -434,7 +444,7 @@ dokumenti
 stavke_dokumenata
   id, id_dokumenta FK → dokumenti
   id_varijante FK → varijante_artikla
-  kolicina NUMERIC(12,3)        -- uvijek pozitivna; smjer određuje tip dokumenta
+  kolicina NUMERIC(12,3)        -- POTPISANA (+/−); servis množi sa tip.smjer_kolicine
   cijena   NUMERIC(12,4)        -- VPC pri ulasku, MPC pri izlasku
   popust   NUMERIC(5,2) DEFAULT 0
   ukupno   NUMERIC(12,4)        -- (cijena - popust%) * kolicina
@@ -471,7 +481,7 @@ JOIN s.dokument d
 JOIN d.tipDokumenta t
 WHERE s.idVarijante = :idVarijante
   AND d.idPoslovnice = :idPoslovnice
-  AND d.status = 'POTVRĐEN'
+  AND d.status = 'POTVRDEN'
   AND d.idKompanije = :idKompanije
 ```
 
@@ -482,7 +492,7 @@ WHERE s.idVarijante = :idVarijante
 - [x] **DDL** — ažurirati `V1__init_schema.sql`: ukloniti stare tablice, dodati 4 nove
 - [x] **TipDokumenta entity + repository** (`ba.maloprodaja.promet.tipdokumenta`)
 - [x] **Dokument entity + repository** (`ba.maloprodaja.promet.dokument`)
-  - Status enum: `NACRT`, `POTVRĐEN`, `STORNIRAN`
+  - Status enum: `NACRT`, `POTVRDEN`, `STORNIRAN` (ASCII — frontend koristi `'POTVRĐEN'`, mismatch)
 - [x] **StavkaDokumenta entity + repository**
   - Napomena: `kolicina` je **potpisana** (+/−) — servis primjenjuje `smjerKolicine` pri unosu stavke
 - [x] **BrojacDokumenta entity + service** — auto-number `KOD-YYYY-NNNN`
@@ -500,9 +510,11 @@ WHERE s.idVarijante = :idVarijante
 
 - [x] **Adaptiraj "Ulazne fakture"** — sada gada `/api/dokumenti?tipKod=UF`
 - [x] **Adaptiraj "Otpremnice" → "Povrat dobavljaču"** (`tipKod=PD`)
-- [x] **Novi screen "Izlazne fakture"** (veleprodaja, `tipKod=IF`)
+- [ ] **Novi screen "Izlazne fakture"** (veleprodaja, `tipKod=IF`) — ❌ **NE POSTOJI**:
+      ni direktorij, ni ruta, ni komponenta. Backend podržava `IF`. Vidi `TASKS.md` P1.8.
 - [x] **Novi screen "Međuskladišnica"** (`tipKod=MSI`+`MSU` atomično)
-- [x] **Ažurirati topbar/navigaciju** — nove rute, stare uklonjene
+- [x] **Ažurirati topbar/navigaciju** — nove rute dodane; ⚠️ stare NISU uklonjene
+      (~15 mrtvih linkova koje catch-all ruta tiho guta)
 - [ ] **Shared komponenta za stavke** `PrometStavkeComponent` *(svaki screen ima vlastitu formu; refaktoring u Sprint 5 ako bude potrebe)*
 
 ---
